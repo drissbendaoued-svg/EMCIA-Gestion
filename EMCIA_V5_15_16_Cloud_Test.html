@@ -299,9 +299,23 @@ body.reception-mode #langMenu{display:block}
 #waiting .wait-counts{grid-template-columns:repeat(3,minmax(120px,1fr))}
 @media(max-width:600px){#waiting .wait-counts{grid-template-columns:repeat(3,1fr)}}
 </style>
-<style>body:not(.emcia-authorized) > header,body:not(.emcia-authorized) > #langMenu,body:not(.emcia-authorized) > #mobileNavToggle,body:not(.emcia-authorized) > #appWorkspace{display:none!important}#authGate{font-family:system-ui,Arial,sans-serif;min-height:100vh;display:grid;place-items:center;background:#f2f5fa;color:#19344e;direction:rtl}#authGate .panel{background:white;padding:28px;border-radius:18px;max-width:430px;width:calc(100% - 48px);box-shadow:0 8px 28px #0001}#authGate input{width:100%;box-sizing:border-box;padding:13px;margin:8px 0 14px;border:1px solid #bac5d0;border-radius:9px;direction:ltr}#authGate button{padding:13px;border:0;background:#175d8d;color:white;border-radius:9px;width:100%;font:inherit}#authStatus{min-height:24px;overflow-wrap:anywhere}body.emcia-authorized #authGate{display:none}</style></head>
+<style>body:not(.emcia-authorized) > header,body:not(.emcia-authorized) > #langMenu,body:not(.emcia-authorized) > #mobileNavToggle,body:not(.emcia-authorized) > #appWorkspace{display:none!important}#authGate{font-family:system-ui,Arial,sans-serif;min-height:100vh;display:grid;place-items:center;background:#f2f5fa;color:#19344e;direction:rtl}#authGate .panel{background:white;padding:28px;border-radius:18px;max-width:430px;width:calc(100% - 48px);box-shadow:0 8px 28px #0001}#authGate input{width:100%;box-sizing:border-box;padding:13px;margin:8px 0 14px;border:1px solid #bac5d0;border-radius:9px;direction:ltr}#authGate button{padding:13px;border:0;background:#175d8d;color:white;border-radius:9px;width:100%;font:inherit}#authStatus{min-height:24px;overflow-wrap:anywhere}body.emcia-authorized #authGate{display:none}
+/* EMCIA V19 — aligned controls and workspace branding */
+header{position:relative;text-align:center;padding:14px 12px;z-index:20}
+header>b{display:block;text-align:center;font-size:clamp(20px,5vw,28px)}
+#emcia-top-controls{display:flex;direction:rtl;align-items:stretch;justify-content:space-between;gap:10px;padding:10px 12px;background:#f4f7fb;position:relative;z-index:100}
+#emcia-top-controls #mobileNavToggle{display:block!important;position:static!important;top:auto!important;margin:0!important;flex:1 1 50%;min-width:0;min-height:44px;z-index:auto!important}
+#emcia-top-controls #emcia-account-menu{flex:1 1 50%;min-width:0}
+#emcia-top-controls #emcia-account-menu button{font-size:clamp(12px,3.5vw,16px)}
+#emcia-top-controls #emcia-account-menu>div{max-width:min(90vw,330px)}
+.emcia-dashboard-brand{text-align:center;padding:25px 12px;margin:10px auto 18px;max-width:700px}
+.emcia-dashboard-brand .welcome-logo{margin:0 auto 16px}
+.emcia-dashboard-brand .welcome-name{font-size:clamp(19px,4.5vw,28px);font-weight:750}
+.emcia-dashboard-brand .welcome-season{font-weight:650;margin-top:12px}
+@media(min-width:651px){#emcia-top-controls{justify-content:flex-end}#emcia-top-controls #mobileNavToggle{display:none!important}#emcia-top-controls #emcia-account-menu{flex:0 1 330px}}
+</style></head>
 <body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>تسجيل دخول المدير والموظفين المفعّلين</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label>كلمة المرور<input id="authPassword" type="password" required autocomplete="current-password"></label><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات متصلة بقاعدة Supabase السحابية.</small></div></div>
-<header><b>EMCIA Gestion</b><small>تدبير المؤسسة والميزانية — Gestion de l'établissement et du budget</small></header>
+<header><b>EMCIA Gestion</b></header>
 <div id="langMenu" class="lang-menu">
 <button id="langMenuBtn" type="button" onclick="toggleLangMenu()" aria-label="اختيار اللغة">🌐</button>
 <div id="langChoices" class="lang-choices">
@@ -527,7 +541,8 @@ function enterApp(){
  document.body.classList.remove("mobile-menu-open","mobile-nav-collapsed");
  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
  $("#workspace").classList.add("active");
- $("#workspace").innerHTML="";
+ let y=new Date().getFullYear(),m=new Date().getMonth()+1,season=m>=9?`${y}/${y+1}`:`${y-1}/${y}`;
+ $("#workspace").innerHTML=`<div class="card emcia-dashboard-brand"><div class="welcome-logo">EMCIA</div><div class="welcome-name">أمسية للثقافة والتربية والتكوين</div><div class="welcome-season">الموسم الدراسي ${season}</div></div>`;
  nav();
  applyLang();
 }
@@ -2172,12 +2187,15 @@ async function enter(user,accessToken){
  if(!source)throw Error('تعذر العثور على كود التطبيق.');
  try{const script=document.createElement('script');script.textContent=source.textContent;document.body.appendChild(script);document.body.classList.add('emcia-authorized');if(typeof enterApp==='function')enterApp();}catch(error){started=false;say('تعذر فتح واجهة التطبيق: '+error.message);return;}
  const header=document.querySelector('header');
- const accountMenu=document.createElement('div');accountMenu.id='emcia-account-menu';accountMenu.style.cssText='position:relative;display:inline-block;margin:8px 0 0;max-width:100%';
- const accountToggle=document.createElement('button');accountToggle.type='button';accountToggle.textContent='☰ '+(profile.display_name||'المستخدم')+' — '+({director:'المدير',secretary_morning:'السكرتارية الصباحية',secretary_evening:'السكرتارية المسائية',accountant:'المحاسبة'}[profile.role]||profile.role);accountToggle.style.cssText='background:#fff;color:#102a43;border:0;border-radius:8px;padding:9px 12px;font:inherit;max-width:100%;white-space:normal';
- const accountActions=document.createElement('div');accountActions.style.cssText='display:none;position:absolute;top:100%;right:0;z-index:10000;background:#fff;color:#102a43;min-width:220px;max-width:90vw;border:1px solid #d9e2ec;border-radius:10px;padding:8px;box-shadow:0 8px 24px #0003;direction:rtl';
+ const controls=document.createElement('div');controls.id='emcia-top-controls';header.after(controls);
+ const mobileToggle=document.getElementById('mobileNavToggle');controls.appendChild(mobileToggle);
+ const accountMenu=document.createElement('div');accountMenu.id='emcia-account-menu';accountMenu.style.cssText='position:relative;display:block;min-width:0;flex:1 1 50%';
+ const accountToggle=document.createElement('button');accountToggle.type='button';accountToggle.textContent='☰ '+(profile.display_name||'المستخدم')+' — '+({director:'المدير',secretary_morning:'السكرتارية الصباحية',secretary_evening:'السكرتارية المسائية',accountant:'المحاسبة'}[profile.role]||profile.role);accountToggle.style.cssText='background:#fff;color:#102a43;border:1px solid #d9e2ec;border-radius:8px;padding:9px 8px;font:inherit;width:100%;min-height:44px;white-space:normal;overflow-wrap:anywhere';
+ const accountActions=document.createElement('div');accountActions.style.cssText='display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:10000;background:#fff;color:#102a43;min-width:220px;max-width:90vw;border:1px solid #d9e2ec;border-radius:10px;padding:8px;box-shadow:0 8px 24px #0003;direction:rtl';
  const addAction=(label,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.style.cssText='display:block;width:100%;padding:11px;margin:3px 0;text-align:right;background:#eef3f8;color:#102a43;border:0;border-radius:7px;font:inherit';b.onclick=()=>{accountActions.style.display='none';fn()};accountActions.appendChild(b);return b};
- accountToggle.onclick=()=>{accountActions.style.display=accountActions.style.display==='none'?'block':'none'};
- accountMenu.append(accountToggle,accountActions);header.appendChild(accountMenu);
+ accountToggle.onclick=()=>{document.body.classList.remove('mobile-menu-open');accountActions.style.display=accountActions.style.display==='none'?'block':'none'};
+ mobileToggle.addEventListener('click',()=>{accountActions.style.display='none'});
+ accountMenu.append(accountToggle,accountActions);controls.appendChild(accountMenu);
  addAction('⌂ لوحة البرنامج',()=>{if(typeof enterApp==='function')enterApp()});
  const logout=addAction('تسجيل الخروج',async()=>{logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
  logout.style.background='#fbe9e7';logout.style.color='#a32929';
