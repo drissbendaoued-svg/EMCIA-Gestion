@@ -2222,7 +2222,22 @@ async function enter(user,accessToken){
       const active=document.createElement('input');active.type='checkbox';active.checked=u.active;
       const label=document.createElement('label');label.textContent=' حساب مفعل ';label.prepend(active);
       const save=document.createElement('button');save.textContent='حفظ الصلاحيات';save.onclick=async()=>{try{await call({action:'update',user_id:u.user_id,role:sel.value,active:active.checked});msg.textContent='تم تحديث الحساب';await refreshUsers()}catch(e){msg.textContent=e.message}};
-      line.append(' ',sel,' ',label,' ',save);
+      const reset=document.createElement('button');reset.type='button';reset.textContent='تعيين كلمة مرور مؤقتة';
+      const resetBox=document.createElement('div');resetBox.style.cssText='display:none;padding:8px;background:#f3f6f9;border-radius:8px;margin-top:8px';
+      const pass=document.createElement('input');pass.type='password';pass.minLength=12;pass.autocomplete='new-password';pass.placeholder='كلمة مرور مؤقتة (12 حرفًا على الأقل)';
+      const passConfirm=document.createElement('input');passConfirm.type='password';passConfirm.minLength=12;passConfirm.autocomplete='new-password';passConfirm.placeholder='تأكيد كلمة المرور';
+      const apply=document.createElement('button');apply.type='button';apply.textContent='اعتماد كلمة المرور';
+      reset.onclick=()=>{resetBox.style.display=resetBox.style.display==='none'?'block':'none'};
+      apply.onclick=async()=>{
+       if(pass.value.length<12||pass.value!==passConfirm.value){msg.textContent='أدخل كلمة مرور من 12 حرفًا على الأقل وتأكد من تطابقها.';return}
+       if(!confirm('سيتم تغيير كلمة مرور هذا الموظف فورًا. هل تريد المتابعة؟'))return;
+       apply.disabled=true;
+       try{await call({action:'temporary_password',user_id:u.user_id,password:pass.value});msg.textContent='تم تعيين كلمة المرور المؤقتة بنجاح. سلّمها للموظف بصورة خاصة.';pass.value='';passConfirm.value='';resetBox.style.display='none'}
+       catch(e){msg.textContent='تعذر تغيير كلمة المرور: '+e.message}
+       finally{apply.disabled=false}
+      };
+      resetBox.append(pass,passConfirm,apply);
+      line.append(' ',sel,' ',label,' ',save,' ',reset,resetBox);
      }list.appendChild(line);
     }
    }catch(e){list.textContent='تعذر تحميل المستخدمين: '+e.message}
