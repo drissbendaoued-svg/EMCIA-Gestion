@@ -598,7 +598,7 @@ function home(){
 function teacherSubjects(o){return Array.isArray(o?.subjects)&&o.subjects.length?o.subjects:(o?.sub?[o.sub]:[])}
 function compactSubjects(arr=[]){let a=[...new Set((arr||[]).filter(Boolean))];return a.length<=2?a.join("، "):(a.slice(0,2).join("، ")+" +"+(a.length-2))}
 function groupMaterialNames(){
- return [...new Set(db.g.map(g=>(g.subject||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ar"))
+ return [...new Set([...activeSubjectRecords().map(x=>(x.n||"").trim()),...db.g.map(g=>(g.subject||"").trim())].filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ar"))
 }
 function ensureSubjectRecordForGroupMaterial(n){
  n=normalizeSubjectName((n||"").trim());if(!n)return null;
@@ -843,7 +843,7 @@ function students(){
 function addStudent(){
  let ar=$("#snAr").value.trim(),fr=$("#snFr").value.trim();if(!ar&&!fr)return alert("أدخل الاسم");
  let requestedSubjectIds=[...new Set(tempStudentSubjects)].filter(id=>subjectById(id));
- if(!requestedSubjectIds.length&&!confirm("لم تحدد أي مادة مطلوبة. هل تريد تسجيل المتعلم دون مادة حالياً؟"))return;
+ if(!requestedSubjectIds.length)return alert("يجب اختيار مادة واحدة على الأقل، ثم الضغط على زر «+ إضافة مادة» قبل تسجيل المتعلم.");
  let subjects=requestedSubjectIds.map(id=>subjectNameFromId(id)).filter(Boolean);
  db.s.push({id:uid(),n:ar||fr,nAr:ar,nFr:fr,ph:$("#sph").value,parent:$("#spa").value,landline:$("#sland").value,educationLevel:$("#sedu").value,level:$("#sl").value,preferredTime:$("#stime").value,joined:$("#sj").value||today(),note:$("#snote").value.trim(),studentType:$("#stype").value,requestedSubjects:subjects,requestedSubjectIds,active:true});save();students()
 }
