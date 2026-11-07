@@ -2200,6 +2200,28 @@ async function enter(user,accessToken){
     }
    }catch(e){list.textContent='تعذر تحميل المستخدمين: '+e.message}
   }
+  const auditBtn=document.createElement('button');auditBtn.type='button';auditBtn.textContent='📋 سجل العمليات';auditBtn.style.cssText='position:fixed;bottom:62px;right:12px;z-index:9999;background:#102a43;color:white;padding:10px;border:0;border-radius:8px';document.body.appendChild(auditBtn);
+  const auditPanel=document.createElement('section');auditPanel.style.cssText='display:none;position:fixed;inset:5vh 4vw;z-index:100001;overflow:auto;background:#fff;color:#102a43;padding:18px;border:2px solid #9fb3c8;border-radius:12px;box-shadow:0 0 0 100vmax #0008;direction:rtl';
+  auditPanel.innerHTML='<button type="button" id="emcia-audit-close">إغلاق ×</button><h2>سجل العمليات</h2><p>يُحفظ سجل التعديلات في Supabase، ويعرض اسم المستخدم والوقت والبيانات السابقة والجديدة.</p><button type="button" id="emcia-audit-refresh">تحديث</button><div id="emcia-audit-list"></div>';
+  document.body.appendChild(auditPanel);
+  const auditList=auditPanel.querySelector('#emcia-audit-list');
+  async function loadAudit(){
+   auditList.textContent='جار تحميل السجل...';
+   try{
+    const entries=await request(api+'/rest/v1/audit_events?select=id,payload,created_at&order=created_at.desc&limit=100',{headers:headers()});
+    auditList.replaceChildren();
+    if(!entries.length){auditList.textContent='لا توجد عمليات مسجلة بعد.';return}
+    for(const entry of entries){
+     const p=entry.payload||{},item=document.createElement('details');item.style.cssText='padding:10px 0;border-bottom:1px solid #ddd';
+     const summary=document.createElement('summary');const names={create:'إضافة',update:'تعديل',delete:'حذف'};
+     summary.textContent=(names[p.action]||p.action)+' — '+(p.section_name||p.section||'')+' — '+(p.actor_name||'')+' — '+new Date(entry.created_at).toLocaleString('ar-MA');item.appendChild(summary);
+     const pre=document.createElement('pre');pre.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;direction:ltr;text-align:left;font-size:12px';pre.textContent='السجل: '+(p.record_id||'')+'\nقبل:\n'+JSON.stringify(p.before,null,2)+'\nبعد:\n'+JSON.stringify(p.after,null,2);item.appendChild(pre);auditList.appendChild(item);
+    }
+   }catch(e){auditList.textContent='تعذر تحميل السجل: '+e.message}
+  }
+  auditBtn.onclick=()=>{auditPanel.style.display='block';loadAudit()};
+  auditPanel.querySelector('#emcia-audit-close').onclick=()=>auditPanel.style.display='none';
+  auditPanel.querySelector('#emcia-audit-refresh').onclick=loadAudit;
   opener.onclick=()=>{panel.style.display='block';refreshUsers()};
   panel.querySelector('#emcia-users-close').onclick=()=>panel.style.display='none';
   panel.querySelector('#emcia-invite-form').onsubmit=async ev=>{
