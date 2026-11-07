@@ -2125,9 +2125,9 @@ async function request(url,options){
  return body;
 }
 async function enter(user,accessToken){
- const profiles=await request(api+'/rest/v1/profiles?user_id=eq.'+encodeURIComponent(user.id)+'&select=role,active',{headers:{'apikey':key,'Authorization':'Bearer '+accessToken,'Accept':'application/json'}});
+ const profiles=await request(api+'/rest/v1/profiles?user_id=eq.'+encodeURIComponent(user.id)+'&select=role,active,display_name',{headers:{'apikey':key,'Authorization':'Bearer '+accessToken,'Accept':'application/json'}});
  const profile=profiles[0];
- if(profile?.role!=='director'||profile?.active!==true){say('ليس لهذا الحساب صلاحية المدير المفعّلة.');return;}
+ if(!profile?.active||!['director','secretary_morning','secretary_evening','accountant'].includes(profile.role)){say('الحساب غير مفعل أو ليست له صلاحية الدخول.');return;}
  if(started)return;
  started=true;token=accessToken;userId=user.id;
  try{
@@ -2138,7 +2138,7 @@ async function enter(user,accessToken){
    sessionStorage.setItem('emcia_cloud_backup_done','1');
   }
   localStorage.setItem(localKey,JSON.stringify(cloud.payload||{}));
-  cloudStatus('☁️ متصل بقاعدة Supabase');
+  cloudStatus('☁️ متصل بقاعدة Supabase — '+(profile.display_name||profile.role));
  }catch(e){started=false;say('تعذر تحميل البيانات السحابية، ولن يفتح التطبيق منعًا لفقدان التغييرات: '+e.message);return;}
  const source=document.getElementById('emcia-app-source');
  if(!source)throw Error('تعذر العثور على كود التطبيق.');
