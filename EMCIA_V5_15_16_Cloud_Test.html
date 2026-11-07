@@ -2214,7 +2214,7 @@ async function enter(user,accessToken){
      const p=entry.payload||{},item=document.createElement('details');item.style.cssText='padding:10px 0;border-bottom:1px solid #ddd';
      const summary=document.createElement('summary');const names={create:'إضافة',update:'تعديل',delete:'حذف'};
      summary.textContent=(names[p.action]||p.action)+' — '+(p.section_name||p.section||'')+' — '+(p.actor_name||'')+' — '+new Date(entry.created_at).toLocaleString('ar-MA');item.appendChild(summary);
-     const pre=document.createElement('pre');pre.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;direction:ltr;text-align:left;font-size:12px';pre.textContent='السجل: '+(p.record_id||'')+'\nقبل:\n'+JSON.stringify(p.before,null,2)+'\nبعد:\n'+JSON.stringify(p.after,null,2);item.appendChild(pre);auditList.appendChild(item);
+     const pre=document.createElement('pre');pre.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;direction:ltr;text-align:left;font-size:12px';pre.textContent='السجل: '+(p.record_id||'')+'\\nقبل:\\n'+JSON.stringify(p.before,null,2)+'\\nبعد:\\n'+JSON.stringify(p.after,null,2);item.appendChild(pre);auditList.appendChild(item);
     }
    }catch(e){auditList.textContent='تعذر تحميل السجل: '+e.message}
   }
