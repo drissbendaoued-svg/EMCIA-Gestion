@@ -2144,6 +2144,33 @@ async function enter(user,accessToken){
  if(!source)throw Error('تعذر العثور على كود التطبيق.');
  const script=document.createElement('script');script.textContent=source.textContent;document.body.appendChild(script);
  document.body.classList.add('emcia-authorized');
+ // Staff management: director-only controls, enforced again by database RLS.
+ if(profile.role==='director'){
+  const panel=document.createElement('section');
+  panel.id='emcia-staff-admin';
+  panel.style.cssText='max-width:1050px;margin:12px auto;padding:14px;border:1px solid #cbd5e1;border-radius:12px;background:white;color:#102a43';
+  panel.innerHTML='<details><summary style="cursor:pointer;font-weight:700">👥 إدارة حسابات الموظفين والصلاحيات (المدير فقط)</summary><p>تظهر هنا الحسابات التي تم إنشاؤها في Supabase Auth وربطها بجدول profiles. لا يمكن إنشاء كلمة مرور للموظف من هذه اللوحة.</p><div id="emcia-staff-list">جار تحميل الحسابات...</div><button id="emcia-staff-refresh" type="button">تحديث القائمة</button></details>';
+  document.body.insertBefore(panel,document.body.firstChild);
+  const roles={director:'المدير',secretary_morning:'السكرتارية الصباحية',secretary_evening:'السكرتارية المسائية',accountant:'المحاسب'};
+  const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  async function loadStaff(){
+   const box=panel.querySelector('#emcia-staff-list');
+   try{
+    const rows=await request(api+'/rest/v1/profiles?select=user_id,display_name,role,active&order=created_at.asc',{headers:headers()});
+    box.innerHTML='<div style="overflow-x:auto"><table><thead><tr><th>الموظف</th><th>الوظيفة</th><th>الحالة</th><th>الإجراء</th></tr></thead><tbody>'+rows.map(p=>'<tr><td>'+safe(p.display_name||p.user_id)+'</td><td><select data-role="'+safe(p.user_id)+'" '+(p.user_id===userId?'disabled':'')+'>'+Object.entries(roles).map(([k,v])=>'<option value="'+k+'" '+(p.role===k?'selected':'')+'>'+v+'</option>').join('')+'</select></td><td><label><input type="checkbox" data-active="'+safe(p.user_id)+'" '+(p.active?'checked':'')+' '+(p.user_id===userId?'disabled':'')+'> مفعل</label></td><td><button type="button" data-save="'+safe(p.user_id)+'" '+(p.user_id===userId?'disabled':'')+'>حفظ</button></td></tr>').join('')+'</tbody></table></div>';
+    box.querySelectorAll('[data-save]').forEach(b=>b.onclick=async()=>{
+     const id=b.getAttribute('data-save'),role=box.querySelector('[data-role="'+id+'"]').value,active=box.querySelector('[data-active="'+id+'"]').checked;
+     if(!confirm('تأكيد تعديل صلاحيات هذا الحساب؟'))return;
+     b.disabled=true;
+     try{const updated=await request(api+'/rest/v1/profiles?user_id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:{...headers(),'Prefer':'return=representation'},body:JSON.stringify({role,active})});if(!updated.length)throw Error('لم يتم حفظ التعديل');await loadStaff();}
+     catch(e){alert('تعذر تعديل الصلاحيات: '+e.message);b.disabled=false;}
+    });
+   }catch(e){box.textContent='تعذر تحميل حسابات الموظفين: '+e.message;}
+  }
+  panel.querySelector('#emcia-staff-refresh').onclick=loadStaff;
+  loadStaff();
+ }
+
  const btn=document.createElement('button');btn.type='button';btn.textContent='تسجيل الخروج';
  btn.style.cssText='position:fixed;bottom:12px;left:12px;z-index:9999;background:#a32929;color:white;padding:10px;border:0;border-radius:8px';
  btn.onclick=async()=>{try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){} token=null;location.reload()};
