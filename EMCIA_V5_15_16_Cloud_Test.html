@@ -300,7 +300,7 @@ body.reception-mode #langMenu{display:block}
 @media(max-width:600px){#waiting .wait-counts{grid-template-columns:repeat(3,1fr)}}
 </style>
 <style>body:not(.emcia-authorized) > header,body:not(.emcia-authorized) > #langMenu,body:not(.emcia-authorized) > #mobileNavToggle,body:not(.emcia-authorized) > #appWorkspace{display:none!important}#authGate{font-family:system-ui,Arial,sans-serif;min-height:100vh;display:grid;place-items:center;background:#f2f5fa;color:#19344e;direction:rtl}#authGate .panel{background:white;padding:28px;border-radius:18px;max-width:430px;width:calc(100% - 48px);box-shadow:0 8px 28px #0001}#authGate input{width:100%;box-sizing:border-box;padding:13px;margin:8px 0 14px;border:1px solid #bac5d0;border-radius:9px;direction:ltr}#authGate button{padding:13px;border:0;background:#175d8d;color:white;border-radius:9px;width:100%;font:inherit}#authStatus{min-height:24px;overflow-wrap:anywhere}body.emcia-authorized #authGate{display:none}</style></head>
-<body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>تسجيل دخول المدير والموظفين المفعّلين</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label>كلمة المرور<input id="authPassword" type="password" required autocomplete="current-password"></label><button type="submit">دخول</button></form><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات متصلة بقاعدة Supabase السحابية.</small></div></div>
+<body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>تسجيل دخول المدير والموظفين المفعّلين</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label>كلمة المرور<input id="authPassword" type="password" required autocomplete="current-password"></label><button type="submit">دخول</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات متصلة بقاعدة Supabase السحابية.</small></div></div>
 <header><b>EMCIA Gestion</b><small>تدبير المؤسسة والميزانية — Gestion de l'établissement et du budget</small></header>
 <div id="langMenu" class="lang-menu">
 <button id="langMenuBtn" type="button" onclick="toggleLangMenu()" aria-label="اختيار اللغة">🌐</button>
@@ -2257,6 +2257,45 @@ async function enter(user,accessToken){
   };
  }
 }
+const forgot=document.getElementById('emcia-forgot');
+const recovery=document.getElementById('emcia-recovery');
+const newPassword=document.getElementById('emcia-new-password');
+let recoveryToken=null;
+forgot.onclick=()=>{recovery.style.display=recovery.style.display==='none'?'block':'none';document.getElementById('emcia-recovery-email').value=document.getElementById('authEmail').value.trim();say('');};
+document.getElementById('emcia-recovery-form').addEventListener('submit',async e=>{
+ e.preventDefault();
+ const email=document.getElementById('emcia-recovery-email').value.trim();
+ say('جار طلب رابط الاستعادة...');
+ try{
+  await request(api+'/auth/v1/recover?redirect_to='+encodeURIComponent(location.origin+location.pathname),{method:'POST',headers:{'apikey':key,'Content-Type':'application/json'},body:JSON.stringify({email})});
+  say('إذا كان البريد مسجلاً ويسمح إعداد البريد بالإرسال، فستصلك رسالة لاستعادة كلمة المرور. تحقق من البريد غير المرغوب فيه أيضًا.');
+ }catch(err){say('تعذر إرسال رابط الاستعادة: '+err.message);}
+});
+(function checkRecoveryLink(){
+ const hash=new URLSearchParams(location.hash.replace(/^#/,''));
+ const params=new URLSearchParams(location.search);
+ if(hash.get('type')==='recovery'&&hash.get('access_token')){
+  recoveryToken=hash.get('access_token');
+  history.replaceState(null,'',location.pathname+location.search);
+  document.getElementById('authForm').style.display='none';forgot.style.display='none';recovery.style.display='none';newPassword.style.display='block';
+  say('تم التحقق من رابط الاستعادة. عيّن كلمة المرور الجديدة ثم سجل الدخول.');
+ }else if(hash.get('error')||params.get('error')){
+  say('رابط الاستعادة غير صالح أو انتهت صلاحيته. اطلب رابطًا جديدًا.');
+  history.replaceState(null,'',location.pathname);
+ }
+})();
+document.getElementById('emcia-new-password-form').addEventListener('submit',async e=>{
+ e.preventDefault();
+ if(!recoveryToken){say('انتهت جلسة الاستعادة. اطلب رابطًا جديدًا.');return;}
+ const pass=document.getElementById('emcia-new-password-value').value,confirmPass=document.getElementById('emcia-new-password-confirm').value;
+ if(pass!==confirmPass){say('كلمتا المرور غير متطابقتين.');return;}
+ say('جار حفظ كلمة المرور...');
+ try{
+  await request(api+'/auth/v1/user',{method:'PUT',headers:{'apikey':key,'Authorization':'Bearer '+recoveryToken,'Content-Type':'application/json'},body:JSON.stringify({password:pass})});
+  recoveryToken=null;document.getElementById('emcia-new-password-form').reset();newPassword.style.display='none';document.getElementById('authForm').style.display='block';forgot.style.display='block';
+  say('تم تغيير كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.');
+ }catch(err){say('تعذر تغيير كلمة المرور: '+err.message);}
+});
 document.getElementById('authForm').addEventListener('submit',async e=>{
  e.preventDefault();say('جار التحقق...');
  const email=document.getElementById('authEmail').value.trim(),password=document.getElementById('authPassword').value;
