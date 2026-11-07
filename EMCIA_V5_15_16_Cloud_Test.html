@@ -2170,16 +2170,22 @@ async function enter(user,accessToken){
  }catch(e){started=false;say('تعذر تحميل البيانات السحابية، ولن يفتح التطبيق منعًا لفقدان التغييرات: '+e.message);return;}
  const source=document.getElementById('emcia-app-source');
  if(!source)throw Error('تعذر العثور على كود التطبيق.');
- try{const script=document.createElement('script');script.textContent=source.textContent;document.body.appendChild(script);document.body.classList.add('emcia-authorized');}catch(error){started=false;say('تعذر فتح واجهة التطبيق: '+error.message);return;}
- const btn=document.createElement('button');btn.type='button';btn.textContent='تسجيل الخروج';
- btn.style.cssText='position:fixed;bottom:12px;left:12px;z-index:9999;background:#a32929;color:white;padding:10px;border:0;border-radius:8px';
- btn.onclick=async()=>{try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){} token=null;location.reload()};
- document.body.appendChild(btn);
+ try{const script=document.createElement('script');script.textContent=source.textContent;document.body.appendChild(script);document.body.classList.add('emcia-authorized');if(typeof enterApp==='function')enterApp();}catch(error){started=false;say('تعذر فتح واجهة التطبيق: '+error.message);return;}
+ const header=document.querySelector('header');
+ const accountMenu=document.createElement('div');accountMenu.id='emcia-account-menu';accountMenu.style.cssText='position:relative;display:inline-block;margin:8px 0 0;max-width:100%';
+ const accountToggle=document.createElement('button');accountToggle.type='button';accountToggle.textContent='☰ '+(profile.display_name||'المستخدم')+' — '+({director:'المدير',secretary_morning:'السكرتارية الصباحية',secretary_evening:'السكرتارية المسائية',accountant:'المحاسبة'}[profile.role]||profile.role);accountToggle.style.cssText='background:#fff;color:#102a43;border:0;border-radius:8px;padding:9px 12px;font:inherit;max-width:100%;white-space:normal';
+ const accountActions=document.createElement('div');accountActions.style.cssText='display:none;position:absolute;top:100%;right:0;z-index:10000;background:#fff;color:#102a43;min-width:220px;max-width:90vw;border:1px solid #d9e2ec;border-radius:10px;padding:8px;box-shadow:0 8px 24px #0003;direction:rtl';
+ const addAction=(label,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.style.cssText='display:block;width:100%;padding:11px;margin:3px 0;text-align:right;background:#eef3f8;color:#102a43;border:0;border-radius:7px;font:inherit';b.onclick=()=>{accountActions.style.display='none';fn()};accountActions.appendChild(b);return b};
+ accountToggle.onclick=()=>{accountActions.style.display=accountActions.style.display==='none'?'block':'none'};
+ accountMenu.append(accountToggle,accountActions);header.appendChild(accountMenu);
+ addAction('⌂ لوحة البرنامج',()=>{if(typeof enterApp==='function')enterApp()});
+ const logout=addAction('تسجيل الخروج',async()=>{logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
+ logout.style.background='#fbe9e7';logout.style.color='#a32929';
  if(profile.role==='director'){
   const panel=document.createElement('section');panel.id='emcia-users-panel';panel.style.cssText='display:none;position:fixed;inset:5vh 4vw;z-index:100000;overflow:auto;background:#fff;color:#102a43;padding:18px;border:2px solid #9fb3c8;border-radius:12px;box-shadow:0 0 0 100vmax #0008;direction:rtl';
   panel.innerHTML='<button type="button" id="emcia-users-close">إغلاق ×</button><h2>إدارة حسابات EMCIA</h2><p>إرسال دعوة بالبريد الإلكتروني لإنشاء حساب موظف جديد. يحدد الموظف كلمة مروره عبر رسالة الدعوة.</p><form id="emcia-invite-form"><input id="emcia-user-name" required placeholder="اسم الموظف" style="width:100%;margin:5px 0"><input id="emcia-user-email" type="email" required placeholder="البريد الإلكتروني" style="width:100%;margin:5px 0"><select id="emcia-user-role"><option value="secretary_morning">السكرتارية الصباحية</option><option value="secretary_evening">السكرتارية المسائية</option><option value="accountant">المحاسب</option></select><button type="submit">إرسال الدعوة</button></form><p id="emcia-users-msg"></p><div id="emcia-users-list"></div>';
   document.body.appendChild(panel);
-  const opener=document.createElement('button');opener.id='emcia-users-opener';opener.textContent='👥 إدارة المستخدمين';opener.type='button';opener.style.cssText='position:fixed;bottom:12px;right:12px;z-index:9999;background:#102a43;color:white;padding:10px;border:0;border-radius:8px';document.body.appendChild(opener);
+  
   const msg=panel.querySelector('#emcia-users-msg'),list=panel.querySelector('#emcia-users-list');
   const call=async data=>request(api+'/functions/v1/emcia-manage-users',{method:'POST',headers:{apikey:key,Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(data)});
   const roleLabel={director:'المدير',secretary_morning:'السكرتارية الصباحية',secretary_evening:'السكرتارية المسائية',accountant:'المحاسب'};
@@ -2223,7 +2229,7 @@ async function enter(user,accessToken){
     }
    }catch(e){list.textContent='تعذر تحميل المستخدمين: '+e.message}
   }
-  const auditBtn=document.createElement('button');auditBtn.type='button';auditBtn.textContent='📋 سجل العمليات';auditBtn.style.cssText='position:fixed;bottom:62px;right:12px;z-index:9999;background:#102a43;color:white;padding:10px;border:0;border-radius:8px';document.body.appendChild(auditBtn);
+  
   const auditPanel=document.createElement('section');auditPanel.style.cssText='display:none;position:fixed;inset:5vh 4vw;z-index:100001;overflow:auto;background:#fff;color:#102a43;padding:18px;border:2px solid #9fb3c8;border-radius:12px;box-shadow:0 0 0 100vmax #0008;direction:rtl';
   auditPanel.innerHTML='<button type="button" id="emcia-audit-close">إغلاق ×</button><h2>سجل العمليات</h2><p>يُحفظ سجل التعديلات في Supabase، ويعرض اسم المستخدم والوقت والبيانات السابقة والجديدة.</p><button type="button" id="emcia-audit-refresh">تحديث</button><div id="emcia-audit-list"></div>';
   document.body.appendChild(auditPanel);
@@ -2242,10 +2248,10 @@ async function enter(user,accessToken){
     }
    }catch(e){auditList.textContent='تعذر تحميل السجل: '+e.message}
   }
-  auditBtn.onclick=()=>{auditPanel.style.display='block';loadAudit()};
+  addAction('📋 سجل العمليات',()=>{auditPanel.style.display='block';loadAudit()});
   auditPanel.querySelector('#emcia-audit-close').onclick=()=>auditPanel.style.display='none';
   auditPanel.querySelector('#emcia-audit-refresh').onclick=loadAudit;
-  opener.onclick=()=>{panel.style.display='block';refreshUsers()};
+  addAction('👥 إدارة المستخدمين',()=>{panel.style.display='block';refreshUsers()});
   panel.querySelector('#emcia-users-close').onclick=()=>panel.style.display='none';
   panel.querySelector('#emcia-invite-form').onsubmit=async ev=>{
    ev.preventDefault();const submit=ev.target.querySelector('button[type=submit]');if(submit.disabled)return;submit.disabled=true;submit.textContent='جار إرسال الدعوة...';msg.textContent='تم استلام الطلب، جار إرسال الدعوة. لا تضغط مرة أخرى.';
