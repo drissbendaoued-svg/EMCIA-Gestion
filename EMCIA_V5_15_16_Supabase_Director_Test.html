@@ -2074,23 +2074,41 @@ function restoreVerifiedBackup(){
  db=window.pendingBackup;save();alert("تم استرجاع النسخة بنجاح. سيعاد تحميل التطبيق الآن.");location.reload()
 }
 nav();home();applyLang();
-</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.min.js"></script><script>if(!window.supabase){document.write('<script src="https://unpkg.com/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"><\/script>')}</script><script>
+</script><script>
 (function(){
-const status=document.getElementById('authStatus');const say=t=>status.textContent=t;
-const client=window.supabase?.createClient('https://gfhmkijxiinoqkxhicza.supabase.co','sb_publishable_AZWNmDjlNPpADgPFYwH3oA_71o4ABTM');
-if(!client){say('تعذر تحميل مكتبة Supabase. تحقق من اتصال الإنترنت.');return;}
-let started=false;
-async function enter(session){
- if(!session?.user)return;
- const {data:profile,error}=await client.from('profiles').select('role,active').eq('user_id',session.user.id).maybeSingle();
- if(error){say('تعذر التحقق من الصلاحية: '+error.message);return;}
- if(profile?.role!=='director'||profile?.active!==true){say('ليس لهذا الحساب صلاحية المدير المفعّلة.');return;}
- if(started)return;started=true;
- const script=document.createElement('script');script.textContent=document.getElementById('emcia-app-source').textContent;document.body.appendChild(script);
- document.body.classList.add('emcia-authorized');
- const btn=document.createElement('button');btn.type='button';btn.textContent='تسجيل الخروج';btn.style.cssText='position:fixed;bottom:12px;left:12px;z-index:9999;background:#a32929;color:white;padding:10px;border:0;border-radius:8px';btn.onclick=async()=>{await client.auth.signOut();location.reload()};document.body.appendChild(btn);
+const api='https://gfhmkijxiinoqkxhicza.supabase.co';
+const key='sb_publishable_AZWNmDjlNPpADgPFYwH3oA_71o4ABTM';
+const status=document.getElementById('authStatus'), say=t=>status.textContent=t;
+let started=false,token=null;
+async function request(url,options){
+ const response=await fetch(url,options);
+ const body=await response.json().catch(()=>({}));
+ if(!response.ok)throw Error(body.msg||body.error_description||body.message||body.error||('HTTP '+response.status));
+ return body;
 }
-document.getElementById('authForm').addEventListener('submit',async e=>{e.preventDefault();say('جار التحقق...');const email=document.getElementById('authEmail').value.trim();const password=document.getElementById('authPassword').value;const {data,error}=await client.auth.signInWithPassword({email,password});document.getElementById('authPassword').value='';if(error){say('فشل تسجيل الدخول: '+error.message);return;}await enter(data.session);});
-client.auth.getSession().then(({data,error})=>{if(error)say('تعذر استرجاع الجلسة: '+error.message);else if(data.session)enter(data.session);});
+async function enter(user,accessToken){
+ const profiles=await request(api+'/rest/v1/profiles?user_id=eq.'+encodeURIComponent(user.id)+'&select=role,active',{headers:{'apikey':key,'Authorization':'Bearer '+accessToken,'Accept':'application/json'}});
+ const profile=profiles[0];
+ if(profile?.role!=='director'||profile?.active!==true){say('ليس لهذا الحساب صلاحية المدير المفعّلة.');return;}
+ if(started)return;
+ started=true;token=accessToken;
+ const source=document.getElementById('emcia-app-source');
+ if(!source)throw Error('تعذر العثور على كود التطبيق.');
+ const script=document.createElement('script');script.textContent=source.textContent;document.body.appendChild(script);
+ document.body.classList.add('emcia-authorized');
+ const btn=document.createElement('button');btn.type='button';btn.textContent='تسجيل الخروج';
+ btn.style.cssText='position:fixed;bottom:12px;left:12px;z-index:9999;background:#a32929;color:white;padding:10px;border:0;border-radius:8px';
+ btn.onclick=async()=>{try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){} token=null;location.reload()};
+ document.body.appendChild(btn);
+}
+document.getElementById('authForm').addEventListener('submit',async e=>{
+ e.preventDefault();say('جار التحقق...');
+ const email=document.getElementById('authEmail').value.trim(),password=document.getElementById('authPassword').value;
+ try{
+  const result=await request(api+'/auth/v1/token?grant_type=password',{method:'POST',headers:{'apikey':key,'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+  document.getElementById('authPassword').value='';
+  await enter(result.user,result.access_token);
+ }catch(error){document.getElementById('authPassword').value='';say('تعذر تسجيل الدخول أو التحقق من الصلاحية: '+error.message);}
+});
 })();
 </script></body></html>
