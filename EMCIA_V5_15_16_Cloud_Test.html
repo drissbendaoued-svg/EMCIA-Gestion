@@ -300,7 +300,7 @@ body.reception-mode #langMenu{display:block}
 @media(max-width:600px){#waiting .wait-counts{grid-template-columns:repeat(3,1fr)}}
 </style>
 <style>body:not(.emcia-authorized) > header,body:not(.emcia-authorized) > #langMenu,body:not(.emcia-authorized) > #mobileNavToggle,body:not(.emcia-authorized) > #appWorkspace{display:none!important}#authGate{font-family:system-ui,Arial,sans-serif;min-height:100vh;display:grid;place-items:center;background:#f2f5fa;color:#19344e;direction:rtl}#authGate .panel{background:white;padding:28px;border-radius:18px;max-width:430px;width:calc(100% - 48px);box-shadow:0 8px 28px #0001}#authGate input{width:100%;box-sizing:border-box;padding:13px;margin:8px 0 14px;border:1px solid #bac5d0;border-radius:9px;direction:ltr}#authGate button{padding:13px;border:0;background:#175d8d;color:white;border-radius:9px;width:100%;font:inherit}#authStatus{min-height:24px;overflow-wrap:anywhere}body.emcia-authorized #authGate{display:none}</style></head>
-<body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>تسجيل دخول المدير والموظفين المفعّلين</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label>كلمة المرور<input id="authPassword" type="password" required autocomplete="current-password"></label><button type="submit">دخول</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات متصلة بقاعدة Supabase السحابية.</small></div></div>
+<body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>تسجيل دخول المدير والموظفين المفعّلين</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label>كلمة المرور<input id="authPassword" type="password" required autocomplete="current-password"></label><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات متصلة بقاعدة Supabase السحابية.</small></div></div>
 <header><b>EMCIA Gestion</b><small>تدبير المؤسسة والميزانية — Gestion de l'établissement et du budget</small></header>
 <div id="langMenu" class="lang-menu">
 <button id="langMenuBtn" type="button" onclick="toggleLangMenu()" aria-label="اختيار اللغة">🌐</button>
@@ -2171,33 +2171,6 @@ async function enter(user,accessToken){
  const source=document.getElementById('emcia-app-source');
  if(!source)throw Error('تعذر العثور على كود التطبيق.');
  try{const script=document.createElement('script');script.textContent=source.textContent;document.body.appendChild(script);document.body.classList.add('emcia-authorized');}catch(error){started=false;say('تعذر فتح واجهة التطبيق: '+error.message);return;}
- // Staff management: director-only controls, enforced again by database RLS.
- if(profile.role==='director'){
-  const panel=document.createElement('section');
-  panel.id='emcia-staff-admin';
-  panel.style.cssText='max-width:1050px;margin:12px auto;padding:14px;border:1px solid #cbd5e1;border-radius:12px;background:white;color:#102a43';
-  panel.innerHTML='<details><summary style="cursor:pointer;font-weight:700">👥 إدارة حسابات الموظفين والصلاحيات (المدير فقط)</summary><p>تظهر هنا الحسابات التي تم إنشاؤها في Supabase Auth وربطها بجدول profiles. لا يمكن إنشاء كلمة مرور للموظف من هذه اللوحة.</p><div id="emcia-staff-list">جار تحميل الحسابات...</div><button id="emcia-staff-refresh" type="button">تحديث القائمة</button></details>';
-  document.body.insertBefore(panel,document.body.firstChild);
-  const roles={director:'المدير',secretary_morning:'السكرتارية الصباحية',secretary_evening:'السكرتارية المسائية',accountant:'المحاسب'};
-  const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  async function loadStaff(){
-   const box=panel.querySelector('#emcia-staff-list');
-   try{
-    const rows=await request(api+'/rest/v1/profiles?select=user_id,display_name,role,active&order=created_at.asc',{headers:headers()});
-    box.innerHTML='<div style="overflow-x:auto"><table><thead><tr><th>الموظف</th><th>الوظيفة</th><th>الحالة</th><th>الإجراء</th></tr></thead><tbody>'+rows.map(p=>'<tr><td>'+safe(p.display_name||p.user_id)+'</td><td><select data-role="'+safe(p.user_id)+'" '+(p.user_id===userId?'disabled':'')+'>'+Object.entries(roles).map(([k,v])=>'<option value="'+k+'" '+(p.role===k?'selected':'')+'>'+v+'</option>').join('')+'</select></td><td><label><input type="checkbox" data-active="'+safe(p.user_id)+'" '+(p.active?'checked':'')+' '+(p.user_id===userId?'disabled':'')+'> مفعل</label></td><td><button type="button" data-save="'+safe(p.user_id)+'" '+(p.user_id===userId?'disabled':'')+'>حفظ</button></td></tr>').join('')+'</tbody></table></div>';
-    box.querySelectorAll('[data-save]').forEach(b=>b.onclick=async()=>{
-     const id=b.getAttribute('data-save'),role=box.querySelector('[data-role="'+id+'"]').value,active=box.querySelector('[data-active="'+id+'"]').checked;
-     if(!confirm('تأكيد تعديل صلاحيات هذا الحساب؟'))return;
-     b.disabled=true;
-     try{const updated=await request(api+'/rest/v1/profiles?user_id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:{...headers(),'Prefer':'return=representation'},body:JSON.stringify({role,active})});if(!updated.length)throw Error('لم يتم حفظ التعديل');await loadStaff();}
-     catch(e){alert('تعذر تعديل الصلاحيات: '+e.message);b.disabled=false;}
-    });
-   }catch(e){box.textContent='تعذر تحميل حسابات الموظفين: '+e.message;}
-  }
-  panel.querySelector('#emcia-staff-refresh').onclick=loadStaff;
-  loadStaff();
- }
-
  const btn=document.createElement('button');btn.type='button';btn.textContent='تسجيل الخروج';
  btn.style.cssText='position:fixed;bottom:12px;left:12px;z-index:9999;background:#a32929;color:white;padding:10px;border:0;border-radius:8px';
  btn.onclick=async()=>{try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){} token=null;location.reload()};
@@ -2216,7 +2189,7 @@ async function enter(user,accessToken){
     const data=await call({action:'list'});list.replaceChildren();
     for(const u of data.users){
      const line=document.createElement('div');line.style.cssText='border-top:1px solid #ddd;padding:10px 0';
-     const title=document.createElement('strong');title.textContent=(u.display_name||'بدون اسم')+' — '+(roleLabel[u.role]||u.role);line.appendChild(title);
+     const title=document.createElement('strong');title.textContent=(u.display_name||'بدون اسم')+' — '+(roleLabel[u.role]||u.role);line.appendChild(title);const emailLine=document.createElement('div');emailLine.style.cssText='direction:ltr;text-align:right;overflow-wrap:anywhere;font-size:13px;color:#52657a;margin:5px 0';emailLine.textContent=u.email||'البريد غير متوفر';line.appendChild(emailLine);
      if(u.role!=='director'){
       const sel=document.createElement('select');for(const r of ['secretary_morning','secretary_evening','accountant']){const op=document.createElement('option');op.value=r;op.textContent=roleLabel[r];sel.appendChild(op)}sel.value=u.role;
       const active=document.createElement('input');active.type='checkbox';active.checked=u.active;
@@ -2231,13 +2204,21 @@ async function enter(user,accessToken){
       apply.onclick=async()=>{
        if(pass.value.length<12||pass.value!==passConfirm.value){msg.textContent='أدخل كلمة مرور من 12 حرفًا على الأقل وتأكد من تطابقها.';return}
        if(!confirm('سيتم تغيير كلمة مرور هذا الموظف فورًا. هل تريد المتابعة؟'))return;
-       apply.disabled=true;
+       apply.disabled=true;apply.textContent='جار تعيين كلمة المرور...';msg.textContent='تم استلام الطلب، جار تعيين كلمة المرور. لا تضغط مرة أخرى.';
        try{await call({action:'temporary_password',user_id:u.user_id,password:pass.value});msg.textContent='تم تعيين كلمة المرور المؤقتة بنجاح. سلّمها للموظف بصورة خاصة.';pass.value='';passConfirm.value='';resetBox.style.display='none'}
        catch(e){msg.textContent='تعذر تغيير كلمة المرور: '+e.message}
-       finally{apply.disabled=false}
+       finally{apply.disabled=false;apply.textContent='اعتماد كلمة المرور'}
       };
       resetBox.append(pass,passConfirm,apply);
-      line.append(' ',sel,' ',label,' ',save,' ',reset,resetBox);
+      const del=document.createElement('button');del.type='button';del.textContent='حذف الحساب';del.style.cssText='background:#a32929;color:#fff;margin-top:6px';
+      del.onclick=async()=>{
+       if(!confirm('هل تريد حذف حساب '+(u.display_name||'')+' ('+(u.email||'')+') نهائيًا؟ لن يمكن الدخول بهذا الحساب بعد الحذف.'))return;
+       if(!confirm('تأكيد نهائي: حذف الحساب لا يمكن التراجع عنه. هل أنت متأكد؟'))return;
+       del.disabled=true;del.textContent='جار حذف الحساب...';msg.textContent='جار حذف الحساب، يرجى عدم تكرار الطلب...';
+       try{await call({action:'delete',user_id:u.user_id});msg.textContent='تم حذف حساب '+(u.email||u.display_name)+' بنجاح';await refreshUsers()}
+       catch(e){msg.textContent='تعذر حذف الحساب: '+e.message;del.disabled=false;del.textContent='حذف الحساب'}
+      };
+      line.append(' ',sel,' ',label,' ',save,' ',reset,resetBox,' ',del);
      }list.appendChild(line);
     }
    }catch(e){list.textContent='تعذر تحميل المستخدمين: '+e.message}
@@ -2267,8 +2248,8 @@ async function enter(user,accessToken){
   opener.onclick=()=>{panel.style.display='block';refreshUsers()};
   panel.querySelector('#emcia-users-close').onclick=()=>panel.style.display='none';
   panel.querySelector('#emcia-invite-form').onsubmit=async ev=>{
-   ev.preventDefault();msg.textContent='جار إرسال الدعوة...';
-   try{await call({action:'invite',name:panel.querySelector('#emcia-user-name').value,email:panel.querySelector('#emcia-user-email').value,role:panel.querySelector('#emcia-user-role').value});msg.textContent='تم إرسال الدعوة وإنشاء ملف الموظف';ev.target.reset();await refreshUsers()}catch(e){msg.textContent='تعذر إرسال الدعوة: '+e.message}
+   ev.preventDefault();const submit=ev.target.querySelector('button[type=submit]');if(submit.disabled)return;submit.disabled=true;submit.textContent='جار إرسال الدعوة...';msg.textContent='تم استلام الطلب، جار إرسال الدعوة. لا تضغط مرة أخرى.';
+   try{await call({action:'invite',name:panel.querySelector('#emcia-user-name').value,email:panel.querySelector('#emcia-user-email').value,role:panel.querySelector('#emcia-user-role').value});msg.textContent='تم إرسال الدعوة وإنشاء ملف الموظف';ev.target.reset();await refreshUsers()}catch(e){msg.textContent='تعذر إرسال الدعوة: '+e.message}finally{submit.disabled=false;submit.textContent='إرسال الدعوة'}
   };
  }
 }
@@ -2312,13 +2293,13 @@ document.getElementById('emcia-new-password-form').addEventListener('submit',asy
  }catch(err){say('تعذر تغيير كلمة المرور: '+err.message);}
 });
 document.getElementById('authForm').addEventListener('submit',async e=>{
- e.preventDefault();say('جار التحقق...');
+ e.preventDefault();const loginBtn=document.getElementById('emcia-login-submit');if(loginBtn.disabled)return;loginBtn.disabled=true;loginBtn.textContent='جار التحقق...';say('جار التحقق من بيانات الدخول، يرجى الانتظار وعدم تكرار الضغط...');
  const email=document.getElementById('authEmail').value.trim(),password=document.getElementById('authPassword').value;
  try{
   const result=await request(api+'/auth/v1/token?grant_type=password',{method:'POST',headers:{'apikey':key,'Content-Type':'application/json'},body:JSON.stringify({email,password})});
   document.getElementById('authPassword').value='';
   await enter(result.user,result.access_token);
- }catch(error){document.getElementById('authPassword').value='';say('تعذر تسجيل الدخول أو التحقق من الصلاحية: '+error.message);}
+ }catch(error){document.getElementById('authPassword').value='';say('تعذر تسجيل الدخول أو التحقق من الصلاحية: '+error.message);}finally{loginBtn.disabled=false;loginBtn.textContent='دخول إلى الحساب'}
 });
 })();
 </script></body></html>
