@@ -522,7 +522,7 @@ function nav(){
  if(active==="home"){document.body.classList.add("reception-mode");$("#nav").innerHTML="";return}
  document.body.classList.remove("reception-mode");
  let g=NAV_GROUPS.find(x=>x[0]===navCategory);
- let main=`<div class="main-nav"><button onclick="document.body.classList.remove('mobile-menu-open');show('home')">⌂ الاستقبال</button>${NAV_GROUPS.map(x=>`<button class="${g&&x[0]===g[0]?"active-cat":""}" onclick="selectNavCategory('${x[0]}')">${x[1]}</button>`).join("")}</div>`;
+ let main=`<div class="main-nav">${NAV_GROUPS.map(x=>`<button class="${g&&x[0]===g[0]?"active-cat":""}" onclick="selectNavCategory('${x[0]}')">${x[1]}</button>`).join("")}</div>`;
  let sub=g?`<div class="subnav-wrap"><div class="subnav-title">${g[1]}</div><div class="subnav">${g[2].map(i=>`<button class="${active===i[0]?"active-sub":""}" onclick="show('${i[0]}')">${i[1]}</button>`).join("")}</div></div>`:`<div class="subnav-wrap"></div>`;
  $("#nav").innerHTML=main+sub;
 }
@@ -557,7 +557,7 @@ function enterApp(){
 }
 
 function show(id){
- if(id==="home"){navCategory="";window.navCategory="";document.body.classList.remove("mobile-menu-open","mobile-nav-collapsed")}
+ if(id==="home"){enterApp();return}
  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
  $("#"+id).classList.add("active");render(id);nav();
  if(id!=="home")autoCollapseMobileNav()
@@ -614,11 +614,7 @@ function drawFinance(id,months,income,expenses){
  function line(vals,dash){ctx.setLineDash(dash);ctx.beginPath();vals.forEach((v,i)=>{let x=left+(i+.5)*step,y=h-bottom-(v/max)*ch;i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.strokeStyle="#333";ctx.lineWidth=2;ctx.stroke();ctx.setLineDash([])}
  line(income,[]);line(expenses,[6,4]);ctx.fillStyle="#222";ctx.textAlign="center";months.forEach((m,i)=>ctx.fillText(m.slice(5),left+(i+.5)*step,h-bottom+18));ctx.textAlign="start";ctx.fillText(tr("خط متصل: حصة EMCIA | متقطع: المصاريف"),10,h-5);
 }
-function home(){
- let y=new Date().getFullYear(),mo=new Date().getMonth()+1,season=mo>=9?`${y}/${y+1}`:`${y-1}/${y}`;
- $("#home").innerHTML=`<div class="card welcome-card"><div class="welcome-logo">EMCIA</div><div class="welcome-name">أمسية للثقافة والتربية والتكوين</div><div>EMCIA</div><div class="welcome-season">الموسم الدراسي ${season}</div><button class="welcome-enter" onclick="enterApp()">الدخول إلى البرنامج</button></div>`;
- document.body.classList.add("reception-mode")
-}
+function home(){enterApp()}
 function teacherSubjects(o){return Array.isArray(o?.subjects)&&o.subjects.length?o.subjects:(o?.sub?[o.sub]:[])}
 function compactSubjects(arr=[]){let a=[...new Set((arr||[]).filter(Boolean))];return a.length<=2?a.join("، "):(a.slice(0,2).join("، ")+" +"+(a.length-2))}
 function groupMaterialNames(){
@@ -2116,7 +2112,7 @@ async function restoreVerifiedBackup(){
   db=restored;
   localStorage.setItem(KEY,JSON.stringify(db));
   window.pendingBackup=null;
-  nav();home();applyLang();
+  nav();enterApp();applyLang();
   alert("تم استرجاع البيانات وحفظها في Supabase بنجاح، دون تسجيل الخروج.");
  }catch(error){
   db=original;
