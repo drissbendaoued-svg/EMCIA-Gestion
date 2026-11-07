@@ -2079,11 +2079,25 @@ function inspectBackup(inp){
  }catch(e){box.style.display="block";box.innerHTML="<h3>❌ ملف غير صالح</h3><p>تعذر قراءة الملف كنسخة احتياطية لـ EMCIA.</p>";inp.value=""}};
  r.readAsText(f)
 }
-function restoreVerifiedBackup(){
+async function restoreVerifiedBackup(){
  if(!window.pendingBackup){alert("اختر نسخة احتياطية صالحة أولاً.");return}
  if(!confirm("تحذير: سيتم استبدال جميع البيانات الحالية بالنسخة المختارة. هل تريد المتابعة؟"))return;
  if(!confirm("تأكيد أخير: هل أنت متأكد من استرجاع النسخة واستبدال البيانات الحالية؟"))return;
- db=window.pendingBackup;save();alert("تم استرجاع النسخة بنجاح. سيعاد تحميل التطبيق الآن.");location.reload()
+ const original=db;
+ const restored=window.pendingBackup;
+ const synced=window.EMCIA_CLOUD_SYNC;
+ if(!synced?.restore){alert("تعذر الوصول إلى الحفظ السحابي. لم يتم استرجاع البيانات.");return}
+ try{
+  await synced.restore(restored);
+  db=restored;
+  localStorage.setItem(KEY,JSON.stringify(db));
+  window.pendingBackup=null;
+  nav();home();applyLang();
+  alert("تم استرجاع البيانات وحفظها في Supabase بنجاح، دون تسجيل الخروج.");
+ }catch(error){
+  db=original;
+  alert("تعذر تأكيد الاسترجاع السحابي، ولم تُستبدل البيانات الحالية: "+error.message);
+ }
 }
 nav();home();applyLang();
 </script><script>
@@ -2116,7 +2130,21 @@ async function flushCloud(){
  }catch(e){blocked=true;cloudStatus('⚠️ فشل الحفظ السحابي: '+e.message);}
  finally{saving=false;if(dirty&&!blocked)flushCloud();}
 }
-window.EMCIA_CLOUD_SYNC={save(){if(blocked)return;dirty=true;cloudStatus('☁️ جار حفظ التغييرات...');clearTimeout(debounce);debounce=setTimeout(flushCloud,550);}};
+window.EMCIA_CLOUD_SYNC={
+ save(){if(blocked)return;dirty=true;cloudStatus('☁️ جار حفظ التغييرات...');clearTimeout(debounce);debounce=setTimeout(flushCloud,550);},
+ async restore(payload){
+  if(!token||blocked)throw Error('الجلسة غير متصلة أو الحفظ متوقف.');
+  clearTimeout(debounce);
+  if(saving||dirty){throw Error('هناك عملية حفظ جارية. انتظر قليلاً وأعد المحاولة.')}
+  saving=true;
+  try{
+   const rows=await request(cloudUrl+'?id=eq.'+cloudId+'&revision=eq.'+revision,{method:'PATCH',headers:{...headers(),'Prefer':'return=representation'},body:JSON.stringify({payload,revision:revision+1,updated_by:userId,updated_at:new Date().toISOString()})});
+   if(!rows.length)throw Error('تعارض مع تعديل آخر. حدّث البيانات قبل الاسترجاع.');
+   revision=rows[0].revision;
+   cloudStatus('☁️ تم استرجاع النسخة وحفظها في Supabase');
+  }finally{saving=false}
+ }
+};
 
 async function request(url,options){
  const response=await fetch(url,options);
