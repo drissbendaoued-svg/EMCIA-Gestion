@@ -898,20 +898,13 @@ function groupLevelOptions(subject="",selected=""){return `<option value="">— 
 function refreshGroupLevels(){let s=$("#gsub")?.value||"",el=$("#glevel");if(el)el.innerHTML=groupLevelOptions(s);refreshGroupTeachers();updateSuggestedGroupName()}
 function chosenGroupLevel(){let el=$("#glevel"),v=el?.value||"";if(v==="__other__"){let x=prompt("أدخل المستوى أو التخصص");if(!x){el.value="";return ""}let op=document.createElement("option");op.value=x.trim();op.textContent=x.trim();op.selected=true;el.insertBefore(op,el.lastElementChild);v=x.trim()}return v}
 function updateSuggestedGroupName(){
- let n=$("#gn"),c=$("#gcode");if(!n)return;
+ let n=$("#gn"),c=$("#glinkcode");if(!n)return;
  let code=(c?.value||"").trim();
- if(code){
-   n.value=code;
-   n.disabled=true;
-   n.dataset.manual="0";
-   return
- }
- let subject=selectedGroupSubjectName(),spec=selectedGroupSpecName(),tid=$("#gt")?.value||"";
+ let subject=selectedGroupSubjectName(),spec=selectedGroupSpecialty(),tid=$("#gt")?.value||"";
  let teacher=db.t.find(x=>x.id===tid);
- let parts=[subject,spec,teacher?objName(teacher):""].filter(Boolean);
+ let suggested=[code||subject,spec,teacher?objName(teacher):""].filter(Boolean).join(" – ");
+ if(n.dataset.manual!=="1"||!n.value.trim())n.value=suggested;
  n.disabled=false;
- n.value=parts.join(" – ");
- n.dataset.manual="0"
 }
 function markGroupNameManual(){let gn=$("#gn");if(gn)gn.dataset.manual="1"}
 function groupCategoryOptions(){
@@ -1087,7 +1080,7 @@ function groups(){
  <select id="gspec" onchange="toggleGroupOtherSpec();updateSuggestedGroupName()"><option value="">— اختر المادة أولاً —</option></select>
  <input id="gspecOther" class="hide" placeholder="أدخل المستوى أو التخصص الآخر" oninput="updateSuggestedGroupName()">
  <select id="gt" onchange="updateSuggestedGroupName()"><option value="">— اختر المادة أولاً —</option></select><span id="gtinfo" class="muted"></span>
- <input id="glinkcode" placeholder="أضف اختصاراً" oninput="updateSuggestedGroupName()">
+ <input id="glinkcode" placeholder="اختصار اختياري (غير إلزامي)" oninput="updateSuggestedGroupName()">
  <input id="gn" placeholder="اسم الفوج المقترح تلقائياً" oninput="markGroupNameManual()">
  <input id="gf" type="number" placeholder="الواجب الافتراضي">
  <input id="gr" type="number" placeholder="نسبة الأستاذ %">
@@ -1100,12 +1093,13 @@ function addGroup(){
  if(!category)return alert("اختر الفئة");
  if(!subject)return alert("اختر المادة أو أدخل مادة أخرى");
  if(!tid)return alert("اختر الأستاذ");
- if(!linkCode)return alert("أدخل الاختصار");
  let tt=by(db.t,tid);
- let n=$("#gn").value.trim()||[linkCode,level,objName(tt)].filter(Boolean).join(" – ");
- let same=db.g.filter(g=>g.active&&(g.linkCode||"").toLocaleLowerCase()===linkCode.toLocaleLowerCase());
- if(same.length&&!$("#gn").dataset.manual)n=`${n} – ${same.length+1}`;
- db.g.push({id:uid(),n,category,subject,subjectId:"",level,specialty,linkCode,tid:tt.id,f:+$("#gf").value||0,r:+$("#gr").value||0,active:true});save();groups()
+ let suggested=[linkCode||subject,level,objName(tt)].filter(Boolean).join(" – ");
+ let n=$("#gn").value.trim()||suggested;
+ if(!n)return alert("تعذر إنشاء اسم الفوج");
+ let same=db.g.filter(g=>g.active&&g.n===n);
+ if(same.length&&$("#gn").dataset.manual!=="1")n=`${n} – ${same.length+1}`;
+ db.g.push({id:uid(),n,category,subject,subjectId:subjectIdByLegacyName(subject)||"",level,specialty,linkCode,tid:tt.id,f:+$("#gf").value||0,r:+$("#gr").value||0,active:true});save();groups()
 }
 function editGroup(id){
  let o=by(db.g,id);if(!o)return;
