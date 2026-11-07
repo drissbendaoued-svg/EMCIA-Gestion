@@ -300,7 +300,7 @@ body.reception-mode #langMenu{display:block}
 @media(max-width:600px){#waiting .wait-counts{grid-template-columns:repeat(3,1fr)}}
 </style>
 <style>body:not(.emcia-authorized) > header,body:not(.emcia-authorized) > #langMenu,body:not(.emcia-authorized) > #mobileNavToggle,body:not(.emcia-authorized) > #appWorkspace{display:none!important}#authGate{font-family:system-ui,Arial,sans-serif;min-height:100vh;display:grid;place-items:center;background:#f2f5fa;color:#19344e;direction:rtl}#authGate .panel{background:white;padding:28px;border-radius:18px;max-width:430px;width:calc(100% - 48px);box-shadow:0 8px 28px #0001}#authGate input{width:100%;box-sizing:border-box;padding:13px;margin:8px 0 14px;border:1px solid #bac5d0;border-radius:9px;direction:ltr}#authGate button{padding:13px;border:0;background:#175d8d;color:white;border-radius:9px;width:100%;font:inherit}#authStatus{min-height:24px;overflow-wrap:anywhere}body.emcia-authorized #authGate{display:none}</style></head>
-<body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>نسخة اختبارية V5.15.16 — الدخول للمدير فقط</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" value="emciazaio@gmail.com"></label><label>كلمة المرور<input id="authPassword" type="password" required autocomplete="current-password"></label><button type="submit">دخول</button></form><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات في هذه المرحلة محلية على الجهاز؛ لم تُفعّل المزامنة السحابية بعد.</small></div></div>
+<body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>تسجيل دخول المدير والموظفين المفعّلين</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label>كلمة المرور<input id="authPassword" type="password" required autocomplete="current-password"></label><button type="submit">دخول</button></form><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات متصلة بقاعدة Supabase السحابية.</small></div></div>
 <header><b>EMCIA Gestion</b><small>تدبير المؤسسة والميزانية — Gestion de l'établissement et du budget</small></header>
 <div id="langMenu" class="lang-menu">
 <button id="langMenuBtn" type="button" onclick="toggleLangMenu()" aria-label="اختيار اللغة">🌐</button>
@@ -2142,8 +2142,7 @@ async function enter(user,accessToken){
  }catch(e){started=false;say('تعذر تحميل البيانات السحابية، ولن يفتح التطبيق منعًا لفقدان التغييرات: '+e.message);return;}
  const source=document.getElementById('emcia-app-source');
  if(!source)throw Error('تعذر العثور على كود التطبيق.');
- const script=document.createElement('script');script.textContent=source.textContent;document.body.appendChild(script);
- document.body.classList.add('emcia-authorized');
+ try{const script=document.createElement('script');script.textContent=source.textContent;document.body.appendChild(script);document.body.classList.add('emcia-authorized');}catch(error){started=false;say('تعذر فتح واجهة التطبيق: '+error.message);return;}
  // Staff management: director-only controls, enforced again by database RLS.
  if(profile.role==='director'){
   const panel=document.createElement('section');
