@@ -2179,7 +2179,7 @@ async function enter(user,accessToken){
   const panel=document.createElement('section');panel.id='emcia-users-panel';panel.style.cssText='display:none;position:fixed;inset:5vh 4vw;z-index:100000;overflow:auto;background:#fff;color:#102a43;padding:18px;border:2px solid #9fb3c8;border-radius:12px;box-shadow:0 0 0 100vmax #0008;direction:rtl';
   panel.innerHTML='<button type="button" id="emcia-users-close">إغلاق ×</button><h2>إدارة حسابات EMCIA</h2><p>إرسال دعوة بالبريد الإلكتروني لإنشاء حساب موظف جديد. يحدد الموظف كلمة مروره عبر رسالة الدعوة.</p><form id="emcia-invite-form"><input id="emcia-user-name" required placeholder="اسم الموظف" style="width:100%;margin:5px 0"><input id="emcia-user-email" type="email" required placeholder="البريد الإلكتروني" style="width:100%;margin:5px 0"><select id="emcia-user-role"><option value="secretary_morning">السكرتارية الصباحية</option><option value="secretary_evening">السكرتارية المسائية</option><option value="accountant">المحاسب</option></select><button type="submit">إرسال الدعوة</button></form><p id="emcia-users-msg"></p><div id="emcia-users-list"></div>';
   document.body.appendChild(panel);
-  const opener=document.createElement('button');opener.textContent='👥 إدارة المستخدمين';opener.type='button';opener.style.cssText='position:fixed;bottom:12px;right:12px;z-index:9999;background:#102a43;color:white;padding:10px;border:0;border-radius:8px';document.body.appendChild(opener);
+  const opener=document.createElement('button');opener.id='emcia-users-opener';opener.textContent='👥 إدارة المستخدمين';opener.type='button';opener.style.cssText='position:fixed;bottom:12px;right:12px;z-index:9999;background:#102a43;color:white;padding:10px;border:0;border-radius:8px';document.body.appendChild(opener);
   const msg=panel.querySelector('#emcia-users-msg'),list=panel.querySelector('#emcia-users-list');
   const call=async data=>request(api+'/functions/v1/emcia-manage-users',{method:'POST',headers:{apikey:key,Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(data)});
   const roleLabel={director:'المدير',secretary_morning:'السكرتارية الصباحية',secretary_evening:'السكرتارية المسائية',accountant:'المحاسب'};
@@ -2199,17 +2199,17 @@ async function enter(user,accessToken){
       const resetBox=document.createElement('div');resetBox.style.cssText='display:none;padding:8px;background:#f3f6f9;border-radius:8px;margin-top:8px';
       const pass=document.createElement('input');pass.type='password';pass.minLength=12;pass.autocomplete='new-password';pass.placeholder='كلمة مرور مؤقتة (12 حرفًا على الأقل)';
       const passConfirm=document.createElement('input');passConfirm.type='password';passConfirm.minLength=12;passConfirm.autocomplete='new-password';passConfirm.placeholder='تأكيد كلمة المرور';
-      const apply=document.createElement('button');apply.type='button';apply.textContent='اعتماد كلمة المرور';
+      const apply=document.createElement('button');apply.type='button';apply.textContent='اعتماد كلمة المرور';const resetStatus=document.createElement('p');resetStatus.setAttribute('role','status');resetStatus.style.cssText='font-size:13px;margin:6px 0;color:#175d8d';
       reset.onclick=()=>{resetBox.style.display=resetBox.style.display==='none'?'block':'none'};
       apply.onclick=async()=>{
        if(pass.value.length<12||pass.value!==passConfirm.value){msg.textContent='أدخل كلمة مرور من 12 حرفًا على الأقل وتأكد من تطابقها.';return}
        if(!confirm('سيتم تغيير كلمة مرور هذا الموظف فورًا. هل تريد المتابعة؟'))return;
-       apply.disabled=true;apply.textContent='جار تعيين كلمة المرور...';msg.textContent='تم استلام الطلب، جار تعيين كلمة المرور. لا تضغط مرة أخرى.';
-       try{await call({action:'temporary_password',user_id:u.user_id,password:pass.value});msg.textContent='تم تعيين كلمة المرور المؤقتة بنجاح. سلّمها للموظف بصورة خاصة.';pass.value='';passConfirm.value='';resetBox.style.display='none'}
-       catch(e){msg.textContent='تعذر تغيير كلمة المرور: '+e.message}
-       finally{apply.disabled=false;apply.textContent='اعتماد كلمة المرور'}
+       apply.disabled=true;reset.disabled=true;apply.textContent='جار تعيين كلمة المرور...';resetStatus.textContent='تم استلام الطلب. جار التنفيذ، لا حاجة إلى الضغط مجددًا.';msg.textContent=resetStatus.textContent;
+       try{await call({action:'temporary_password',user_id:u.user_id,password:pass.value});msg.textContent='تم تعيين كلمة المرور المؤقتة بنجاح. سلّمها للموظف بصورة خاصة.';resetStatus.textContent=msg.textContent;pass.value='';passConfirm.value='';resetBox.style.display='none'}
+       catch(e){msg.textContent='تعذر تغيير كلمة المرور: '+e.message;resetStatus.textContent=msg.textContent}
+       finally{apply.disabled=false;reset.disabled=false;apply.textContent='اعتماد كلمة المرور'}
       };
-      resetBox.append(pass,passConfirm,apply);
+      resetBox.append(pass,passConfirm,apply,resetStatus);
       const del=document.createElement('button');del.type='button';del.textContent='حذف الحساب';del.style.cssText='background:#a32929;color:#fff;margin-top:6px';
       del.onclick=async()=>{
        if(!confirm('هل تريد حذف حساب '+(u.display_name||'')+' ('+(u.email||'')+') نهائيًا؟ لن يمكن الدخول بهذا الحساب بعد الحذف.'))return;
@@ -2292,6 +2292,7 @@ document.getElementById('emcia-new-password-form').addEventListener('submit',asy
   say('تم تغيير كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.');
  }catch(err){say('تعذر تغيير كلمة المرور: '+err.message);}
 });
+document.getElementById('authForm').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();say('اضغط زر «دخول إلى الحساب» لبدء التحقق.')}});
 document.getElementById('authForm').addEventListener('submit',async e=>{
  e.preventDefault();const loginBtn=document.getElementById('emcia-login-submit');if(loginBtn.disabled)return;loginBtn.disabled=true;loginBtn.textContent='جار التحقق...';say('جار التحقق من بيانات الدخول، يرجى الانتظار وعدم تكرار الضغط...');
  const email=document.getElementById('authEmail').value.trim(),password=document.getElementById('authPassword').value;
