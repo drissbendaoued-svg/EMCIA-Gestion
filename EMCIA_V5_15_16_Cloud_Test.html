@@ -313,6 +313,15 @@ header>b{display:block;text-align:center;font-size:clamp(20px,5vw,28px)}
 .emcia-dashboard-brand .welcome-name{font-size:clamp(19px,4.5vw,28px);font-weight:750}
 .emcia-dashboard-brand .welcome-season{font-weight:650;margin-top:12px}
 @media(min-width:651px){#emcia-top-controls{justify-content:flex-end}#emcia-top-controls #mobileNavToggle{display:none!important}#emcia-top-controls #emcia-account-menu{flex:0 1 330px}}
+
+/* EMCIA V20: all page chrome scrolls naturally */
+header,nav,#nav,.main-nav,.subnav-wrap,.subnav,#emcia-top-controls{position:static!important;top:auto!important;bottom:auto!important}
+#emcia-top-controls{z-index:auto}
+#emcia-cloud-status{position:static!important;box-shadow:none!important;background:transparent!important;border:0!important;padding:0!important}
+#emcia-account-menu{position:relative}
+#emcia-account-menu>div{z-index:80!important}
+body:not(.emcia-authorized) #emcia-top-controls{display:none!important}
+@media(max-width:650px){#emcia-top-controls #mobileNavToggle{position:static!important}}
 </style></head>
 <body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>تسجيل دخول المدير والموظفين المفعّلين</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label>كلمة المرور<input id="authPassword" type="password" required autocomplete="current-password"></label><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات متصلة بقاعدة Supabase السحابية.</small></div></div>
 <header><b>EMCIA Gestion</b></header>
@@ -2124,7 +2133,7 @@ let started=false,token=null,userId=null,revision=0,dirty=false,saving=false,blo
 const cloudId='emcia-main', localKey='emcia_core_mobile';
 const cloudUrl=api+'/rest/v1/emcia_cloud_state';
 const headers=()=>({'apikey':key,'Authorization':'Bearer '+token,'Content-Type':'application/json'});
-function cloudStatus(message){let node=document.getElementById('emcia-cloud-status');if(!node){node=document.createElement('div');node.id='emcia-cloud-status';node.style.cssText='position:fixed;top:6px;left:8px;z-index:99999;background:#fff;color:#102a43;border:1px solid #9fb3c8;padding:5px 9px;border-radius:8px;font:12px system-ui;max-width:65vw';document.body.appendChild(node);}node.textContent=message;}
+function cloudStatus(message){let node=document.getElementById('emcia-cloud-status');if(!node){node=document.createElement('span');node.id='emcia-cloud-status';node.setAttribute('role','status');node.setAttribute('aria-live','polite');node.style.cssText='display:block;text-align:center;font:12px system-ui;color:#d1fae5;margin:4px auto 0;max-width:100%;overflow-wrap:anywhere';const header=document.querySelector('header');(header||document.body).appendChild(node);}const error=/فشل|تعارض|تعذر|⚠️/.test(message);node.style.color=error?'#fecaca':'#d1fae5';node.textContent=error?message:(/جار/.test(message)?'☁️ جار الحفظ...':'☁️ متصل بالسحابة');}
 async function cloudFetch(){
  const rows=await request(cloudUrl+'?id=eq.'+cloudId+'&select=id,payload,revision',{headers:headers()});
  if(rows.length)return rows[0];
