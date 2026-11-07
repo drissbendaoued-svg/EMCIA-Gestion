@@ -758,9 +758,17 @@ function teacherSubjectPickerOptions(){
 }
 
 function studentSubjectPickerOptions(){
- const listed=new Set(["الفرنسية","الإنجليزية","الإسبانية","الألمانية","الهولندية","العربية","الرياضيات","الفيزياء","العلوم الطبيعية","الحجامة","الطبخ","الإعلاميات","الإسعافات الأولية"]);
+ const cats=[
+  ["اللغات",["الفرنسية","الإنجليزية","الإسبانية","الألمانية","الهولندية","العربية"]],
+  ["الدعم المدرسي",["الرياضيات","الفيزياء","العلوم الطبيعية"]],
+  ["التكوينات",["الحجامة","الطبخ","الإعلاميات","الإسعافات الأولية"]]
+ ];
+ const listed=new Set(cats.flatMap(c=>c[1]));
  const extra=[...new Set(activeSubjectRecords().map(x=>x.n).filter(n=>n&&!listed.has(n)))];
- return teacherSubjectPickerOptions().replace('<optgroup label="أخرى">',extra.length?'<optgroup label="مواد مسجلة أخرى">'+extra.map(n=>'<option value="name:'+esc(n)+'">'+esc(n)+'</option>').join('')+'</optgroup><optgroup label="أخرى">':'<optgroup label="أخرى">');
+ const options=cats.flatMap(([cat,items])=>items.map(n=>'<option value="'+esc(n)+'">'+cat+' — '+esc(n)+'</option>'));
+ extra.forEach(n=>options.push('<option value="name:'+esc(n)+'">مواد أخرى — '+esc(n)+'</option>'));
+ options.push('<option value="__other__">أخرى — إدخال مادة جديدة...</option>');
+ return '<option value="">— اختر مادة —</option>'+options.join('');
 }
 function studentSubjectChoiceChanged(){
  const w=$("#studentOtherSubjectWrap");
