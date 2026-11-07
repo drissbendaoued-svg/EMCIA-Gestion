@@ -719,7 +719,7 @@ function renderSubjectPicker(kind){
    return
  }
  if(box)box.innerHTML=tempStudentSubjects.length?tempStudentSubjects.map(id=>{let s=subjectById(id),label=s?.n||"";return label?`<span class="subject-chip">${esc(label)} <button type="button" onclick="removeSubjectChip('student','${id}')">×</button></span>`:""}).join(""):`<span class="muted">لم تُحدد مواد بعد</span>`;
- if(sel){let names=groupMaterialNames();sel.innerHTML=`<option value="">— اختر مادة —</option>`+names.map(n=>`<option value="name:${esc(n)}">${esc(n)}</option>`).join("");sel.value=""}
+ if(sel){sel.innerHTML=studentSubjectPickerOptions();sel.value=""}
 }
 function removeTeacherSubjectByIndex(i){
  if(i<0||i>=tempTeacherSubjects.length)return;
@@ -742,8 +742,9 @@ function addSubjectChip(kind){
    return
  }
  let arr=tempStudentSubjects,sel=$("#studentSubjectSelect"),v=sel?.value||"";if(!v)return;
- let rec=v.startsWith("name:")?ensureSubjectRecordForGroupMaterial(v.slice(5)):subjectById(v);
- if(!rec)return;if(!arr.includes(rec.id))arr.push(rec.id);renderSubjectPicker("student")
+ if(v==="__other__"){v=($("#studentOtherSubject")?.value||"").trim();if(!v)return alert("أدخل اسم المادة الأخرى.");v="name:"+v;}
+ let rec=v.startsWith("name:")?ensureSubjectRecordForGroupMaterial(v.slice(5)):ensureSubjectRecordForGroupMaterial(v);
+ if(!rec)return;if(!arr.includes(rec.id))arr.push(rec.id);renderSubjectPicker("student");let other=$("#studentOtherSubject");if(other)other.value="";$("#studentOtherSubjectWrap")?.classList.add("hide")
 }
 function removeSubjectChip(kind,i){let arr=kind==="teacher"?tempTeacherSubjects:tempStudentSubjects;arr.splice(i,1);renderSubjectPicker(kind)}
 function teacherSubjectPickerOptions(){
@@ -756,6 +757,15 @@ function teacherSubjectPickerOptions(){
  return `<option value="">— اختر مادة —</option>`+cats.map(([cat,items])=>`<optgroup label="${cat}">${items.map(x=>x==="__other__"?`<option value="__other__">مادة أخرى...</option>`:`<option value="${esc(x)}">${esc(x)}</option>`).join("")}</optgroup>`).join("")
 }
 
+function studentSubjectPickerOptions(){
+ const listed=new Set(["الفرنسية","الإنجليزية","الإسبانية","الألمانية","الهولندية","العربية","الرياضيات","الفيزياء","العلوم الطبيعية","الحجامة","الطبخ","الإعلاميات","الإسعافات الأولية"]);
+ const extra=[...new Set(activeSubjectRecords().map(x=>x.n).filter(n=>n&&!listed.has(n)))];
+ return teacherSubjectPickerOptions().replace('<optgroup label="أخرى">',extra.length?'<optgroup label="مواد مسجلة أخرى">'+extra.map(n=>'<option value="name:'+esc(n)+'">'+esc(n)+'</option>').join('')+'</optgroup><optgroup label="أخرى">':'<optgroup label="أخرى">');
+}
+function studentSubjectChoiceChanged(){
+ const w=$("#studentOtherSubjectWrap");
+ if(w)w.classList.toggle("hide",$("#studentSubjectSelect")?.value!=="__other__");
+}
 function teacherSubjectChoiceChanged(){
  let s=$("#teacherSubjectSelect"),w=$("#teacherOtherSubjectWrap");
  if(w)w.classList.toggle("hide",s?.value!=="__other__")
@@ -836,7 +846,7 @@ function subjectCatalog(){return ["الفرنسية","الإنجليزية","ا�
 function students(){
  tempStudentSubjects=[];
  $("#students").innerHTML=`<div class="card"><div class="row"><input id="snAr" placeholder="الاسم بالعربية"><input id="snFr" placeholder="Nom en français"><input id="sph" placeholder="الهاتف الشخصي"><input id="spa" placeholder="هاتف ولي الأمر"><input id="sland" placeholder="الهاتف الثابت"><select id="sedu"><option value="">— المستوى التعليمي —</option><option>ابتدائي</option><option>إعدادي</option><option>ثانوي</option><option>جامعي</option><option>موظف/عامل</option><option>غير ذلك</option></select><input id="sl" placeholder="المستوى أو التخصص التفصيلي"><select id="stime"><option value="">— التوقيت المفضل —</option><option value="day">نهاراً</option><option value="evening">مساءً</option><option value="both">نهاراً أو مساءً</option><option value="unspecified">غير محدد</option></select><select id="stype"><option value="new">متعلم جديد بالمؤسسة</option><option value="former">متعلم سابق بالمؤسسة</option></select><div><label>تاريخ التسجيل بالمؤسسة</label><input id="sj" type="date" value="${today()}"></div></div>
- <div style="margin-top:12px"><label><b>ملاحظات</b></label><textarea id="snote" placeholder="التوقيت المناسب للمتعلم، شروطه الخاصة أو أي ملاحظات أخرى"></textarea></div><div style="margin-top:12px"><label><b>المادة أو المواد المطلوبة</b></label><div id="studentChips" style="margin:7px 0"><span class="muted">لم تُحدد مواد بعد</span></div><div class="row"><select id="studentSubjectSelect">${subjectPickerOptions([])}</select><button type="button" onclick="addSubjectChip('student')">+ إضافة مادة</button></div></div>
+ <div style="margin-top:12px"><label><b>ملاحظات</b></label><textarea id="snote" placeholder="التوقيت المناسب للمتعلم، شروطه الخاصة أو أي ملاحظات أخرى"></textarea></div><div style="margin-top:12px"><label><b>المادة أو المواد المطلوبة</b></label><div id="studentChips" style="margin:7px 0"><span class="muted">لم تُحدد مواد بعد</span></div><div class="row"><select id="studentSubjectSelect" onchange="studentSubjectChoiceChanged()">${studentSubjectPickerOptions()}</select><div id="studentOtherSubjectWrap" class="hide"><label>المادة الأخرى</label><input id="studentOtherSubject" placeholder="اكتب اسم المادة"></div><button type="button" onclick="addSubjectChip('student')">+ إضافة مادة</button></div></div>
  <div class="row" style="margin-top:12px"><button onclick="addStudent()">إضافة متعلم</button></div></div>
  <div class="card"><table><tr><th>المتعلم</th><th>جديد/سابق</th><th>المواد المطلوبة</th><th>المستوى</th><th>الهاتف</th><th>الحالة</th><th></th></tr>${[...db.s].reverse().map(o=>`<tr><td>${esc(objName(o))}</td><td>${o.studentType==="former"?"سابق":"جديد"}</td><td>${esc((o.requestedSubjects||[]).join("، ")||"—")}</td><td>${esc(o.level)}</td><td>${esc(o.ph)}</td><td>${o.active?"نشط":"غير نشط"}</td><td class="actions"><button onclick="editStudentRegistration('${o.id}')">✏️</button>${o.active?"":`<button class="ok" onclick="activateObj('s','${o.id}')">✓ تنشيط</button>`}<button class="danger" onclick="removeObj('s','${o.id}')">🗑️</button></td></tr>`).join("")}</table></div>`;
 }
