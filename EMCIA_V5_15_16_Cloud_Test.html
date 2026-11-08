@@ -2308,6 +2308,15 @@ async function enter(user,accessToken){
  const addAction=(label,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.style.cssText='display:flex;align-items:center;justify-content:center;gap:5px;width:100%;min-height:32px;padding:6px 10px;margin:0;text-align:center;background:#eef3f8;color:#102a43;border:0;border-radius:7px;font:inherit;font-size:13px;line-height:1.25;white-space:nowrap';b.onclick=()=>{accountActions.style.display='none';fn()};accountActions.appendChild(b);return b};
  accountToggle.onclick=()=>{document.body.classList.remove('mobile-menu-open');accountActions.style.display=accountActions.style.display==='none'?'grid':'none'};
  mobileToggle.addEventListener('click',()=>{accountActions.style.display='none'});
+ // Dismiss either menu when tapping anywhere outside its trigger and panel.
+ document.addEventListener('pointerdown',event=>{
+  const target=event.target;
+  if(!accountMenu.contains(target))accountActions.style.display='none';
+  const nav=document.getElementById('nav');
+  if(!mobileToggle.contains(target)&&!(nav&&nav.contains(target))){
+   document.body.classList.remove('mobile-menu-open','mobile-nav-collapsed');
+  }
+ });
  accountMenu.append(accountToggle,accountActions);controls.appendChild(accountMenu);
  addAction('⌂ الرئيسية',()=>{if(typeof enterApp==='function')enterApp()});
  const logout=addAction('↪ الخروج',async()=>{clearAuthSession();logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
