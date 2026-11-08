@@ -452,7 +452,7 @@ db.p=db.p.map(o=>({...o,date:o.date||today(),receiptMonth:o.receiptMonth||o.m||n
 db.tp=db.tp.map(o=>({...o,month:o.month||nowMonth(),amount:+o.amount||0,date:o.date||today(),method:o.method||"cash",note:o.note||""}));
 db.p=db.p.map(o=>({...o,receiptNo:o.receiptNo||"",method:o.method||"cash",paymentRef:o.paymentRef||""}));
 db.adj=db.adj.map(o=>({...o,month:o.month||nowMonth(),countedDays:+o.countedDays||0,originalPaid:+o.originalPaid||0,approvedDue:+o.approvedDue||0,refund:+o.refund||0,date:o.date||today()}));
-function save(){localStorage.setItem(KEY,JSON.stringify(db));window.EMCIA_CLOUD_SYNC?.save(db);setTimeout(applyLang,0)}
+function save(){localStorage.setItem(KEY,JSON.stringify(db));window.EMCIA_CLOUD_SYNC?.save(db);window.emciaUpdateAlertCounter?.();setTimeout(applyLang,0)}
 function teacherDueOf(p){return +(p?.d??p?.t??0)||0}
 const by=(a,id)=>a.find(x=>x.id===id);
 function objName(o,mode="ui"){if(!o)return "—";let ar=o.nAr||o.n||"",fr=o.nFr||"";if(mode==="both")return [ar,fr].filter(Boolean).join(" / ")||"—";if(mode==="fr")return fr||ar||"—";if(mode==="ar")return ar||fr||"—";return LANG==="fr"?(fr||ar||"—"):(ar||fr||"—")}
@@ -1998,6 +1998,27 @@ function monthRange(start,end){
  while(m<=end&&guard++<120){out.push(m);m=monthShift(m,1)}return out
 }
 // Read-only administrative alerts reuse the same dues/payment rules as arrears().
+function emciaPendingAlertCount(){
+ const month=nowMonth();let count=0;
+ db.e.filter(e=>e.active&&e.start&&e.start.slice(0,7)<=month).forEach(e=>{
+  if(!by(db.s,e.sid)||!by(db.g,e.gid))return;
+  const pending=monthRange(e.start,month).some(mm=>{
+   const due=dueForEnrollmentMonth(e,mm);
+   const paid=db.p.filter(p=>p.eid===e.id&&p.allocMonth===mm).reduce((sum,p)=>sum+(+(p.netAfterRefund??p.a)||0),0);
+   return due-paid>0.001;
+  });
+  if(pending)count++;
+ });
+ return count;
+}
+window.emciaUpdateAlertCounter=function(){
+ const badge=document.getElementById('emcia-alert-count');
+ if(!badge)return;
+ const count=emciaPendingAlertCount();
+ badge.textContent=count>99?'99+':String(count);
+ badge.style.display=count?'inline-flex':'none';
+ badge.title=count+' تسجيلات تستدعي متابعة الأداء';
+};
 function emciaAdministrativeAlerts(){
  const existing=document.getElementById('emcia-alerts-panel');if(existing)existing.remove();
  const panel=document.createElement('section');panel.id='emcia-alerts-panel';
@@ -2391,9 +2412,11 @@ async function enter(user,accessToken){
  });
  accountMenu.append(accountToggle,accountActions);controls.appendChild(accountMenu);
  const alertsButton=document.createElement('button');alertsButton.type='button';alertsButton.textContent='♧ التنبيهات';
+ const alertsBadge=document.createElement('span');alertsBadge.id='emcia-alert-count';alertsBadge.style.cssText='display:none;align-items:center;justify-content:center;min-width:19px;height:19px;padding:0 4px;margin-inline-start:6px;border-radius:10px;background:#eef2f6;color:#102a43;font-size:11px;font-weight:700';alertsButton.appendChild(alertsBadge);
  alertsButton.style.cssText='width:auto;min-height:34px;padding:6px 10px;border-radius:8px;font:inherit;font-size:13px';
  alertsButton.onclick=()=>{accountActions.style.display='none';if(typeof emciaAdministrativeAlerts==='function')emciaAdministrativeAlerts()};
  controls.appendChild(alertsButton);
+ if(typeof window.emciaUpdateAlertCounter==='function')window.emciaUpdateAlertCounter();
  addAction('⌂ الرئيسية',()=>{if(typeof enterApp==='function')enterApp()});
  const logout=addAction('↪ الخروج',async()=>{clearAuthSession();logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
  logout.style.background='#fbe9e7';logout.style.color='#a32929';
