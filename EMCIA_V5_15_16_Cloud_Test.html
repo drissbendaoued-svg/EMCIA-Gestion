@@ -620,7 +620,7 @@ function enterApp(){
 }
 
 function show(id){
- if(id==="home"){enterApp();return}catch(e){}
+ if(id==="home"){enterApp();return}
  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
  $("#"+id).classList.add("active");render(id);nav();
  if(id!=="home")autoCollapseMobileNav()
