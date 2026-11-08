@@ -1703,6 +1703,7 @@ function rcFileBase(){
  return `EMCIA_${code}_${m}`;
 }
 function rcDirectPrint(){
+ if($("#rcType")?.value==="executive"&&!emciaCanViewManagement()){alert("هذا التقرير متاح للمدير والمحاسب فقط.");return}
  if(!($("#rcType")?.value)){alert("اختر نوع التقرير أولاً.");return}
  let paper=document.querySelector("#rcPreview .rc-paper");
  if(!paper){alert("اعرض التقرير أولاً.");return}
@@ -1728,7 +1729,8 @@ function rcDirectPrint(){
    setTimeout(()=>{try{frame.remove()}catch(e){}},1000);
  },250);
 }
-function rcExportPDF(){ if(!($("#rcType")?.value)){alert("اختر نوع التقرير أولاً.");return;} if($("#rcType").value==="executive"){rcDirectPrint();return;}
+function rcExportPDF(){
+ if($("#rcType")?.value==="executive"&&!emciaCanViewManagement()){alert("هذا التقرير متاح للمدير والمحاسب فقط.");return} if(!($("#rcType")?.value)){alert("اختر نوع التقرير أولاً.");return;} if($("#rcType").value==="executive"){rcDirectPrint();return;}
  let paper=document.querySelector("#rcPreview .rc-paper");if(!paper){if(rcBuildReport()===false)return;}
 
  paper=document.querySelector("#rcPreview .rc-paper");if(!paper){alert("اعرض التقرير أولاً.");return}
@@ -1736,7 +1738,8 @@ function rcExportPDF(){ if(!($("#rcType")?.value)){alert("اختر نوع الت
  let doc=`<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><style>body{font-family:Arial,Tahoma,sans-serif;padding:20px;color:#111}h1,h2{text-align:center}table{width:100%;border-collapse:collapse}th,td{border:1px solid #777;padding:7px;text-align:right}th{background:#eee}</style></head><body>${paper.outerHTML}</body></html>`;
  rcDownload(new Blob([doc],{type:"text/html;charset=utf-8"}),rcFileBase()+".html")
 }
-function rcExportExcel(){ if(!($("#rcType")?.value)){alert("اختر نوع التقرير أولاً.");return;}
+function rcExportExcel(){
+ if($("#rcType")?.value==="executive"&&!emciaCanViewManagement()){alert("هذا التقرير متاح للمدير والمحاسب فقط.");return} if(!($("#rcType")?.value)){alert("اختر نوع التقرير أولاً.");return;}
  let paper=document.querySelector("#rcPreview .rc-paper");if(!paper){if(rcBuildReport()===false)return;}
 
  paper=document.querySelector("#rcPreview .rc-paper");if(!paper){alert("اعرض التقرير أولاً.");return}
