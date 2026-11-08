@@ -240,6 +240,12 @@ body.reception-mode #langMenu{display:block}
  #enroll .show-all-learners{margin-inline-start:0;justify-self:start}
  #enroll #esearch{width:100%!important}
 }
+
+/* Budget: all eight indicators on one horizontally scrollable line. */
+#budget .budget-kpi-strip{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;gap:7px!important;width:100%;padding-bottom:8px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+#budget .budget-kpi-strip>.card{flex:0 0 auto!important;width:max-content!important;min-width:112px!important;max-width:220px;margin:0!important;padding:10px 12px!important;text-align:center;white-space:normal}
+#budget .budget-kpi-strip>.card>.muted{font-size:clamp(10px,2.4vw,12px);line-height:1.35;min-height:2.7em}
+#budget .budget-kpi-strip>.card>.kpi{font-size:clamp(14px,3.2vw,20px);white-space:nowrap;font-variant-numeric:tabular-nums}
 </style>
 
 <style>
@@ -1630,7 +1636,7 @@ function budget(){
  let m=window.bm||nowMonth(), rec=db.p.filter(p=>p.receiptMonth===m), gross=rec.reduce((s,p)=>s+(+(p.netAfterRefund??p.a)||0),0), prof=rec.reduce((s,p)=>s+teacherDueOf(p),0), em=rec.reduce((s,p)=>s+(+p.e||0),0), other=db.oi.filter(x=>x.month===m).reduce((s,x)=>s+(+x.a||0),0), fixed=db.x.filter(x=>x.month===m&&x.type==="fixed").reduce((s,x)=>s+(+x.a||0),0), variable=db.x.filter(x=>x.month===m&&x.type!=="fixed").reduce((s,x)=>s+(+x.a||0),0), sav=db.sv.filter(x=>x.month===m).reduce((s,x)=>s+(+x.a||0),0), operating=em+other-fixed-variable, avail=operating-sav;
  let low=db.sv.filter(x=>x.fund==="low").reduce((s,x)=>s+(+x.a||0),0), dev=db.sv.filter(x=>x.fund==="dev").reduce((s,x)=>s+(+x.a||0),0);
  $("#budget").innerHTML=`<div class="card"><h3>تدبير الميزانية / Gestion du budget</h3><input type="month" value="${m}" onchange="window.bm=this.value;budget()"></div>
- <div class="grid"><div class="card"><div class="muted">إجمالي المقبوضات الدراسية</div><div class="kpi">${money(gross)}</div></div><div class="card"><div class="muted">مستحقات الأساتذة</div><div class="kpi">${money(prof)}</div></div><div class="card"><div class="muted">حصة EMCIA</div><div class="kpi">${money(em)}</div></div><div class="card"><div class="muted">مداخيل أخرى</div><div class="kpi">${money(other)}</div></div><div class="card"><div class="muted">المصاريف الثابتة</div><div class="kpi">${money(fixed)}</div></div><div class="card"><div class="muted">المصاريف المتغيرة</div><div class="kpi">${money(variable)}</div></div><div class="card"><div class="muted">صافي التشغيل قبل الادخار</div><div class="kpi">${money(operating)}</div></div><div class="card"><div class="muted">الرصيد المتاح بعد الادخار</div><div class="kpi">${money(avail)}</div></div></div>
+ <div class="grid budget-kpi-strip"><div class="card"><div class="muted">إجمالي المقبوضات الدراسية</div><div class="kpi">${money(gross)}</div></div><div class="card"><div class="muted">مستحقات الأساتذة</div><div class="kpi">${money(prof)}</div></div><div class="card"><div class="muted">حصة EMCIA</div><div class="kpi">${money(em)}</div></div><div class="card"><div class="muted">مداخيل أخرى</div><div class="kpi">${money(other)}</div></div><div class="card"><div class="muted">المصاريف الثابتة</div><div class="kpi">${money(fixed)}</div></div><div class="card"><div class="muted">المصاريف المتغيرة</div><div class="kpi">${money(variable)}</div></div><div class="card"><div class="muted">صافي التشغيل قبل الادخار</div><div class="kpi">${money(operating)}</div></div><div class="card"><div class="muted">الرصيد المتاح بعد الادخار</div><div class="kpi">${money(avail)}</div></div></div>
  <div class="card"><h3>صندوق التوفير / Fonds de réserve</h3><div class="row"><select id="sf"><option value="low">احتياطي أشهر الركود</option><option value="dev">الإصلاح والتطوير</option></select><input id="sa" type="number" placeholder="المبلغ"><input id="sm" type="month" value="${m}"><button onclick="addSaving()">تحويل إلى الادخار</button></div>
  <p>احتياطي الركود: <b>${money(low)}</b> / 40,000 DH</p><progress max="40000" value="${low}"></progress><p>الإصلاح والتطوير: <b>${money(dev)}</b> / 10,000 DH</p><progress max="10000" value="${dev}"></progress><p class="muted">المستهدف الشهري الإجمالي: 5,000 DH. المحول هذا الشهر: ${money(sav)}.</p></div>`;
 }
