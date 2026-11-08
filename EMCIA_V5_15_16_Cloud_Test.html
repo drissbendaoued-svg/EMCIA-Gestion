@@ -326,6 +326,16 @@ header>b{display:block;text-align:center;font-size:clamp(20px,5vw,28px)}
  #nav .subnav-title{font-size:15px!important}
  #nav .subnav button{font-size:13px!important;padding:6px!important;flex-basis:100px!important}
 }
+
+/* EMCIA V24 — compact mobile navigation */
+@media(max-width:650px){
+ #emcia-top-controls{align-items:center!important;gap:8px!important;padding:8px 12px!important}
+ #emcia-top-controls #mobileNavToggle{flex:0 0 auto!important;width:auto!important;min-width:0!important;min-height:40px!important;padding:7px 13px!important;font-size:15px!important;line-height:1.35!important;border-radius:9px!important}
+ #emcia-top-controls #emcia-account-menu{flex:0 1 auto!important;min-width:0!important;max-width:calc(100% - 112px)!important}
+ #emcia-top-controls #emcia-account-menu>button{font-size:13px!important;padding:7px 9px!important;min-height:40px!important}
+ #nav .main-nav{width:max-content!important;min-width:160px!important;max-width:min(68vw,225px)!important;padding:5px!important;gap:3px!important;position:absolute!important;top:auto!important;max-height:65vh!important}
+ #nav .main-nav button{min-height:34px!important;padding:6px 9px!important;font-size:14px!important;line-height:1.35!important}
+}
 /* EMCIA V20: all page chrome scrolls naturally */
 header,nav,#nav,.main-nav,.subnav-wrap,.subnav,#emcia-top-controls{position:static!important;top:auto!important;bottom:auto!important}
 #emcia-top-controls{z-index:auto}
