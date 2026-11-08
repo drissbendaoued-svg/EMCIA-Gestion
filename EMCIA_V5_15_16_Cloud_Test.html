@@ -2521,10 +2521,30 @@ async function enter(user,accessToken){
     'مفاتيح غير مصنفة: '+(unknown.join(', ')||'لا يوجد'),
     'مهم: بيانات التسجيلات والأداءات والأفواج قد تتضمن مبالغ أو حصصاً مالية داخل السجل نفسه.',
     'لن يُسمح بالترحيل قبل فصل هذه الحقول واختبار الكتابة والمزامنة.'
-   ].join('\\n');
+   ].join('\n');
    alert(message);
   });
  }
+  addAction('🔍 فحص الحقول الحساسة',()=>{
+   let current;
+   try{current=JSON.parse(localStorage.getItem(localKey)||'{}')}catch(e){alert('تعذر قراءة البيانات المحلية.');return;}
+   const groups=['e','p','g','t','s','tp','adj','cash','shifts','x','oi','sv'];
+   const patterns=/(fee|amount|paid|due|price|cost|salary|wage|share|rate|refund|discount|total|profit|income|expense|balance|saving|advance|payment|financial|originalPaid|approvedDue)/i;
+   const explicit={g:['f','r'],p:['d','t'],e:['fee'],tp:['amount'],adj:['originalPaid','approvedDue','refund']};
+   const report=groups.map(k=>{
+    const rows=Array.isArray(current[k])?current[k]:[];
+    const fields=[...new Set(rows.flatMap(o=>o&&typeof o==='object'&&!Array.isArray(o)?Object.keys(o):[]))].sort();
+    const flagged=fields.filter(field=>patterns.test(field)||(explicit[k]||[]).includes(field));
+    return k+' — '+rows.length+' سجل | حقول: '+fields.length+' | مرشحة للحماية: '+(flagged.join(', ')||'لا يوجد');
+   });
+   const pre=document.createElement('pre');
+   pre.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;text-align:right;direction:rtl;font:13px/1.8 system-ui;margin:0';
+   pre.textContent='فحص بنية الحقول فقط — لا تظهر أسماء أو مبالغ أو قيم شخصية.\\nالحقول المرشحة ليست تصنيفاً نهائياً، ويجب مراجعتها قبل الترحيل.\\n\\n'+report.join('\\n');
+   const dialog=document.createElement('div');
+   dialog.style.cssText='position:fixed;inset:5vh 4vw;z-index:100001;background:#fff;color:#102a43;border:2px solid #9fb3c8;border-radius:12px;padding:16px;overflow:auto;box-shadow:0 0 0 100vmax #0008';
+   const close=document.createElement('button');close.textContent='✕ إغلاق';close.onclick=()=>dialog.remove();close.style.cssText='margin-bottom:14px;padding:8px 14px';
+   dialog.append(close,pre);document.body.appendChild(dialog);
+  });
  addAction('⌂ الرئيسية',()=>{if(typeof enterApp==='function')enterApp()});
  const logout=addAction('↪ الخروج',async()=>{clearAuthSession();logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
  logout.style.background='#fbe9e7';logout.style.color='#a32929';
