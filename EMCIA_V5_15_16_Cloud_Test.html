@@ -2016,7 +2016,7 @@ window.emciaUpdateAlertCounter=function(){
  if(!badge)return;
  const count=emciaPendingAlertCount();
  badge.textContent=count>99?'99+':String(count);
- badge.style.display=count?'inline-flex':'none';
+ badge.style.display='inline-flex';
  badge.title=count+' تسجيلات تستدعي متابعة الأداء';
 };
 function emciaAdministrativeAlerts(){
