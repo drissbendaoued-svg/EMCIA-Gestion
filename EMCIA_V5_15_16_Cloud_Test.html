@@ -1722,7 +1722,7 @@ function rcDirectPrint(){
    setTimeout(()=>{try{frame.remove()}catch(e){}},1000);
  },250);
 }
-function rcExportPDF(){ if(!($("#rcType")?.value)){alert("اختر نوع التقرير أولاً.");return;}
+function rcExportPDF(){ if(!($("#rcType")?.value)){alert("اختر نوع التقرير أولاً.");return;} if($("#rcType").value==="executive"){rcDirectPrint();return;}
  let paper=document.querySelector("#rcPreview .rc-paper");if(!paper){if(rcBuildReport()===false)return;}
 
  paper=document.querySelector("#rcPreview .rc-paper");if(!paper){alert("اعرض التقرير أولاً.");return}
