@@ -2497,13 +2497,13 @@ async function enter(user,accessToken){
   const results=[];
   for(const [label,table] of checks){
    try{
-    const response=await fetch(api+'/rest/v1/'+table+'?select=id&limit=1',{headers:headers()});
+    const response=await fetch(api+'/rest/v1/'+table+'?id=eq.emcia-rls-test&select=id&limit=1',{headers:headers()});
     if(!response.ok){results.push(label+': خطأ HTTP '+response.status);continue;}
     const rows=await response.json();
-    results.push(label+': اتصال ناجح ('+(Array.isArray(rows)?rows.length:0)+' سجل ظاهر)');
+    results.push(label+': '+(Array.isArray(rows)&&rows.length===1?'السجل التجريبي ظاهر':'السجل التجريبي محجوب')+' ('+(Array.isArray(rows)?rows.length:0)+')');
    }catch(e){results.push(label+': تعذر الاتصال');}
   }
-  alert('اختبار قراءة فقط — دون حفظ أو تعديل بيانات\\nالدور: '+profile.role+'\\n'+results.join('\\n')+'\\nتنبيه: ظهور صفر سجل لا يثبت وحده منع القراءة؛ يلزم اختبار RLS بهوية كل دور بعد إدخال بيانات اختبارية.');
+  alert('اختبار قراءة فقط — دون حفظ أو تعديل بيانات\\nالدور: '+profile.role+'\\n'+results.join('\\n')+'\\nالمتوقع: يظهر السجل التشغيلي للجميع، والمالي للمدير والمحاسب فقط.');
  });
  addAction('⌂ الرئيسية',()=>{if(typeof enterApp==='function')enterApp()});
  const logout=addAction('↪ الخروج',async()=>{clearAuthSession();logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
