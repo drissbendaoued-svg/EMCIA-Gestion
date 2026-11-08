@@ -2503,8 +2503,28 @@ async function enter(user,accessToken){
     results.push(label+': '+(Array.isArray(rows)&&rows.length===1?'السجل التجريبي ظاهر':'السجل التجريبي محجوب')+' ('+(Array.isArray(rows)?rows.length:0)+')');
    }catch(e){results.push(label+': تعذر الاتصال');}
   }
-  alert('اختبار قراءة فقط — دون حفظ أو تعديل بيانات\\nالدور: '+profile.role+'\\n'+results.join('\\n')+'\\nالمتوقع: يظهر السجل التشغيلي للجميع، والمالي للمدير والمحاسب فقط.');
+  alert('اختبار قراءة فقط — دون حفظ أو تعديل بيانات\nالدور: '+profile.role+'\n'+results.join('\n')+'\nالمتوقع: يظهر السجل التشغيلي للجميع، والمالي للمدير والمحاسب فقط.');
  });
+ if(profile.role==='director'){
+  addAction('🧪 معاينة خطة فصل البيانات',()=>{
+   let current;
+   try{current=JSON.parse(localStorage.getItem(localKey)||'{}')}catch(e){alert('تعذر قراءة البيانات المحلية.');return;}
+   const operational=['subj','t','s','g','e','p','att','sch','rooms','tatt','wait','wls'];
+   const restricted=['x','oi','sv','tp','adj','cash','shifts'];
+   const keys=Object.keys(current);
+   const unknown=keys.filter(k=>!operational.includes(k)&&!restricted.includes(k));
+   const count=names=>names.reduce((n,k)=>n+(Array.isArray(current[k])?current[k].length:0),0);
+   const message=[
+    'معاينة فقط — لا نقل ولا حفظ سحابي',
+    'مجموعات تشغيلية مرشحة: '+operational.length+' | عدد السجلات: '+count(operational),
+    'مجموعات مالية مرشحة: '+restricted.length+' | عدد السجلات: '+count(restricted),
+    'مفاتيح غير مصنفة: '+(unknown.join(', ')||'لا يوجد'),
+    'مهم: بيانات التسجيلات والأداءات والأفواج قد تتضمن مبالغ أو حصصاً مالية داخل السجل نفسه.',
+    'لن يُسمح بالترحيل قبل فصل هذه الحقول واختبار الكتابة والمزامنة.'
+   ].join('\\n');
+   alert(message);
+  });
+ }
  addAction('⌂ الرئيسية',()=>{if(typeof enterApp==='function')enterApp()});
  const logout=addAction('↪ الخروج',async()=>{clearAuthSession();logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
  logout.style.background='#fbe9e7';logout.style.color='#a32929';
