@@ -2191,6 +2191,39 @@ const key='sb_publishable_AZWNmDjlNPpADgPFYwH3oA_71o4ABTM';
 const status=document.getElementById('authStatus'), say=t=>status.textContent=t;
 let started=false,token=null,userId=null,revision=0,dirty=false,saving=false,blocked=false,debounce=null;
 const cloudId='emcia-main', localKey='emcia_core_mobile';
+const authSessionKey='emcia_auth_session_v2';
+let refreshTimer=null;
+function clearAuthSession(){
+ try{sessionStorage.removeItem(authSessionKey)}catch(e){}
+ if(refreshTimer){clearTimeout(refreshTimer);refreshTimer=null}
+}
+function saveAuthSession(data){
+ if(!data?.access_token||!data?.refresh_token||!data?.user?.id)return;
+ const expiresAt=Date.now()+Math.max(60,Number(data.expires_in)||3600)*1000;
+ try{sessionStorage.setItem(authSessionKey,JSON.stringify({refresh_token:data.refresh_token,user_id:data.user.id,expiresAt}))}catch(e){}
+ if(refreshTimer)clearTimeout(refreshTimer);
+ refreshTimer=setTimeout(()=>{renewAuthSession().catch(()=>{})},Math.max(10000,expiresAt-Date.now()-120000));
+}
+async function renewAuthSession(){
+ let saved;try{saved=JSON.parse(sessionStorage.getItem(authSessionKey)||'null')}catch(e){}
+ if(!saved?.refresh_token)return null;
+ try{
+  const data=await request(api+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:key,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:saved.refresh_token})});
+  if(!data?.access_token||!data?.user?.id||data.user.id!==saved.user_id)throw Error('جلسة غير صالحة');
+  token=data.access_token;saveAuthSession(data);return data;
+ }catch(error){clearAuthSession();throw error}
+}
+async function resumeAuthSession(){
+ if(location.hash.includes('type=recovery')||location.hash.includes('error='))return;
+ let saved;try{saved=JSON.parse(sessionStorage.getItem(authSessionKey)||'null')}catch(e){}
+ if(!saved?.refresh_token)return;
+ say('جار استعادة الجلسة والعودة إلى لوحة الاستقبال...');
+ try{
+  const data=await renewAuthSession();
+  if(data)await enter(data.user,data.access_token);
+ }catch(error){say('تعذرت استعادة الجلسة. يرجى تسجيل الدخول.')}
+}
+
 const cloudUrl=api+'/rest/v1/emcia_cloud_state';
 const headers=()=>({'apikey':key,'Authorization':'Bearer '+token,'Content-Type':'application/json'});
 function cloudStatus(message){let node=document.getElementById('emcia-cloud-status');if(!node){node=document.createElement('span');node.id='emcia-cloud-status';node.setAttribute('role','status');node.setAttribute('aria-live','polite');node.style.cssText='display:block;text-align:center;font:12px system-ui;color:#d1fae5;margin:4px auto 0;max-width:100%;overflow-wrap:anywhere';const header=document.querySelector('header');(header||document.body).appendChild(node);}const error=/فشل|تعارض|تعذر|⚠️/.test(message);node.style.color=error?'#fecaca':'#d1fae5';node.textContent=error?message:(/جار/.test(message)?'☁️ جار الحفظ...':'☁️ متصل بالسحابة');}
@@ -2266,7 +2299,7 @@ async function enter(user,accessToken){
  mobileToggle.addEventListener('click',()=>{accountActions.style.display='none'});
  accountMenu.append(accountToggle,accountActions);controls.appendChild(accountMenu);
  addAction('⌂ لوحة البرنامج',()=>{if(typeof enterApp==='function')enterApp()});
- const logout=addAction('تسجيل الخروج',async()=>{logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
+ const logout=addAction('تسجيل الخروج',async()=>{clearAuthSession();logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
  logout.style.background='#fbe9e7';logout.style.color='#a32929';
  if(profile.role==='director'){
   const panel=document.createElement('section');panel.id='emcia-users-panel';panel.style.cssText='display:none;position:fixed;inset:5vh 4vw;z-index:100000;overflow:auto;background:#fff;color:#102a43;padding:18px;border:2px solid #9fb3c8;border-radius:12px;box-shadow:0 0 0 100vmax #0008;direction:rtl';
@@ -2393,7 +2426,9 @@ document.getElementById('authForm').addEventListener('submit',async e=>{
   const result=await request(api+'/auth/v1/token?grant_type=password',{method:'POST',headers:{'apikey':key,'Content-Type':'application/json'},body:JSON.stringify({email,password})});
   document.getElementById('authPassword').value='';
   await enter(result.user,result.access_token);
+  if(started)saveAuthSession(result);
  }catch(error){document.getElementById('authPassword').value='';say('تعذر تسجيل الدخول أو التحقق من الصلاحية: '+error.message);}finally{loginBtn.disabled=false;loginBtn.textContent='دخول إلى الحساب'}
 });
+resumeAuthSession();
 })();
 </script></body></html>
