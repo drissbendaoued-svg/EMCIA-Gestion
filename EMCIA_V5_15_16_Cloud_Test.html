@@ -1997,6 +1997,44 @@ function monthRange(start,end){
  let out=[];if(!start||!end)return out;let m=start.slice(0,7),guard=0;
  while(m<=end&&guard++<120){out.push(m);m=monthShift(m,1)}return out
 }
+// Read-only administrative alerts reuse the same dues/payment rules as arrears().
+function emciaAdministrativeAlerts(){
+ const month=nowMonth(),items=[];
+ db.e.filter(e=>e.active&&e.start&&e.start.slice(0,7)<=month).forEach(e=>{
+  const student=by(db.s,e.sid),group=by(db.g,e.gid);
+  if(!student||!group)return;
+  const pending=monthRange(e.start,month).map(mm=>{
+   const due=dueForEnrollmentMonth(e,mm);
+   const paid=db.p.filter(p=>p.eid===e.id&&p.allocMonth===mm).reduce((sum,p)=>sum+(+(p.netAfterRefund??p.a)||0),0);
+   return {month:mm,remaining:Math.max(0,due-paid),paid};
+  }).filter(x=>x.remaining>0);
+  if(!pending.length)return;
+  const total=pending.reduce((sum,x)=>sum+x.remaining,0);
+  items.push({student:objName(student),group:group.n||'—',total,months:pending.map(x=>x.month),partial:pending.some(x=>x.paid>0)});
+ });
+ items.sort((a,b)=>b.total-a.total);
+ const existing=document.getElementById('emcia-alerts-panel');if(existing)existing.remove();
+ const panel=document.createElement('section');panel.id='emcia-alerts-panel';
+ panel.style.cssText='position:fixed;inset:5vh 4vw;z-index:100002;overflow:auto;background:#fff;color:#102a43;padding:16px;border:2px solid #9fb3c8;border-radius:12px;box-shadow:0 0 0 100vmax #0008;direction:rtl';
+ const heading=document.createElement('h2');heading.textContent='التنبيهات الإدارية — '+month;
+ const intro=document.createElement('p');intro.textContent='متابعة للواجبات المتبقية وفق حسابات قسم المتأخرات. لا يتم إرسال رسائل تلقائية ولا تعديل أي بيانات.';
+ const count=document.createElement('p');count.textContent='تسجيلات تستدعي المتابعة: '+items.length+' | إجمالي المتبقي: '+money(items.reduce((sum,x)=>sum+x.total,0));
+ const close=document.createElement('button');close.type='button';close.textContent='إغلاق ×';close.onclick=()=>panel.remove();
+ const go=document.createElement('button');go.type='button';go.textContent='فتح متابعة المتأخرات';go.style.margin='8px';go.onclick=()=>{panel.remove();show('arrears')};
+ panel.append(close,heading,intro,count,go);
+ if(!items.length){const empty=document.createElement('p');empty.textContent='لا توجد واجبات متبقية للتسجيلات النشطة حتى هذا الشهر.';panel.appendChild(empty)}
+ else{
+  const list=document.createElement('div');
+  items.slice(0,100).forEach(x=>{
+   const line=document.createElement('div');line.style.cssText='padding:9px 0;border-bottom:1px solid #ddd';
+   line.textContent=x.student+' — '+x.group+' | '+money(x.total)+' | '+(x.partial?'يتضمن أداءً جزئياً':'غير مؤدى')+' | '+x.months.join('، ');
+   list.appendChild(line);
+  });
+  panel.appendChild(list);
+  if(items.length>100){const note=document.createElement('p');note.textContent='تظهر أول 100 حالة. افتح قسم المتأخرات لمراجعة اللائحة كاملة.';panel.appendChild(note)}
+ }
+ document.body.appendChild(panel);
+}
 function arrears(){
  let m=window.arm||nowMonth(), q=(window.arq||"").trim().toLowerCase(), rows=[];
  db.e.filter(e=>e.active&&e.start&&e.start.slice(0,7)<=m).forEach(e=>{
@@ -2334,6 +2372,12 @@ async function enter(user,accessToken){
   }
  });
  accountMenu.append(accountToggle,accountActions);controls.appendChild(accountMenu);
+ if(profile.role==='director'){
+  const alertsButton=document.createElement('button');alertsButton.type='button';alertsButton.textContent='♧ التنبيهات';
+  alertsButton.style.cssText='width:auto;min-height:34px;padding:6px 10px;border-radius:8px;font:inherit;font-size:13px';
+  alertsButton.onclick=()=>{accountActions.style.display='none';if(typeof emciaAdministrativeAlerts==='function')emciaAdministrativeAlerts()};
+  controls.appendChild(alertsButton);
+ }
  addAction('⌂ الرئيسية',()=>{if(typeof enterApp==='function')enterApp()});
  const logout=addAction('↪ الخروج',async()=>{clearAuthSession();logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
  logout.style.background='#fbe9e7';logout.style.color='#a32929';
