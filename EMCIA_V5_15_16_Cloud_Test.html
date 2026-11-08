@@ -334,7 +334,7 @@ body.reception-mode #langMenu{display:block}
 #waiting .wait-counts{grid-template-columns:repeat(3,minmax(120px,1fr))}
 @media(max-width:600px){#waiting .wait-counts{grid-template-columns:repeat(3,1fr)}}
 </style>
-<style>body:not(.emcia-authorized) > header,body:not(.emcia-authorized) > #langMenu,body:not(.emcia-authorized) > #mobileNavToggle,body:not(.emcia-authorized) > #appWorkspace{display:none!important}#authGate{font-family:system-ui,Arial,sans-serif;min-height:100vh;display:grid;place-items:center;background:#f2f5fa;color:#19344e;direction:rtl}#authGate .panel{background:white;padding:28px;border-radius:18px;max-width:430px;width:calc(100% - 48px);box-shadow:0 8px 28px #0001}#authGate input{width:100%;box-sizing:border-box;padding:13px;margin:8px 0 14px;border:1px solid #bac5d0;border-radius:9px;direction:ltr}#authGate button{padding:13px;border:0;background:#175d8d;color:white;border-radius:9px;width:100%;font:inherit}#authStatus{min-height:24px;overflow-wrap:anywhere}body.emcia-authorized #authGate{display:none}
+<style>body:not(.emcia-authorized) > header,body:not(.emcia-authorized) > #langMenu,body:not(.emcia-authorized) > #mobileNavToggle,body:not(.emcia-authorized) > #appWorkspace{display:none!important}#authGate{font-family:system-ui,Arial,sans-serif;min-height:100vh;display:grid;place-items:center;background:#f2f5fa;color:#19344e;direction:rtl}#authGate .panel{background:white;padding:28px;border-radius:18px;max-width:430px;width:calc(100% - 48px);box-shadow:0 8px 28px #0001}#authGate input{width:100%;box-sizing:border-box;padding:13px;margin:8px 0 14px;border:1px solid #bac5d0;border-radius:9px;direction:ltr}#authGate button{padding:13px;border:0;background:#175d8d;color:white;border-radius:9px;width:100%;font:inherit}#authStatus{min-height:24px;overflow-wrap:anywhere}body.emcia-authorized #authGate{display:none}body.emcia-session-resuming #authGate{visibility:hidden}body.emcia-session-resuming{background:#f4f7fb}
 /* EMCIA V19 — aligned controls and workspace branding */
 header{position:relative;text-align:center;padding:14px 12px;z-index:20}
 header>b{display:block;text-align:center;font-size:clamp(20px,5vw,28px)}
@@ -2200,7 +2200,11 @@ function clearAuthSession(){
 function saveAuthSession(data){
  if(!data?.access_token||!data?.refresh_token||!data?.user?.id)return;
  const expiresAt=Date.now()+Math.max(60,Number(data.expires_in)||3600)*1000;
- try{sessionStorage.setItem(authSessionKey,JSON.stringify({refresh_token:data.refresh_token,user_id:data.user.id,expiresAt}))}catch(e){}
+ try{sessionStorage.setItem(authSessionKey,JSON.stringify({access_token:data.access_token,refresh_token:data.refresh_token,user:data.user,user_id:data.user.id,expiresAt}))}catch(e){}
+ if(refreshTimer)clearTimeout(refreshTimer);
+ refreshTimer=setTimeout(()=>{renewAuthSession().catch(()=>{})},Math.max(10000,expiresAt-Date.now()-120000));
+}
+function scheduleExistingAuthRefresh(expiresAt){
  if(refreshTimer)clearTimeout(refreshTimer);
  refreshTimer=setTimeout(()=>{renewAuthSession().catch(()=>{})},Math.max(10000,expiresAt-Date.now()-120000));
 }
@@ -2217,11 +2221,18 @@ async function resumeAuthSession(){
  if(location.hash.includes('type=recovery')||location.hash.includes('error='))return;
  let saved;try{saved=JSON.parse(sessionStorage.getItem(authSessionKey)||'null')}catch(e){}
  if(!saved?.refresh_token)return;
- say('جار استعادة الجلسة والعودة إلى لوحة الاستقبال...');
+ document.body.classList.add('emcia-session-resuming');
  try{
-  const data=await renewAuthSession();
-  if(data)await enter(data.user,data.access_token);
+  // A valid access token preserves the existing Supabase session without re-authentication.
+  if(saved.access_token&&saved.user?.id&&saved.expiresAt>Date.now()+120000){
+   scheduleExistingAuthRefresh(saved.expiresAt);
+   await enter(saved.user,saved.access_token);
+  }else{
+   const data=await renewAuthSession();
+   if(data)await enter(data.user,data.access_token);
+  }
  }catch(error){say('تعذرت استعادة الجلسة. يرجى تسجيل الدخول.')}
+ finally{document.body.classList.remove('emcia-session-resuming')}
 }
 
 const cloudUrl=api+'/rest/v1/emcia_cloud_state';
