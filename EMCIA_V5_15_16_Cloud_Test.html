@@ -579,12 +579,17 @@ const NAV_GROUPS=[
  ["filescat","الملفات والمتابعة",[["studentfile","ملف المتعلم"],["teacherfile","ملف الأستاذ"]]],
  ["reportcat","التقارير والأرشفة",[["reportcenter","التقارير"],["backup","النسخ الاحتياطي"]]]
 ];
+function emciaRole(){return window.EMCIA_CURRENT_ROLE||"secretary_morning"}
+function emciaIsSecretary(){return emciaRole()==="secretary_morning"||emciaRole()==="secretary_evening"}
+function emciaCanViewManagement(){return emciaRole()==="director"||emciaRole()==="accountant"}
+function emciaCanOpenPage(id){return !emciaIsSecretary()||!["budget","analysis"].includes(id)}
 let navCategory=window.navCategory||"";
 function nav(){
  let active=document.querySelector(".page.active")?.id;
  if(active==="home"){document.body.classList.add("reception-mode");$("#nav").innerHTML="";return}
  document.body.classList.remove("reception-mode");
- let g=NAV_GROUPS.find(x=>x[0]===navCategory);
+ let raw=NAV_GROUPS.find(x=>x[0]===navCategory);
+ let g=raw?[raw[0],raw[1],raw[2].filter(i=>emciaCanOpenPage(i[0]))]:null;
  let main=`<div class="main-nav">${NAV_GROUPS.map(x=>`<button class="${g&&x[0]===g[0]?"active-cat":""}" onclick="selectNavCategory('${x[0]}')">${x[1]}</button>`).join("")}</div>`;
  let sub=g?`<div class="subnav-wrap"><div class="subnav-title">${g[1]}</div><div class="subnav">${g[2].map(i=>`<button class="${active===i[0]?"active-sub":""}" onclick="show('${i[0]}')">${i[1]}</button>`).join("")}</div></div>`:`<div class="subnav-wrap"></div>`;
  $("#nav").innerHTML=main+sub;
@@ -593,7 +598,7 @@ function selectNavCategory(id){
  navCategory=id;window.navCategory=id;
  let g=NAV_GROUPS.find(x=>x[0]===id);
  document.body.classList.remove("mobile-menu-open");
- if(g&&g[2]&&g[2].length){show(g[2][0][0])}else nav()
+ if(g&&g[2]&&g[2].length){let first=g[2].find(i=>emciaCanOpenPage(i[0]));if(first)show(first[0]);else nav()}else nav()
 }
 function toggleMobileNav(){
  if(window.matchMedia("(max-width:650px)").matches){
@@ -620,6 +625,7 @@ function enterApp(){
 }
 
 function show(id){
+ if(!emciaCanOpenPage(id)){alert("هذه الصفحة مخصصة للمدير والمحاسب.");return}
  if(id==="home"){enterApp();return}
  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
  $("#"+id).classList.add("active");render(id);nav();
@@ -1772,6 +1778,7 @@ function rcBuildReport(){
  let ok=true;
  let type=$("#rcType").value,m=$("#rcMonth").value||nowMonth(),teacherEl=$("#rcTeacher"),tid=teacherEl?teacherEl.value:"";
  if(type==="executive"){
+  if(!emciaCanViewManagement()){rcClearPreview("هذا التقرير متاح للمدير والمحاسب فقط.");return false}
   const ens=activeEnrollmentsForMonth(m),due=ens.reduce((z,e)=>z+dueForEnrollmentMonth(e,m),0);
   const allocated=db.p.filter(p=>p.allocMonth===m),paid=allocated.reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);
   const remaining=Math.max(0,due-paid),rate=due?paid/due*100:0;
@@ -1836,7 +1843,7 @@ function rcBuildReport(){
 }
 function reportcenter(){
  let teachers=db.t.filter(x=>x.active!==false);
- $("#reportcenter").innerHTML=`<div class="card"><p class="muted">اختر نوع التقرير من القائمة. يُقترح الشهر الحالي تلقائياً ويمكن تغييره، ثم تظهر المعاينة قبل الطباعة أو التصدير.</p><div class="row"><div><label>نوع التقرير</label><select id="rcType" onchange="rcToggleFields()"><option value="">— اختر من القائمة —</option><option value="executive">التقرير الإداري والمالي الموحد للمدير</option><option value="monthly">التقرير الشهري الشامل للمؤسسة</option><option value="teacher">كشف الأستاذ</option><option value="attendance">تقرير الحضور والغياب</option><option value="arrears">تقرير المتأخرات</option><option value="financial">التقرير المالي</option></select></div><div><label>الشهر</label><input id="rcMonth" type="month" value="${nowMonth()}" onchange="rcRefreshPreview()"></div></div><div id="rcTeacherBox" style="display:none"><label>الأستاذ</label><select id="rcTeacher" onchange="rcRefreshPreview()"><option value="">— اختر الأستاذ —</option>${teachers.map(x=>`<option value="${x.id}">${esc(objName(x))}</option>`).join("")}</select></div><div class="report-action-row" style="margin-top:12px">
+ $("#reportcenter").innerHTML=`<div class="card"><p class="muted">اختر نوع التقرير من القائمة. يُقترح الشهر الحالي تلقائياً ويمكن تغييره، ثم تظهر المعاينة قبل الطباعة أو التصدير.</p><div class="row"><div><label>نوع التقرير</label><select id="rcType" onchange="rcToggleFields()"><option value="">— اختر من القائمة —</option>${emciaCanViewManagement()?`<option value="executive">التقرير الإداري والمالي الموحد للمدير</option>`:""}<option value="monthly">التقرير الشهري الشامل للمؤسسة</option><option value="teacher">كشف الأستاذ</option><option value="attendance">تقرير الحضور والغياب</option><option value="arrears">تقرير المتأخرات</option><option value="financial">التقرير المالي</option></select></div><div><label>الشهر</label><input id="rcMonth" type="month" value="${nowMonth()}" onchange="rcRefreshPreview()"></div></div><div id="rcTeacherBox" style="display:none"><label>الأستاذ</label><select id="rcTeacher" onchange="rcRefreshPreview()"><option value="">— اختر الأستاذ —</option>${teachers.map(x=>`<option value="${x.id}">${esc(objName(x))}</option>`).join("")}</select></div><div class="report-action-row" style="margin-top:12px">
 <button type="button" onclick="rcDirectPrint()">🖨️ طباعة</button>
 <button type="button" onclick="rcExportPDF()">📄 PDF</button>
 <button type="button" onclick="rcExportExcel()">📊 Excel</button>
@@ -2442,7 +2449,7 @@ async function enter(user,accessToken){
  const profile=profiles[0];
  if(!profile?.active||!['director','secretary_morning','secretary_evening','accountant'].includes(profile.role)){say('الحساب غير مفعل أو ليست له صلاحية الدخول.');return;}
  if(started)return;
- started=true;token=accessToken;userId=user.id;
+ started=true;token=accessToken;userId=user.id;window.EMCIA_CURRENT_ROLE=profile.role;
  try{
   const cloud=await cloudFetch();
   revision=cloud.revision;
