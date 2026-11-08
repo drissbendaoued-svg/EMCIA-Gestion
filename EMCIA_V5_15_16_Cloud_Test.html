@@ -620,7 +620,8 @@ function enterApp(){
 }
 
 function show(id){
- if(id==="home"){enterApp();return}
+ if(id==="home"){try{sessionStorage.removeItem("emcia_active_page_v1")}catch(e){}enterApp();return}
+ try{sessionStorage.setItem("emcia_active_page_v1",id)}catch(e){}
  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
  $("#"+id).classList.add("active");render(id);nav();
  if(id!=="home")autoCollapseMobileNav()
@@ -2286,7 +2287,15 @@ async function enter(user,accessToken){
  }catch(e){started=false;say('تعذر تحميل البيانات السحابية، ولن يفتح التطبيق منعًا لفقدان التغييرات: '+e.message);return;}
  const source=document.getElementById('emcia-app-source');
  if(!source)throw Error('تعذر العثور على كود التطبيق.');
- try{const script=document.createElement('script');script.textContent=source.textContent;document.body.appendChild(script);document.body.classList.add('emcia-authorized');if(typeof enterApp==='function')enterApp();}catch(error){started=false;say('تعذر فتح واجهة التطبيق: '+error.message);return;}
+ try{const script=document.createElement('script');script.textContent=source.textContent;document.body.appendChild(script);document.body.classList.add('emcia-authorized');if(typeof enterApp==='function'){
+  const remembered=(()=>{try{return sessionStorage.getItem('emcia_active_page_v1')||''}catch(e){return ''}})();
+  const target=remembered&&document.getElementById(remembered)?.classList.contains('page')&&remembered!=='home'&&remembered!=='workspace'?remembered:'';
+  if(target&&typeof show==='function'){
+   const navGroup=typeof NAV_GROUPS!=='undefined'?NAV_GROUPS.find(g=>g[2]?.some(item=>item[0]===target)):null;
+   if(navGroup){navCategory=navGroup[0];window.navCategory=navCategory}
+   show(target);
+  }else enterApp();
+ }}catch(error){started=false;say('تعذر فتح واجهة التطبيق: '+error.message);return;}
  const header=document.querySelector('header');
  const controls=document.createElement('div');controls.id='emcia-top-controls';header.after(controls);
  const mobileToggle=document.getElementById('mobileNavToggle');controls.appendChild(mobileToggle);
