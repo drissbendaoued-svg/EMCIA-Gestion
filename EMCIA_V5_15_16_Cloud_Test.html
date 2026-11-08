@@ -314,7 +314,7 @@ header>b{display:block;text-align:center;font-size:clamp(20px,5vw,28px)}
 .emcia-dashboard-brand .welcome-season{font-weight:650;margin-top:12px}
 @media(min-width:651px){#emcia-top-controls{justify-content:flex-end}#emcia-top-controls #mobileNavToggle{display:none!important}#emcia-top-controls #emcia-account-menu{flex:0 1 330px}}
 
-/* EMCIA V20: all page chrome scrolls naturally */
+.emcia-dashboard-brand .emcia-official-logo{display:block;width:min(100%,620px);height:auto;max-height:300px;object-fit:contain;margin:0 auto 12px;border:0;border-radius:0}.emcia-dashboard-brand .welcome-name{margin-top:8px}\n/* EMCIA V20: all page chrome scrolls naturally */
 header,nav,#nav,.main-nav,.subnav-wrap,.subnav,#emcia-top-controls{position:static!important;top:auto!important;bottom:auto!important}
 #emcia-top-controls{z-index:auto}
 #emcia-cloud-status{position:static!important;box-shadow:none!important;background:transparent!important;border:0!important;padding:0!important}
@@ -551,7 +551,7 @@ function enterApp(){
  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
  $("#workspace").classList.add("active");
  let y=new Date().getFullYear(),m=new Date().getMonth()+1,season=m>=9?`${y}/${y+1}`:`${y-1}/${y}`;
- $("#workspace").innerHTML=`<div class="card emcia-dashboard-brand"><div class="welcome-logo">EMCIA</div><div class="welcome-name">أمسية للثقافة والتربية والتكوين</div><div class="welcome-season">الموسم الدراسي ${season}</div></div>`;
+ $("#workspace").innerHTML=`<div class="card emcia-dashboard-brand"><img class="emcia-official-logo" src="./EMCIA_Official_Logo-1.jpg" alt="الشعار الرسمي لمؤسسة EMCIA" loading="eager"><div class="welcome-name">أمسية للثقافة والتربية والتكوين</div><div class="welcome-season">الموسم الدراسي ${season}</div></div>`;
  nav();
  applyLang();
 }
