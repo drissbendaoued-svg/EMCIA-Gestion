@@ -2404,6 +2404,8 @@ async function enter(user,accessToken){
    try{await call({action:'invite',name:panel.querySelector('#emcia-user-name').value,email:panel.querySelector('#emcia-user-email').value,role:panel.querySelector('#emcia-user-role').value});msg.textContent='تم إرسال الدعوة وإنشاء ملف الموظف';ev.target.reset();await refreshUsers()}catch(e){msg.textContent='تعذر إرسال الدعوة: '+e.message}finally{submit.disabled=false;submit.textContent='إرسال الدعوة'}
   };
  }
+ // Always place logout after all role-specific account actions.
+ accountActions.appendChild(logout);
 }
 const forgot=document.getElementById('emcia-forgot');
 const recovery=document.getElementById('emcia-recovery');
