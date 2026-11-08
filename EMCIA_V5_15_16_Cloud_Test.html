@@ -2010,7 +2010,7 @@ function emciaAdministrativeAlerts(){
   }).filter(x=>x.remaining>0);
   if(!pending.length)return;
   const total=pending.reduce((sum,x)=>sum+x.remaining,0);
-  items.push({student:objName(student),group:group.n||'—',total,months:pending.map(x=>x.month),partial:pending.some(x=>x.paid>0)});
+  items.push({student:objName(student),group:group.n||'—',total,months:pending.map(x=>x.month),partial:pending.some(x=>x.paid>0),studentId:e.sid});
  });
  items.sort((a,b)=>b.total-a.total);
  const existing=document.getElementById('emcia-alerts-panel');if(existing)existing.remove();
@@ -2027,8 +2027,10 @@ function emciaAdministrativeAlerts(){
   const list=document.createElement('div');
   items.slice(0,100).forEach(x=>{
    const line=document.createElement('div');line.style.cssText='padding:9px 0;border-bottom:1px solid #ddd';
-   line.textContent=x.student+' — '+x.group+' | '+money(x.total)+' | '+(x.partial?'يتضمن أداءً جزئياً':'غير مؤدى')+' | '+x.months.join('، ');
-   list.appendChild(line);
+   const description=document.createElement('span');description.textContent=x.student+' — '+x.group+' | '+money(x.total)+' | '+(x.partial?'يتضمن أداءً جزئياً':'غير مؤدى')+' | '+x.months.join('، ');
+   const detail=document.createElement('button');detail.type='button';detail.textContent='متابعة';detail.style.cssText='width:auto;min-height:32px;margin:4px 8px;padding:5px 10px;font:inherit;font-size:12px';
+   detail.onclick=()=>{panel.remove();window.arm=nowMonth();window.arq=x.student;show('arrears')};
+   line.append(description,detail);list.appendChild(line);
   });
   panel.appendChild(list);
   if(items.length>100){const note=document.createElement('p');note.textContent='تظهر أول 100 حالة. افتح قسم المتأخرات لمراجعة اللائحة كاملة.';panel.appendChild(note)}
