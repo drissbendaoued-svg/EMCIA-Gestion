@@ -2237,7 +2237,23 @@ async function resumeAuthSession(){
 
 const cloudUrl=api+'/rest/v1/emcia_cloud_state';
 const headers=()=>({'apikey':key,'Authorization':'Bearer '+token,'Content-Type':'application/json'});
-function cloudStatus(message){let node=document.getElementById('emcia-cloud-status');if(!node){node=document.createElement('span');node.id='emcia-cloud-status';node.setAttribute('role','status');node.setAttribute('aria-live','polite');node.style.cssText='display:block;text-align:center;font:12px system-ui;color:#d1fae5;margin:4px auto 0;max-width:100%;overflow-wrap:anywhere';const header=document.querySelector('header');(header||document.body).appendChild(node);}const error=/فشل|تعارض|تعذر|⚠️/.test(message);node.style.color=error?'#fecaca':'#d1fae5';node.textContent=error?message:(/جار/.test(message)?'☁️ جار الحفظ...':'☁️ متصل بالسحابة');}
+function cloudStatus(message){
+ let node=document.getElementById('emcia-cloud-status');
+ if(!node){
+  node=document.createElement('span');node.id='emcia-cloud-status';
+  node.setAttribute('role','status');node.setAttribute('aria-live','polite');
+  node.style.cssText='display:block;text-align:center;font:12px system-ui;margin:4px auto 0;max-width:100%;overflow-wrap:anywhere';
+  const header=document.querySelector('header');(header||document.body).appendChild(node);
+ }
+ const error=/فشل|تعارض|تعذر|⚠️/.test(message);
+ node.style.color=error?'#fecaca':(/جار/.test(message)?'#fef08a':'#d1fae5');
+ node.textContent=message;
+}
+window.addEventListener('beforeunload',event=>{
+ if(!started||(!dirty&&!saving&&!blocked))return;
+ event.preventDefault();
+ event.returnValue='';
+});
 async function cloudFetch(){
  const rows=await request(cloudUrl+'?id=eq.'+cloudId+'&select=id,payload,revision',{headers:headers()});
  if(rows.length)return rows[0];
@@ -2253,13 +2269,13 @@ async function flushCloud(){
  const payload=JSON.parse(localStorage.getItem(localKey)||'{}');
  try{
   const rows=await request(cloudUrl+'?id=eq.'+cloudId+'&revision=eq.'+revision,{method:'PATCH',headers:{...headers(),'Prefer':'return=representation'},body:JSON.stringify({payload,revision:revision+1,updated_by:userId,updated_at:new Date().toISOString()})});
-  if(!rows.length){blocked=true;cloudStatus('تعارض في التعديل: لم تُحفظ التغييرات. أعد تحميل التطبيق بعد حفظ نسخة احتياطية.');return;}
-  revision=rows[0].revision;cloudStatus('☁️ تم حفظ البيانات في Supabase');
- }catch(e){blocked=true;cloudStatus('⚠️ فشل الحفظ السحابي: '+e.message);}
+  if(!rows.length){blocked=true;dirty=true;cloudStatus('⚠️ تعارض في التعديل: لم تُحفظ التغييرات سحابياً. صدّر نسخة احتياطية أولاً، ثم راجع النسخة السحابية قبل إعادة التحميل.');return;}
+  revision=rows[0].revision;cloudStatus('☁️ تم تأكيد الحفظ السحابي — '+new Date().toLocaleTimeString('ar-MA'));
+ }catch(e){blocked=true;dirty=true;cloudStatus('⚠️ فشل الحفظ السحابي؛ التغييرات محلية فقط. صدّر نسخة احتياطية قبل المغادرة. السبب: '+e.message);}
  finally{saving=false;if(dirty&&!blocked)flushCloud();}
 }
 window.EMCIA_CLOUD_SYNC={
- save(){if(blocked)return;dirty=true;cloudStatus('☁️ جار حفظ التغييرات...');clearTimeout(debounce);debounce=setTimeout(flushCloud,550);},
+ save(){if(blocked){dirty=true;cloudStatus('⚠️ الحفظ السحابي متوقف. التغييرات موجودة محلياً فقط؛ لا تغادر الصفحة قبل تصدير نسخة احتياطية ومراجعة التعارض.');return;}dirty=true;cloudStatus('☁️ تغييرات بانتظار الحفظ السحابي...');clearTimeout(debounce);debounce=setTimeout(flushCloud,550);},
  async restore(payload){
   if(!token||blocked)throw Error('الجلسة غير متصلة أو الحفظ متوقف.');
   clearTimeout(debounce);
