@@ -2374,12 +2374,10 @@ async function enter(user,accessToken){
   }
  });
  accountMenu.append(accountToggle,accountActions);controls.appendChild(accountMenu);
- if(profile.role==='director'){
-  const alertsButton=document.createElement('button');alertsButton.type='button';alertsButton.textContent='♧ التنبيهات';
-  alertsButton.style.cssText='width:auto;min-height:34px;padding:6px 10px;border-radius:8px;font:inherit;font-size:13px';
-  alertsButton.onclick=()=>{accountActions.style.display='none';if(typeof emciaAdministrativeAlerts==='function')emciaAdministrativeAlerts()};
-  controls.appendChild(alertsButton);
- }
+ const alertsButton=document.createElement('button');alertsButton.type='button';alertsButton.textContent='♧ التنبيهات';
+ alertsButton.style.cssText='width:auto;min-height:34px;padding:6px 10px;border-radius:8px;font:inherit;font-size:13px';
+ alertsButton.onclick=()=>{accountActions.style.display='none';if(typeof emciaAdministrativeAlerts==='function')emciaAdministrativeAlerts()};
+ controls.appendChild(alertsButton);
  addAction('⌂ الرئيسية',()=>{if(typeof enterApp==='function')enterApp()});
  const logout=addAction('↪ الخروج',async()=>{clearAuthSession();logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
  logout.style.background='#fbe9e7';logout.style.color='#a32929';
