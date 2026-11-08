@@ -314,7 +314,19 @@ header>b{display:block;text-align:center;font-size:clamp(20px,5vw,28px)}
 .emcia-dashboard-brand .welcome-season{font-weight:650;margin-top:12px}
 @media(min-width:651px){#emcia-top-controls{justify-content:flex-end}#emcia-top-controls #mobileNavToggle{display:none!important}#emcia-top-controls #emcia-account-menu{flex:0 1 330px}}
 
-.emcia-dashboard-brand .emcia-official-logo{display:block;width:min(100%,620px);height:auto;max-height:300px;object-fit:contain;margin:0 auto 12px;border:0;border-radius:0}.emcia-dashboard-brand .welcome-name{margin-top:8px}\n/* EMCIA V20: all page chrome scrolls naturally */
+.emcia-dashboard-brand .emcia-official-logo{display:block;width:min(100%,620px);height:auto;max-height:300px;object-fit:contain;margin:0 auto 12px;border:0;border-radius:0}.emcia-dashboard-brand .welcome-name{margin-top:8px}\n/* EMCIA V24: compact navigation control and dropdown */
+@media(max-width:650px){
+ #emcia-top-controls{align-items:center;gap:8px;padding:8px 12px}
+ #emcia-top-controls #mobileNavToggle{flex:0 0 auto!important;width:auto!important;min-width:92px!important;max-width:125px!important;min-height:40px!important;padding:8px 12px!important;font-size:15px!important;line-height:1.3!important;border-radius:9px!important}
+ #emcia-top-controls #emcia-account-menu{flex:1 1 auto!important;min-width:0}
+ #nav{padding:6px!important;gap:6px!important}
+ #nav .main-nav{width:135px!important;flex:0 0 135px!important;gap:5px!important}
+ #nav .main-nav button{font-size:14px!important;min-height:36px!important;padding:7px 8px!important;line-height:1.3!important}
+ #nav .subnav-wrap{padding:5px!important}
+ #nav .subnav-title{font-size:15px!important}
+ #nav .subnav button{font-size:13px!important;padding:6px!important;flex-basis:100px!important}
+}
+/* EMCIA V20: all page chrome scrolls naturally */
 header,nav,#nav,.main-nav,.subnav-wrap,.subnav,#emcia-top-controls{position:static!important;top:auto!important;bottom:auto!important}
 #emcia-top-controls{z-index:auto}
 #emcia-cloud-status{position:static!important;box-shadow:none!important;background:transparent!important;border:0!important;padding:0!important}
