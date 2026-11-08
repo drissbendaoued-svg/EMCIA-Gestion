@@ -2304,17 +2304,17 @@ async function enter(user,accessToken){
  const mobileToggle=document.getElementById('mobileNavToggle');controls.appendChild(mobileToggle);
  const accountMenu=document.createElement('div');accountMenu.id='emcia-account-menu';accountMenu.style.cssText='position:relative;display:block;min-width:0;flex:1 1 50%';
  const accountToggle=document.createElement('button');accountToggle.type='button';accountToggle.textContent=profile.role==='director'?'☰ إدارة التطبيق':'☰ '+({secretary_morning:'السكرتارية الصباحية',secretary_evening:'السكرتارية المسائية',accountant:'المحاسبة'}[profile.role]||'حساب المستخدم');accountToggle.style.cssText='background:#fff;color:#102a43;border:1px solid #d9e2ec;border-radius:8px;padding:9px 8px;font:inherit;width:100%;min-height:44px;white-space:normal;overflow-wrap:anywhere';
- const accountActions=document.createElement('div');accountActions.style.cssText='display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:10000;background:#fff;color:#102a43;width:max-content;min-width:0;max-width:min(80vw,245px);border:1px solid #d9e2ec;border-radius:9px;padding:5px;box-shadow:0 8px 24px #0003;direction:rtl';
- const addAction=(label,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.style.cssText='display:block;width:100%;min-height:36px;padding:7px 10px;margin:2px 0;text-align:right;background:#eef3f8;color:#102a43;border:0;border-radius:7px;font:inherit;font-size:14px;line-height:1.4;white-space:nowrap';b.onclick=()=>{accountActions.style.display='none';fn()};accountActions.appendChild(b);return b};
- accountToggle.onclick=()=>{document.body.classList.remove('mobile-menu-open');accountActions.style.display=accountActions.style.display==='none'?'block':'none'};
+ const accountActions=document.createElement('div');accountActions.style.cssText='display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:10000;background:#fff;color:#102a43;width:210px;max-width:80vw;border:1px solid #d9e2ec;border-radius:9px;padding:8px;box-shadow:0 8px 24px #0003;direction:rtl;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px';
+ const addAction=(label,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.style.cssText='display:flex;align-items:center;justify-content:center;gap:5px;width:100%;min-height:48px;padding:7px 4px;margin:0;text-align:center;background:#eef3f8;color:#102a43;border:0;border-radius:8px;font:inherit;font-size:13px;line-height:1.3;white-space:normal';b.onclick=()=>{accountActions.style.display='none';fn()};accountActions.appendChild(b);return b};
+ accountToggle.onclick=()=>{document.body.classList.remove('mobile-menu-open');accountActions.style.display=accountActions.style.display==='none'?'grid':'none'};
  mobileToggle.addEventListener('click',()=>{accountActions.style.display='none'});
  accountMenu.append(accountToggle,accountActions);controls.appendChild(accountMenu);
- addAction('⌂ لوحة البرنامج',()=>{if(typeof enterApp==='function')enterApp()});
- const logout=addAction('تسجيل الخروج',async()=>{clearAuthSession();logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
+ addAction('⌂ الرئيسية',()=>{if(typeof enterApp==='function')enterApp()});
+ const logout=addAction('↪ الخروج',async()=>{clearAuthSession();logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
  logout.style.background='#fbe9e7';logout.style.color='#a32929';
  if(profile.role==='director'){
   const panel=document.createElement('section');panel.id='emcia-users-panel';panel.style.cssText='display:none;position:fixed;inset:5vh 4vw;z-index:100000;overflow:auto;background:#fff;color:#102a43;padding:18px;border:2px solid #9fb3c8;border-radius:12px;box-shadow:0 0 0 100vmax #0008;direction:rtl';
-  panel.innerHTML='<button type="button" id="emcia-users-close">إغلاق ×</button><h2>إدارة حسابات EMCIA</h2><p>إرسال دعوة بالبريد الإلكتروني لإنشاء حساب موظف جديد. يحدد الموظف كلمة مروره عبر رسالة الدعوة.</p><form id="emcia-invite-form"><input id="emcia-user-name" required placeholder="اسم الموظف" style="width:100%;margin:5px 0"><input id="emcia-user-email" type="email" required placeholder="البريد الإلكتروني" style="width:100%;margin:5px 0"><select id="emcia-user-role"><option value="secretary_morning">السكرتارية الصباحية</option><option value="secretary_evening">السكرتارية المسائية</option><option value="accountant">المحاسب</option></select><button type="submit">إرسال الدعوة</button></form><p id="emcia-users-msg"></p><div id="emcia-users-list"></div>';
+  panel.innerHTML='<button type="button" id="emcia-users-close">✕ إغلاق</button><h2>إدارة حسابات EMCIA</h2><p>إرسال دعوة بالبريد الإلكتروني لإنشاء حساب موظف جديد. يحدد الموظف كلمة مروره عبر رسالة الدعوة.</p><form id="emcia-invite-form"><input id="emcia-user-name" required placeholder="اسم الموظف" style="width:100%;margin:5px 0"><input id="emcia-user-email" type="email" required placeholder="البريد الإلكتروني" style="width:100%;margin:5px 0"><select id="emcia-user-role"><option value="secretary_morning">السكرتارية الصباحية</option><option value="secretary_evening">السكرتارية المسائية</option><option value="accountant">المحاسب</option></select><button type="submit">إرسال الدعوة</button></form><p id="emcia-users-msg"></p><div id="emcia-users-list"></div>';
   document.body.appendChild(panel);
   
   const msg=panel.querySelector('#emcia-users-msg'),list=panel.querySelector('#emcia-users-list');
@@ -2325,7 +2325,7 @@ async function enter(user,accessToken){
    try{
     const data=await call({action:'list'});list.replaceChildren();
     for(const u of data.users){
-     const line=document.createElement('div');line.style.cssText='border-top:1px solid #ddd;padding:10px 0';
+     const line=document.createElement('div');line.style.cssText='border:1px solid #d9e2ec;border-radius:10px;padding:12px;margin:10px 0;background:#fff';
      const title=document.createElement('strong');title.textContent=(u.display_name||'بدون اسم')+' — '+(roleLabel[u.role]||u.role);line.appendChild(title);const emailLine=document.createElement('div');emailLine.style.cssText='direction:ltr;text-align:right;overflow-wrap:anywhere;font-size:13px;color:#52657a;margin:5px 0';emailLine.textContent=u.email||'البريد غير متوفر';line.appendChild(emailLine);
      if(u.role!=='director'){
       const sel=document.createElement('select');for(const r of ['secretary_morning','secretary_evening','accountant']){const op=document.createElement('option');op.value=r;op.textContent=roleLabel[r];sel.appendChild(op)}sel.value=u.role;
@@ -2355,7 +2355,18 @@ async function enter(user,accessToken){
        try{await call({action:'delete',user_id:u.user_id});msg.textContent='تم حذف حساب '+(u.email||u.display_name)+' بنجاح';await refreshUsers()}
        catch(e){msg.textContent='تعذر حذف الحساب: '+e.message;del.disabled=false;del.textContent='حذف الحساب'}
       };
-      line.append(' ',sel,' ',label,' ',save,' ',reset,resetBox,' ',del);
+      const edit=document.createElement('button');edit.type='button';edit.textContent='✎ تعديل';edit.style.cssText='width:auto;min-width:92px;padding:8px 14px;margin-top:8px;background:#eef3f8;color:#102a43;border:1px solid #ccd7e2;border-radius:8px;font:inherit;font-size:13px';
+      const editBox=document.createElement('div');editBox.style.cssText='display:none;margin-top:10px;padding:10px;background:#f5f7fa;border-radius:9px';
+      const row=document.createElement('div');row.style.cssText='display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-items:center';
+      const compact=(button,label)=>{button.textContent=label;button.style.cssText='width:100%;min-width:0;min-height:40px;padding:8px 4px;margin:0;border-radius:8px;font:inherit;font-size:13px;white-space:normal'};
+      compact(save,'💾 حفظ');compact(reset,'🔑 المرور');compact(del,'🗑 حذف');
+      sel.style.cssText='width:100%;min-width:0;max-width:100%;padding:8px;border:1px solid #ccd7e2;border-radius:8px';
+      const roleLabelNode=document.createElement('div');roleLabelNode.textContent='الدور الوظيفي';roleLabelNode.style.cssText='font-size:12px;color:#52657a;margin:3px 0';
+      const roleBox=document.createElement('div');roleBox.append(roleLabelNode,sel);
+      row.append(save,reset,del);
+      editBox.append(roleBox,label,row,resetBox);
+      edit.onclick=()=>{editBox.style.display=editBox.style.display==='none'?'block':'none'};
+      line.append(edit,editBox);
      }list.appendChild(line);
     }
    }catch(e){list.textContent='تعذر تحميل المستخدمين: '+e.message}
@@ -2379,11 +2390,15 @@ async function enter(user,accessToken){
     }
    }catch(e){auditList.textContent='تعذر تحميل السجل: '+e.message}
   }
-  addAction('📋 سجل العمليات',()=>{auditPanel.style.display='block';loadAudit()});
+  addAction('▤ السجل',()=>{auditPanel.style.display='block';loadAudit()});
   auditPanel.querySelector('#emcia-audit-close').onclick=()=>auditPanel.style.display='none';
   auditPanel.querySelector('#emcia-audit-refresh').onclick=loadAudit;
-  addAction('👥 إدارة المستخدمين',()=>{panel.style.display='block';refreshUsers()});
+  addAction('♙ المستخدمون',()=>{panel.style.display='block';refreshUsers()});
   panel.querySelector('#emcia-users-close').onclick=()=>panel.style.display='none';
+  const inviteBtn=panel.querySelector('#emcia-invite-form button[type=submit]');
+  inviteBtn.style.cssText='width:auto;min-width:120px;min-height:42px;padding:9px 16px;border-radius:8px;font:inherit;font-size:14px';
+  inviteBtn.textContent='✉ دعوة';
+  panel.querySelector('#emcia-users-close').style.cssText='width:auto;padding:8px 14px;border-radius:8px;font:inherit;font-size:13px';
   panel.querySelector('#emcia-invite-form').onsubmit=async ev=>{
    ev.preventDefault();const submit=ev.target.querySelector('button[type=submit]');if(submit.disabled)return;submit.disabled=true;submit.textContent='جار إرسال الدعوة...';msg.textContent='تم استلام الطلب، جار إرسال الدعوة. لا تضغط مرة أخرى.';
    try{await call({action:'invite',name:panel.querySelector('#emcia-user-name').value,email:panel.querySelector('#emcia-user-email').value,role:panel.querySelector('#emcia-user-role').value});msg.textContent='تم إرسال الدعوة وإنشاء ملف الموظف';ev.target.reset();await refreshUsers()}catch(e){msg.textContent='تعذر إرسال الدعوة: '+e.message}finally{submit.disabled=false;submit.textContent='إرسال الدعوة'}
