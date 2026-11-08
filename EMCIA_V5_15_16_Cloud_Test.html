@@ -1679,6 +1679,7 @@ function rcSetReport(title,body){
 function rcFileCode(){
  let type=$("#rcType")?$("#rcType").value:"";
  return {
+  executive:"Rapport_Direction",
   monthly:"Rapport_Mensuel",
   teacher:"Releve_Professeur",
   attendance:"Rapport_Presences",
@@ -1770,7 +1771,45 @@ function monthlyTeacherAttendanceHTML(m){
 function rcBuildReport(){
  let ok=true;
  let type=$("#rcType").value,m=$("#rcMonth").value||nowMonth(),teacherEl=$("#rcTeacher"),tid=teacherEl?teacherEl.value:"";
- if(type==="monthly"){
+ if(type==="executive"){
+  const ens=activeEnrollmentsForMonth(m),due=ens.reduce((z,e)=>z+dueForEnrollmentMonth(e,m),0);
+  const allocated=db.p.filter(p=>p.allocMonth===m),paid=allocated.reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);
+  const remaining=Math.max(0,due-paid),rate=due?paid/due*100:0;
+  const previous=monthShift(m,-1),prevDue=activeEnrollmentsForMonth(previous).reduce((z,e)=>z+dueForEnrollmentMonth(e,previous),0);
+  const prevPaid=db.p.filter(p=>p.allocMonth===previous).reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);
+  const prevRate=prevDue?prevPaid/prevDue*100:0;
+  const stats=dashboardStats(m);
+  const groups=new Set(ens.map(e=>e.gid).filter(id=>by(db.g,id)?.active!==false)).size;
+  const pending=ens.filter(e=>{
+   const amount=dueForEnrollmentMonth(e,m);
+   const received=allocated.filter(p=>p.eid===e.id).reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);
+   return amount>0&&received<amount-0.001;
+  }).length;
+  const history=Array.from({length:6},(_,i)=>monthShift(m,i-5)).map(mm=>{
+   const expected=activeEnrollmentsForMonth(mm).reduce((z,e)=>z+dueForEnrollmentMonth(e,mm),0);
+   const received=db.p.filter(p=>p.allocMonth===mm).reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);
+   return [esc(mm),money(expected),money(received),expected?(received/expected*100).toFixed(1)+'%':'—'];
+  });
+  const summary=rcTable(['المؤشر','القيمة'],[
+   ['المتعلمون دون تكرار',String(stats.uniqueStudents)],['التسجيلات',String(ens.length)],
+   ['الأفواج النشطة ذات التسجيلات',String(groups)],['تسجيلات بأداء ناقص أو غير مؤدى',String(pending)],
+   ['المستحقات عن الشهر',money(due)],['المحصل عن استحقاقات الشهر',money(paid)],
+   ['المتبقي عن الشهر',money(remaining)],['نسبة التحصيل',rate.toFixed(1)+'%']
+  ]);
+  const cash=rcTable(['مؤشر حركة الأموال خلال شهر القبض','القيمة'],[
+   ['المقبوض من أداءات الدراسة',money(stats.gross)],['مستحقات الأساتذة من المقبوضات',money(stats.prof)],
+   ['حصة المؤسسة من المقبوضات',money(stats.em)],['مداخيل أخرى',money(stats.other)],
+   ['المصاريف',money(stats.exp)],['الادخار',money(stats.sav)],['الرصيد المحاسبي للشهر',money(stats.avail)]
+  ]);
+  rcSetReport('التقرير الإداري والمالي الموحد للمدير — '+m,
+   '<p class="meta">تقرير شهري للمتابعة واتخاذ القرار — EMCIA</p><h3>المؤشرات الإدارية والتحصيل</h3>'+summary+
+   '<h3>مقارنة بالشهر السابق ('+esc(previous)+')</h3>'+
+   rcTable(['المؤشر','الشهر السابق','الشهر المختار'],[['المحصل حسب الاستحقاق',money(prevPaid),money(paid)],['نسبة التحصيل',prevRate.toFixed(1)+'%',rate.toFixed(1)+'%']])+
+   '<h3>تطور المستحقات والتحصيل خلال ستة أشهر</h3>'+
+   rcTable(['الشهر','المستحقات','المحصل','نسبة التحصيل'],history)+
+   '<h3>الحركة المالية حسب تاريخ القبض</h3>'+cash+
+   '<p class="muted">التحصيل والاستحقاقات أعلاه محسوبان حسب الشهر الذي تخصه الواجبات. أما الحركة المالية فحسب شهر القبض؛ لذلك قد تختلف القيم بين القسمين. التقرير للعرض ولا يغيّر السجلات.</p>');
+ } else if(type==="monthly"){
    let ps=db.p.filter(p=>(p.date||"").slice(0,7)===m),gross=ps.reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0),td=ps.reduce((z,p)=>z+teacherDueOf(p),0),em=ps.reduce((z,p)=>z+(+p.e||0),0),oi=db.oi.filter(x=>(x.date||"").slice(0,7)===m).reduce((z,x)=>z+(+x.a||0),0),ex=db.x.filter(x=>(x.date||"").slice(0,7)===m).reduce((z,x)=>z+(+x.a||0),0),sv=db.sv.filter(x=>(x.date||"").slice(0,7)===m).reduce((z,x)=>z+(+x.a||0),0);
    let active=db.e.filter(e=>e.active),uniq=new Set(active.map(e=>e.sid)).size,att=db.att.filter(a=>a.date.slice(0,7)===m);
    let rows=db.t.filter(x=>x.active!==false).map(x=>{let gs=db.g.filter(g=>g.tid===x.id),ids=new Set(gs.map(g=>g.id)),pp=ps.filter(p=>ids.has(p.gid));return[esc(objName(x)),new Set(db.e.filter(e=>e.active&&ids.has(e.gid)).map(e=>e.sid)).size,money(pp.reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0)),money(pp.reduce((z,p)=>z+teacherDueOf(p),0)),money(pp.reduce((z,p)=>z+(+p.e||0),0))]});
@@ -1797,13 +1836,13 @@ function rcBuildReport(){
 }
 function reportcenter(){
  let teachers=db.t.filter(x=>x.active!==false);
- $("#reportcenter").innerHTML=`<div class="card"><p class="muted">اختر نوع التقرير من القائمة. يُقترح الشهر الحالي تلقائياً ويمكن تغييره، ثم تظهر المعاينة قبل الطباعة أو التصدير.</p><div class="row"><div><label>نوع التقرير</label><select id="rcType" onchange="rcToggleFields()"><option value="">— اختر من القائمة —</option><option value="monthly">التقرير الشهري الشامل للمؤسسة</option><option value="teacher">كشف الأستاذ</option><option value="attendance">تقرير الحضور والغياب</option><option value="arrears">تقرير المتأخرات</option><option value="financial">التقرير المالي</option></select></div><div><label>الشهر</label><input id="rcMonth" type="month" value="${nowMonth()}" onchange="rcRefreshPreview()"></div></div><div id="rcTeacherBox" style="display:none"><label>الأستاذ</label><select id="rcTeacher" onchange="rcRefreshPreview()"><option value="">— اختر الأستاذ —</option>${teachers.map(x=>`<option value="${x.id}">${esc(objName(x))}</option>`).join("")}</select></div><div class="report-action-row" style="margin-top:12px">
+ $("#reportcenter").innerHTML=`<div class="card"><p class="muted">اختر نوع التقرير من القائمة. يُقترح الشهر الحالي تلقائياً ويمكن تغييره، ثم تظهر المعاينة قبل الطباعة أو التصدير.</p><div class="row"><div><label>نوع التقرير</label><select id="rcType" onchange="rcToggleFields()"><option value="">— اختر من القائمة —</option><option value="executive">التقرير الإداري والمالي الموحد للمدير</option><option value="monthly">التقرير الشهري الشامل للمؤسسة</option><option value="teacher">كشف الأستاذ</option><option value="attendance">تقرير الحضور والغياب</option><option value="arrears">تقرير المتأخرات</option><option value="financial">التقرير المالي</option></select></div><div><label>الشهر</label><input id="rcMonth" type="month" value="${nowMonth()}" onchange="rcRefreshPreview()"></div></div><div id="rcTeacherBox" style="display:none"><label>الأستاذ</label><select id="rcTeacher" onchange="rcRefreshPreview()"><option value="">— اختر الأستاذ —</option>${teachers.map(x=>`<option value="${x.id}">${esc(objName(x))}</option>`).join("")}</select></div><div class="report-action-row" style="margin-top:12px">
 <button type="button" onclick="rcDirectPrint()">🖨️ طباعة</button>
 <button type="button" onclick="rcExportPDF()">📄 PDF</button>
 <button type="button" onclick="rcExportExcel()">📊 Excel</button>
 </div>
 <p class="muted">اختر نوع التقرير من القائمة. يُقترح الشهر الحالي تلقائياً ويمكن تغييره، ثم تظهر المعاينة قبل الطباعة أو التصدير. يُنشأ التقرير تلقائياً وفق الاختيارات الحالية.</p></div><div id="rcPreview" class="card" style="display:none"></div>
- <div class="card"><h3>التقارير المتاحة</h3><table><tr><th>التقرير</th><th>محتواه</th></tr><tr><td>الشهري الشامل</td><td>المتعلمون، الحضور، التحصيل، مستحقات الأساتذة، حصة المؤسسة، المصاريف والرصيد</td></tr><tr><td>كشف الأستاذ</td><td>الأفواج، المتعلمون، المبلغ المؤدى، التخفيض الذي يتحمله الأستاذ، ومستحق الأستاذ</td></tr><tr><td>الحضور والغياب</td><td>ملخص شهري حسب الفوج</td></tr><tr><td>المتأخرات</td><td>المتعلمون المتأخرون مع الهاتف والمبالغ</td></tr><tr><td>المالي</td><td>التحصيل، مستحقات الأساتذة، حصة EMCIA، المصاريف، الادخار والرصيد</td></tr></table></div>`;applyLang();rcToggleFields()
+ <div class="card"><h3>التقارير المتاحة</h3><table><tr><th>التقرير</th><th>محتواه</th></tr><tr><td>الموحد للمدير</td><td>المؤشرات الإدارية، الاستحقاقات والتحصيل، المقارنة الشهرية، الاتجاه لستة أشهر والحركة المالية</td></tr><tr><td>الشهري الشامل</td><td>المتعلمون، الحضور، التحصيل، مستحقات الأساتذة، حصة المؤسسة، المصاريف والرصيد</td></tr><tr><td>كشف الأستاذ</td><td>الأفواج، المتعلمون، المبلغ المؤدى، التخفيض الذي يتحمله الأستاذ، ومستحق الأستاذ</td></tr><tr><td>الحضور والغياب</td><td>ملخص شهري حسب الفوج</td></tr><tr><td>المتأخرات</td><td>المتعلمون المتأخرون مع الهاتف والمبالغ</td></tr><tr><td>المالي</td><td>التحصيل، مستحقات الأساتذة، حصة EMCIA، المصاريف، الادخار والرصيد</td></tr></table></div>`;applyLang();rcToggleFields()
 }
 
 
