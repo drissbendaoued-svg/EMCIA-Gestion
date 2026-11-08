@@ -2398,12 +2398,15 @@ async function enter(user,accessToken){
   }
   
   const auditPanel=document.createElement('section');auditPanel.style.cssText='display:none;position:fixed;inset:5vh 4vw;z-index:100001;overflow:auto;background:#fff;color:#102a43;padding:18px;border:2px solid #9fb3c8;border-radius:12px;box-shadow:0 0 0 100vmax #0008;direction:rtl';
-  auditPanel.innerHTML='<button type="button" id="emcia-audit-close">إغلاق ×</button><h2>سجل العمليات</h2><p>آخر 100 عملية مسجلة في Supabase. يمكن البحث والتصفية دون تعديل السجلات.</p><div style="display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin:10px 0"><input id="emcia-audit-search" placeholder="بحث بالاسم أو القسم أو رقم السجل" aria-label="بحث في السجل" style="flex:1 1 170px;min-width:130px"><select id="emcia-audit-action" aria-label="نوع العملية"><option value="">كل العمليات</option><option value="create">إضافة</option><option value="update">تعديل</option><option value="delete">حذف</option></select><input id="emcia-audit-date" type="date" aria-label="تاريخ العملية"><button type="button" id="emcia-audit-refresh">تحديث</button></div><p id="emcia-audit-count" aria-live="polite"></p><div id="emcia-audit-list"></div>';
+  auditPanel.innerHTML='<button type="button" id="emcia-audit-close">إغلاق ×</button><h2>سجل العمليات</h2><p>استعرض عمليات شهر كامل أو جميع الأشهر، وانتقل بين صفحات السجل القديم دون تعديل البيانات.</p><div style="display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin:10px 0"><input id="emcia-audit-search" placeholder="بحث بالاسم أو القسم أو رقم السجل" aria-label="بحث في السجل" style="flex:1 1 170px;min-width:130px"><select id="emcia-audit-action" aria-label="نوع العملية"><option value="">كل العمليات</option><option value="create">إضافة</option><option value="update">تعديل</option><option value="delete">حذف</option></select><label style="font-size:13px">الشهر <input id="emcia-audit-month" type="month" aria-label="شهر العمليات"></label><button type="button" id="emcia-audit-all">جميع الأشهر</button><button type="button" id="emcia-audit-refresh">تحديث</button></div><p id="emcia-audit-count" aria-live="polite"></p><div id="emcia-audit-list"></div><div style="display:flex;gap:8px;justify-content:center;margin-top:12px"><button type="button" id="emcia-audit-prev">الأحدث</button><button type="button" id="emcia-audit-next">الأقدم</button></div>';
   document.body.appendChild(auditPanel);
   const auditList=auditPanel.querySelector('#emcia-audit-list');
   const auditSearch=auditPanel.querySelector('#emcia-audit-search');
   const auditAction=auditPanel.querySelector('#emcia-audit-action');
-  const auditDate=auditPanel.querySelector('#emcia-audit-date');
+  const auditMonth=auditPanel.querySelector('#emcia-audit-month');
+  const auditPrev=auditPanel.querySelector('#emcia-audit-prev');
+  const auditNext=auditPanel.querySelector('#emcia-audit-next');
+  let auditPage=0, auditRequestId=0;
   const auditCount=auditPanel.querySelector('#emcia-audit-count');
   let auditEntries=[];
   const auditNames={create:'إضافة',update:'تعديل',delete:'حذف'};
@@ -2412,14 +2415,10 @@ async function enter(user,accessToken){
    const filtered=auditEntries.filter(entry=>{
     const p=entry.payload||{};
     if(auditAction.value&&p.action!==auditAction.value)return false;
-    if(auditDate.value&&new Date(entry.created_at).toLocaleDateString('en-CA')!==auditDate.value){
-     const d=new Date(entry.created_at),localDate=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-     if(localDate!==auditDate.value)return false;
-    }
     const haystack=[p.actor_name,p.section_name,p.section,p.record_id,p.action,auditNames[p.action]].map(v=>String(v||'')).join(' ').toLocaleLowerCase();
     return !query||haystack.includes(query);
    });
-   auditCount.textContent='النتائج: '+filtered.length+' من آخر '+auditEntries.length+' عملية';
+   auditCount.textContent='النتائج المطابقة في الصفحة: '+filtered.length+' من '+auditEntries.length+' | الصفحة '+(auditPage+1)+' (100 عملية كحد أقصى في الصفحة)';
    auditList.replaceChildren();
    if(!filtered.length){auditList.textContent='لا توجد عمليات مطابقة للبحث.';return}
    for(const entry of filtered){
@@ -2432,14 +2431,25 @@ async function enter(user,accessToken){
     item.appendChild(pre);auditList.appendChild(item);
    }
   }
-  [auditSearch,auditAction,auditDate].forEach(el=>el.addEventListener('input',renderAudit));
+  [auditSearch,auditAction].forEach(el=>el.addEventListener('input',renderAudit));
+  auditMonth.addEventListener('change',()=>{auditPage=0;loadAudit()});
+  auditPanel.querySelector('#emcia-audit-all').onclick=()=>{auditMonth.value='';auditPage=0;loadAudit()};
+  auditPrev.onclick=()=>{if(auditPage>0){auditPage--;loadAudit()}};
+  auditNext.onclick=()=>{auditPage++;loadAudit()};
   async function loadAudit(){
+   const currentRequest=++auditRequestId;
    auditList.textContent='جار تحميل السجل...';
+   auditPrev.disabled=auditNext.disabled=true;
    try{
-    const entries=await request(api+'/rest/v1/audit_events?select=id,payload,created_at&order=created_at.desc&limit=100',{headers:headers()});
+    let url=api+'/rest/v1/audit_events?select=id,payload,created_at&order=created_at.desc&limit=100&offset='+(auditPage*100);
+    if(auditMonth.value){const [year,month]=auditMonth.value.split('-').map(Number);const from=auditMonth.value+'-01';const to=month===12?(year+1)+'-01-01':year+'-'+String(month+1).padStart(2,'0')+'-01';url+='&created_at=gte.'+from+'&created_at=lt.'+to;}
+    const entries=await request(url,{headers:headers()});
+    if(currentRequest!==auditRequestId)return;
     auditEntries=Array.isArray(entries)?entries:[];
     renderAudit();
-   }catch(e){auditList.textContent='تعذر تحميل السجل: '+e.message;auditCount.textContent=''}
+    auditPrev.disabled=auditPage===0;
+    auditNext.disabled=auditEntries.length<100;
+   }catch(e){if(currentRequest!==auditRequestId)return;auditList.textContent='تعذر تحميل السجل: '+e.message;auditCount.textContent='';auditPrev.disabled=auditPage===0;auditNext.disabled=true;}
   }
   addAction('▤ السجل',()=>{auditPanel.style.display='block';loadAudit()});
   auditPanel.querySelector('#emcia-audit-close').onclick=()=>auditPanel.style.display='none';
