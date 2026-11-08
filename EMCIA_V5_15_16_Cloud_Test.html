@@ -551,7 +551,7 @@ function enterApp(){
  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
  $("#workspace").classList.add("active");
  let y=new Date().getFullYear(),m=new Date().getMonth()+1,season=m>=9?`${y}/${y+1}`:`${y-1}/${y}`;
- $("#workspace").innerHTML=`<div class="card emcia-dashboard-brand"><img class="emcia-official-logo" src="./EMCIA_Official_Logo-1.jpg" alt="الشعار الرسمي لمؤسسة EMCIA" loading="eager"><div class="welcome-name">أمسية للثقافة والتربية والتكوين</div><div class="welcome-season">الموسم الدراسي ${season}</div></div>`;
+ $("#workspace").innerHTML=`<div class="card emcia-dashboard-brand"><img class="emcia-official-logo" src="./EMCIA_Official_Logo-1.jpg" alt="الشعار الرسمي لمؤسسة EMCIA" loading="eager"><div class="welcome-season">الموسم الدراسي ${season.replace("/", "–")}</div></div>`;
  nav();
  applyLang();
 }
