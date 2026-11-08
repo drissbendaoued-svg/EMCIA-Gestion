@@ -2191,38 +2191,6 @@ const key='sb_publishable_AZWNmDjlNPpADgPFYwH3oA_71o4ABTM';
 const status=document.getElementById('authStatus'), say=t=>status.textContent=t;
 let started=false,token=null,userId=null,revision=0,dirty=false,saving=false,blocked=false,debounce=null;
 const cloudId='emcia-main', localKey='emcia_core_mobile';
-const authStorageKey='emcia_supabase_auth_v1';
-let authRefreshTimer=null;
-function clearSavedAuth(){try{localStorage.removeItem(authStorageKey)}catch(e){}if(authRefreshTimer)clearTimeout(authRefreshTimer)}
-function rememberAuth(session){
- if(!session?.refresh_token||!session?.access_token||!session?.user?.id)return;
- const expiresAt=Date.now()+Math.max(60,Number(session.expires_in)||3600)*1000;
- try{localStorage.setItem(authStorageKey,JSON.stringify({access_token:session.access_token,refresh_token:session.refresh_token,user:session.user,expiresAt}))}catch(e){}
- scheduleAuthRefresh(expiresAt);
-}
-function scheduleAuthRefresh(expiresAt){
- if(authRefreshTimer)clearTimeout(authRefreshTimer);
- authRefreshTimer=setTimeout(()=>{refreshSavedAuth().catch(()=>{})},Math.max(10000,expiresAt-Date.now()-120000));
-}
-async function refreshSavedAuth(){
- let saved;try{saved=JSON.parse(localStorage.getItem(authStorageKey)||'null')}catch(e){}
- if(!saved?.refresh_token)return null;
- try{
-  const session=await request(api+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:key,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:saved.refresh_token})});
-  if(!session?.access_token||!session?.user?.id)throw Error('جلسة غير صالحة');
-  token=session.access_token;rememberAuth(session);return session;
- }catch(e){clearSavedAuth();throw e}
-}
-async function restoreSavedAuth(){
- let saved;try{saved=JSON.parse(localStorage.getItem(authStorageKey)||'null')}catch(e){}
- if(!saved?.refresh_token||!saved?.user?.id)return;
- say('جار استعادة الجلسة السابقة...');
- try{
-  const session=await refreshSavedAuth();
-  if(session)await enter(session.user,session.access_token);
- }catch(e){say('انتهت الجلسة السابقة. يرجى تسجيل الدخول مرة أخرى.')}
-}
-
 const cloudUrl=api+'/rest/v1/emcia_cloud_state';
 const headers=()=>({'apikey':key,'Authorization':'Bearer '+token,'Content-Type':'application/json'});
 function cloudStatus(message){let node=document.getElementById('emcia-cloud-status');if(!node){node=document.createElement('span');node.id='emcia-cloud-status';node.setAttribute('role','status');node.setAttribute('aria-live','polite');node.style.cssText='display:block;text-align:center;font:12px system-ui;color:#d1fae5;margin:4px auto 0;max-width:100%;overflow-wrap:anywhere';const header=document.querySelector('header');(header||document.body).appendChild(node);}const error=/فشل|تعارض|تعذر|⚠️/.test(message);node.style.color=error?'#fecaca':'#d1fae5';node.textContent=error?message:(/جار/.test(message)?'☁️ جار الحفظ...':'☁️ متصل بالسحابة');}
@@ -2298,7 +2266,7 @@ async function enter(user,accessToken){
  mobileToggle.addEventListener('click',()=>{accountActions.style.display='none'});
  accountMenu.append(accountToggle,accountActions);controls.appendChild(accountMenu);
  addAction('⌂ لوحة البرنامج',()=>{if(typeof enterApp==='function')enterApp()});
- const logout=addAction('تسجيل الخروج',async()=>{clearSavedAuth();logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
+ const logout=addAction('تسجيل الخروج',async()=>{logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
  logout.style.background='#fbe9e7';logout.style.color='#a32929';
  if(profile.role==='director'){
   const panel=document.createElement('section');panel.id='emcia-users-panel';panel.style.cssText='display:none;position:fixed;inset:5vh 4vw;z-index:100000;overflow:auto;background:#fff;color:#102a43;padding:18px;border:2px solid #9fb3c8;border-radius:12px;box-shadow:0 0 0 100vmax #0008;direction:rtl';
@@ -2425,9 +2393,7 @@ document.getElementById('authForm').addEventListener('submit',async e=>{
   const result=await request(api+'/auth/v1/token?grant_type=password',{method:'POST',headers:{'apikey':key,'Content-Type':'application/json'},body:JSON.stringify({email,password})});
   document.getElementById('authPassword').value='';
   await enter(result.user,result.access_token);
-  if(started)rememberAuth(result);
  }catch(error){document.getElementById('authPassword').value='';say('تعذر تسجيل الدخول أو التحقق من الصلاحية: '+error.message);}finally{loginBtn.disabled=false;loginBtn.textContent='دخول إلى الحساب'}
 });
-restoreSavedAuth();
 })();
 </script></body></html>
