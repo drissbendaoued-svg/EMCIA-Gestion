@@ -2491,6 +2491,20 @@ async function enter(user,accessToken){
  alertsButton.onclick=()=>{accountActions.style.display='none';if(typeof emciaAdministrativeAlerts==='function')emciaAdministrativeAlerts()};
  controls.appendChild(alertsButton);
  if(typeof window.emciaUpdateAlertCounter==='function')window.emciaUpdateAlertCounter();
+ // Read-only diagnostic for the parallel v2 storage; production synchronization remains unchanged.
+ addAction('🔒 اختبار التخزين الجديد',async()=>{
+  const checks=[['التشغيلي','emcia_operational_state_v2'],['المالي المقيد','emcia_financial_state_v2']];
+  const results=[];
+  for(const [label,table] of checks){
+   try{
+    const response=await fetch(api+'/rest/v1/'+table+'?select=id&limit=1',{headers:headers()});
+    if(!response.ok){results.push(label+': خطأ HTTP '+response.status);continue;}
+    const rows=await response.json();
+    results.push(label+': اتصال ناجح ('+(Array.isArray(rows)?rows.length:0)+' سجل ظاهر)');
+   }catch(e){results.push(label+': تعذر الاتصال');}
+  }
+  alert('اختبار قراءة فقط — دون حفظ أو تعديل بيانات\\nالدور: '+profile.role+'\\n'+results.join('\\n')+'\\nتنبيه: ظهور صفر سجل لا يثبت وحده منع القراءة؛ يلزم اختبار RLS بهوية كل دور بعد إدخال بيانات اختبارية.');
+ });
  addAction('⌂ الرئيسية',()=>{if(typeof enterApp==='function')enterApp()});
  const logout=addAction('↪ الخروج',async()=>{clearAuthSession();logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
  logout.style.background='#fbe9e7';logout.style.color='#a32929';
