@@ -2801,6 +2801,69 @@ async function enter(user,accessToken){
    document.body.appendChild(panel);
   });
  }
+ if(profile.role==='director'){
+  addAction('🧪 اختبار ترحيل بيانات اصطناعية',()=>{
+   const fixture={
+    g:[{id:'test-group',n:'مجموعة اختبار',f:150,r:60,active:true}],
+    e:[{id:'test-enroll',sid:'test-student',gid:'test-group',fee:null,discountAmount:20,discountBearer:'custom',discountTeacher:10,discountEmcia:10,active:true}],
+    p:[
+     {id:'test-full',sid:'test-student',gid:'test-group',a:130,d:80,e:50,allocMonth:'2026-11',type:'full'},
+     {id:'test-partial',sid:'test-student',gid:'test-group',a:65,d:40,e:25,allocMonth:'2026-12',type:'partial'}
+    ],
+    x:[{id:'test-expense',a:25,cat:'test'}],
+    oi:[{id:'test-income',a:40,cat:'test'}],
+    tp:[{tid:'test-teacher',month:'2026-11',amount:80}]
+   };
+   const rules={g:['r'],e:['discountTeacher','discountEmcia'],p:['d','e','t','discountTeacher','discountEmcia']};
+   const financeKeys=['x','oi','tp'],operationalKeys=['g','e','p'];
+   const op={},fin={},failures=[];
+   for(const key of operationalKeys){
+    op[key]=[];fin[key]=[];
+    for(const [index,record] of fixture[key].entries()){
+     const safe={},secret={_index:index};
+     for(const [field,value] of Object.entries(record)){
+      if((rules[key]||[]).includes(field))secret[field]=value;else safe[field]=value;
+     }
+     op[key].push(safe);
+     if(Object.keys(secret).length>1)fin[key].push(secret);
+    }
+   }
+   for(const key of financeKeys)fin[key]=structuredClone(fixture[key]);
+   const restored={};
+   for(const key of operationalKeys)restored[key]=op[key].map((row,index)=>{
+    const found=fin[key].find(item=>item._index===index);
+    if(!found)return row;
+    const {_index,...hidden}=found;return {...row,...hidden};
+   });
+   for(const key of financeKeys)restored[key]=fin[key];
+   const stable=x=>JSON.stringify(x,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.keys(v).sort().reduce((o,k)=>(o[k]=v[k],o),{}):v);
+   for(const key of [...operationalKeys,...financeKeys]){
+    if(stable(fixture[key])!==stable(restored[key]))failures.push('فشل تطابق '+key);
+   }
+   for(const key of operationalKeys)for(const row of op[key])for(const field of rules[key]||[])if(Object.hasOwn(row,field))failures.push('تسرب '+key+'.'+field);
+   const sum=(state,key,field)=>state[key].reduce((total,row)=>total+(Number(row[field])||0),0);
+   for(const [key,field] of [['p','a'],['p','d'],['p','e'],['x','a'],['oi','a'],['tp','amount']]){
+    if(sum(fixture,key,field)!==sum(restored,key,field))failures.push('اختلاف الإجمالي '+key+'.'+field);
+   }
+   if(sum(fixture,'p','a')!==sum(fixture,'p','d')+sum(fixture,'p','e'))failures.push('عدم توازن حصص الأداء');
+   const panel=document.createElement('div');
+   panel.style.cssText='position:fixed;inset:7vh 5vw;z-index:100006;background:#fff;color:#102a43;border-radius:12px;padding:18px;overflow:auto;direction:rtl;line-height:1.9;box-shadow:0 0 0 100vmax #0008';
+   const close=document.createElement('button');close.textContent='✕ إغلاق';close.onclick=()=>panel.remove();
+   const title=document.createElement('h3');title.textContent=failures.length?'توجد اختلافات تحتاج معالجة':'نجح اختبار الترحيل الاصطناعي';
+   const rows=[
+    'بيانات اختبار معزولة تماماً؛ لم تُستخدم سجلات المؤسسة أو التخزين السحابي.',
+    'سجلات اصطناعية: فوج، تسجيل بتخفيض مشترك، أداء كامل، أداء جزئي، مصروف، مدخول، ومستحق أستاذ.',
+    'إجمالي الأداءات: '+sum(fixture,'p','a').toFixed(2)+' MAD',
+    'حصة الأستاذ: '+sum(restored,'p','d').toFixed(2)+' MAD',
+    'حصة المؤسسة: '+sum(restored,'p','e').toFixed(2)+' MAD',
+    'المطابقة: '+(failures.length?'فشلت':'ناجحة')+'؛ '+(failures.length?failures.join('، '):'لا اختلافات في الحقول والإجماليات المختبرة'),
+    'هذا اختبار فصل وإعادة تركيب محلي، وليس إثباتاً لأمان جميع الحقول أو نجاح المزامنة السحابية.'
+   ];
+   panel.append(close,title);
+   for(const line of rows){const p=document.createElement('p');p.textContent=line;panel.appendChild(p)}
+   document.body.appendChild(panel);
+  });
+ }
  addAction('⌂ الرئيسية',()=>{if(typeof enterApp==='function')enterApp()});
  const logout=addAction('↪ الخروج',async()=>{clearAuthSession();logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
  logout.style.background='#fbe9e7';logout.style.color='#a32929';
