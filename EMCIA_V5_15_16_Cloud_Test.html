@@ -2444,6 +2444,27 @@ function joinState(op,fin){
    if(target&&typeof target==='object')for(const [field,value] of Object.entries(item))if(field!=='_index')target[field]=value;
   }
  }
+ if(canFinance()){
+  const groups=new Map(state.g.map(g=>[g.id,g]));
+  const enrollments=new Map(state.e.map(e=>[e.sid+'|'+e.gid,e]));
+  for(const p of state.p){
+   const g=groups.get(p.gid),e=enrollments.get(p.sid+'|'+p.gid);
+   if(!g||!e||!Number.isFinite(Number(g.r))||g.r==null)continue;
+   const month=p.allocMonth||p.receiptMonth||(p.date||'').slice(0,7);
+   if(!month)continue;
+   if(p.type==='composite'&&Array.isArray(p.allocations)){
+    let teacher=0,emcia=0;
+    for(const allocation of p.allocations){
+     const x=emciaPaymentSplitCore(g,e,Number(allocation.amount)||0,allocation.month);
+     teacher+=x.teacher;emcia+=x.emcia;
+    }
+    p.d=teacher;p.e=emcia;
+   }else{
+    const x=emciaPaymentSplitCore(g,e,Number(p.netAfterRefund??p.a)||0,month);
+    p.d=x.teacher;p.e=x.emcia;
+   }
+  }
+ }
  return state;
 }
 async function checkRemoteChanges(){
