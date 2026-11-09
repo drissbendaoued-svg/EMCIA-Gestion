@@ -2697,6 +2697,46 @@ async function enter(user,accessToken){
    document.body.appendChild(panel);
   });
  }
+ addAction('🔐 اختبار الصلاحيات والتعارض',async()=>{
+  const lines=[],role=profile.role;
+  const secretary=role==='secretary_morning'||role==='secretary_evening';
+  const allowed=role==='director'||role==='accountant';
+  const opUrl=api+'/rest/v1/emcia_operational_state_v2';
+  const finUrl=api+'/rest/v1/emcia_financial_state_v2';
+  const testId='emcia-v2-concurrency-'+userId;
+  try{
+   const rows=await request(opUrl+'?id=eq.'+encodeURIComponent(testId)+'&select=id,revision',{headers:headers()});
+   const before=rows[0]?.revision??0;
+   let written;
+   const body={payload:{_testOnly:true,kind:'concurrency-check'},revision:before+1,updated_by:userId};
+   if(rows.length)written=await request(opUrl+'?id=eq.'+encodeURIComponent(testId)+'&revision=eq.'+before,{method:'PATCH',headers:{...headers(),'Prefer':'return=representation'},body:JSON.stringify(body)});
+   else written=await request(opUrl,{method:'POST',headers:{...headers(),'Prefer':'return=representation'},body:JSON.stringify({...body,id:testId})});
+   if(written.length!==1)throw Error('لم تُؤكد الكتابة');
+   lines.push('✓ حفظ السجل التشغيلي التجريبي');
+   const stale=await request(opUrl+'?id=eq.'+encodeURIComponent(testId)+'&revision=eq.'+before,{method:'PATCH',headers:{...headers(),'Prefer':'return=representation'},body:JSON.stringify({payload:{_testOnly:true,kind:'stale-should-not-write'},revision:before+2,updated_by:userId})});
+   const check=await request(opUrl+'?id=eq.'+encodeURIComponent(testId)+'&select=revision,payload',{headers:headers()});
+   if(stale.length===0&&check.length===1&&check[0].revision===before+1&&check[0].payload?.kind==='concurrency-check')lines.push('✓ رفض تعديل بمراجعة قديمة (منع الكتابة المتعارضة)');
+   else lines.push('✗ تعارض المراجعة لم يُرفض كما هو متوقع');
+  }catch(e){lines.push('✗ اختبار التشغيل/التعارض: '+String(e.message||e).slice(0,120))}
+  try{
+   const seen=await request(finUrl+'?id=eq.emcia-rls-test&select=id',{headers:headers()});
+   if(allowed)lines.push(seen.length===1?'✓ قراءة السجل المالي مسموحة':'✗ لم يظهر السجل المالي للمدير/المحاسب');
+   else lines.push(seen.length===0?'✓ قراءة السجل المالي محجوبة':'✗ تحذير: السجل المالي ظاهر');
+  }catch(e){lines.push('✗ فحص قراءة المالية: '+String(e.message||e).slice(0,100))}
+  if(secretary){
+   try{
+    const denied=await request(finUrl+'?id=eq.emcia-rls-test',{method:'PATCH',headers:{...headers(),'Prefer':'return=representation'},body:JSON.stringify({revision:999999,updated_by:userId})});
+    lines.push(denied.length===0?'✓ تعديل السجل المالي مرفوض':'✗ تحذير: أمكن تعديل السجل المالي');
+   }catch(e){lines.push('✓ رفض الخادم محاولة تعديل السجل المالي');}
+  }
+  const panel=document.createElement('div');panel.style.cssText='position:fixed;inset:8vh 5vw;z-index:100004;background:white;color:#102a43;padding:18px;overflow:auto;border-radius:12px;box-shadow:0 0 0 100vmax #0008;direction:rtl;line-height:2';
+  const close=document.createElement('button');close.textContent='✕ إغلاق';close.onclick=()=>panel.remove();
+  const title=document.createElement('h3');title.textContent='نتيجة اختبار الصلاحيات — '+role;
+  const note=document.createElement('p');note.textContent='اختبار سجلات اصطناعية فقط. يفحص تعارض المراجعة والصلاحيات الفعلية، دون تغيير المزامنة الأساسية. لا يختبر تعديلات متزامنة حقيقية من جهازين.';
+  panel.append(close,title,note);
+  for(const line of lines){const row=document.createElement('p');row.textContent=line;panel.appendChild(row)}
+  document.body.appendChild(panel);
+ });
  addAction('⌂ الرئيسية',()=>{if(typeof enterApp==='function')enterApp()});
  const logout=addAction('↪ الخروج',async()=>{clearAuthSession();logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
  logout.style.background='#fbe9e7';logout.style.color='#a32929';
