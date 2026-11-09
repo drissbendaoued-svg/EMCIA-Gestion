@@ -2455,7 +2455,7 @@ async function checkRemoteChanges(){
    cloudStatus('🔄 وصلت تغييرات من حساب آخر؛ جار تحديث البيانات...');
    location.reload();
   }
- }catch(e){cloudStatus('⚠️ تعذر التحقق من التحديثات: '+e.message)}
+ }catch(e){if(!navigator.onLine)cloudStatus('⚠️ الاتصال بالإنترنت غير متاح مؤقتاً');else if(e instanceof TypeError)cloudStatus('☁️ تعذر الاتصال للتحقق مؤقتاً؛ سيُعاد المحاولة تلقائياً');else cloudStatus('⚠️ تعذر التحقق من التحديثات: '+e.message)}
 }
 setInterval(checkRemoteChanges,12000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkRemoteChanges()});
