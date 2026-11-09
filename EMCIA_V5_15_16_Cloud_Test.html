@@ -2663,6 +2663,40 @@ async function enter(user,accessToken){
    document.body.appendChild(overlay);
   });
  }
+ if(profile.role==='director'){
+  addAction('☁️ اختبار كتابة التخزين المنفصل',async()=>{
+   const id='emcia-v2-probe-'+userId;
+   const results=[];
+   const tables=[['التشغيلي','emcia_operational_state_v2'],['المالي المقيد','emcia_financial_state_v2']];
+   for(const [label,table] of tables){
+    try{
+     const url=api+'/rest/v1/'+table;
+     const current=await request(url+'?id=eq.'+encodeURIComponent(id)+'&select=id,revision',{headers:headers()});
+     const old=current[0]?.revision??0;
+     const marker='probe-'+Date.now()+'-'+label;
+     const payload={_testOnly:true,marker};
+     let updated;
+     if(current.length){
+      updated=await request(url+'?id=eq.'+encodeURIComponent(id)+'&revision=eq.'+old,{method:'PATCH',headers:{...headers(),'Prefer':'return=representation'},body:JSON.stringify({payload,revision:old+1,updated_by:userId})});
+     }else{
+      updated=await request(url,{method:'POST',headers:{...headers(),'Prefer':'return=representation'},body:JSON.stringify({id,payload,revision:1,updated_by:userId})});
+     }
+     if(updated.length!==1)throw Error('تعارض في المراجعة أو عدم تأكيد الكتابة');
+     const verified=await request(url+'?id=eq.'+encodeURIComponent(id)+'&select=payload,revision',{headers:headers()});
+     if(verified.length!==1||verified[0].payload?.marker!==marker||verified[0].revision!==old+1)throw Error('فشل التحقق من القراءة بعد الكتابة');
+     results.push(label+': ✓ كتابة وقراءة ناجحتان؛ مراجعة '+verified[0].revision);
+    }catch(err){results.push(label+': ✗ '+String(err.message||err).slice(0,150));}
+   }
+   const panel=document.createElement('div');
+   panel.style.cssText='position:fixed;inset:12vh 5vw;z-index:100003;background:#fff;color:#102a43;border-radius:12px;padding:18px;overflow:auto;box-shadow:0 0 0 100vmax #0008;direction:rtl;line-height:2';
+   const close=document.createElement('button');close.textContent='✕ إغلاق';close.onclick=()=>panel.remove();
+   const title=document.createElement('h3');title.textContent='اختبار المزامنة التجريبية المنفصلة';
+   const note=document.createElement('p');note.textContent='يكتب سجلاً اصطناعياً مخصصاً للاختبار في جدولي v2، ثم يتحقق من قراءته. لا يمس بيانات المؤسسة أو مزامنتها الحالية.';
+   panel.append(close,title,note);
+   for(const line of results){const row=document.createElement('p');row.textContent=line;panel.appendChild(row)}
+   document.body.appendChild(panel);
+  });
+ }
  addAction('⌂ الرئيسية',()=>{if(typeof enterApp==='function')enterApp()});
  const logout=addAction('↪ الخروج',async()=>{clearAuthSession();logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
  logout.style.background='#fbe9e7';logout.style.color='#a32929';
