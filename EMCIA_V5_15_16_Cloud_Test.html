@@ -2446,6 +2446,20 @@ function joinState(op,fin){
  }
  return state;
 }
+async function checkRemoteChanges(){
+ if(!started||!token||dirty||saving||blocked||document.visibilityState==='hidden')return;
+ try{
+  const op=await v2Read(operationalUrl);
+  const fin=canFinance()?await v2Read(financialUrl):null;
+  if((op&&Number(op.revision)!==opRevision)||(fin&&Number(fin.revision)!==finRevision)){
+   cloudStatus('🔄 وصلت تغييرات من حساب آخر؛ جار تحديث البيانات...');
+   location.reload();
+  }
+ }catch(e){cloudStatus('⚠️ تعذر التحقق من التحديثات: '+e.message)}
+}
+setInterval(checkRemoteChanges,12000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkRemoteChanges()});
+window.addEventListener('focus',checkRemoteChanges);
 async function v2Read(url){
  const rows=await request(url+'?id=eq.'+cloudId+'&select=id,payload,revision',{headers:headers()});
  return rows[0]||null;
