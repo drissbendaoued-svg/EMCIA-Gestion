@@ -2535,14 +2535,29 @@ async function enter(user,accessToken){
     const rows=Array.isArray(current[k])?current[k]:[];
     const fields=[...new Set(rows.flatMap(o=>o&&typeof o==='object'&&!Array.isArray(o)?Object.keys(o):[]))].sort();
     const flagged=fields.filter(field=>patterns.test(field)||(explicit[k]||[]).includes(field));
-    return k+' — '+rows.length+' سجل | حقول: '+fields.length+' | مرشحة للحماية: '+(flagged.join(', ')||'لا يوجد');
+    return {key:k,count:rows.length,fieldCount:fields.length,flagged};
    });
-   const pre=document.createElement('pre');
-   pre.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;text-align:right;direction:rtl;font:13px/1.8 system-ui;margin:0';
-   pre.textContent='فحص بنية الحقول فقط — لا تظهر أسماء أو مبالغ أو قيم شخصية.\\nالحقول المرشحة ليست تصنيفاً نهائياً، ويجب مراجعتها قبل الترحيل.\\n\\n'+report.join('\\n');
    const dialog=document.createElement('div');
-   dialog.style.cssText='position:fixed;inset:5vh 4vw;z-index:100001;background:#fff;color:#102a43;border:2px solid #9fb3c8;border-radius:12px;padding:16px;overflow:auto;box-shadow:0 0 0 100vmax #0008';
+   dialog.style.cssText='position:fixed;inset:5vh 4vw;z-index:100001;background:#fff;color:#102a43;border:2px solid #9fb3c8;border-radius:12px;padding:16px;overflow:auto;box-shadow:0 0 0 100vmax #0008;direction:rtl';
    const close=document.createElement('button');close.textContent='✕ إغلاق';close.onclick=()=>dialog.remove();close.style.cssText='margin-bottom:14px;padding:8px 14px';
+   const pre=document.createElement('div');
+   pre.style.cssText='display:grid;gap:10px;font:13px/1.7 system-ui;text-align:right';
+   const intro=document.createElement('p');
+   intro.textContent='فحص بنية الحقول فقط؛ لا تظهر أسماء أو مبالغ أو قيم شخصية. التصنيف أولي، ولا يتيح نقل البيانات بعد.';
+   pre.appendChild(intro);
+   for(const item of report){
+    const card=document.createElement('section');
+    card.style.cssText='border:1px solid #cbd5e1;border-radius:9px;padding:10px;overflow-wrap:anywhere';
+    const heading=document.createElement('strong');
+    heading.textContent=item.key+' — '+item.count+' سجل، '+item.fieldCount+' حقل';
+    heading.style.cssText='display:block;margin-bottom:4px;direction:rtl;unicode-bidi:plaintext';
+    const detail=document.createElement('div');
+    detail.textContent='الحقول المرشحة للحماية: ';
+    const names=document.createElement('span');
+    names.dir='ltr';names.style.cssText='display:inline-block;text-align:left;unicode-bidi:isolate';
+    names.textContent=item.flagged.join(', ')||'—';
+    detail.appendChild(names);card.append(heading,detail);pre.appendChild(card);
+   }
    dialog.append(close,pre);document.body.appendChild(dialog);
   });
  addAction('⌂ الرئيسية',()=>{if(typeof enterApp==='function')enterApp()});
