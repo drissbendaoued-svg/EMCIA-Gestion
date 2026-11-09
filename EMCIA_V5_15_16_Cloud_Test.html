@@ -2994,6 +2994,54 @@ async function enter(user,accessToken){
   }catch(e){checks.push('✗ تعذر إكمال الفحص: '+String(e.message||e).slice(0,180))}
   status.textContent=checks.join('\n');status.style.whiteSpace='pre-line';
  });
+ if(profile.role==='director')addAction('💾 نسخة احتياطية تجريبية قابلة للتحقق',()=>{
+  const panel=document.createElement('div');panel.style.cssText='position:fixed;inset:6vh 4vw;z-index:100012;background:#fff;color:#102a43;padding:18px;overflow:auto;border-radius:12px;box-shadow:0 0 0 100vmax #0008;direction:rtl;line-height:1.8';
+  const title=document.createElement('h3');title.textContent='نسخة احتياطية تجريبية قابلة للتحقق';
+  const info=document.createElement('p');info.textContent='ينشئ ملف JSON مؤرخاً من سجلي الاختبار السحابي فقط، ويتيح التحقق من الملف لاحقاً دون استعادة أو تعديل قاعدة البيانات. احتفظ بالملف في مكان آمن.';
+  const status=document.createElement('p');status.textContent='لم يبدأ الاختبار.';
+  const btn=(label,fn)=>{const b=document.createElement('button');b.textContent=label;b.style.cssText='display:block;width:100%;padding:12px;margin:8px 0';b.onclick=fn;return b};
+  const close=btn('✕ إغلاق',()=>panel.remove());
+  const digest=async value=>{
+    const bytes=new TextEncoder().encode(value);
+    const hash=await crypto.subtle.digest('SHA-256',bytes);
+    return Array.from(new Uint8Array(hash)).map(x=>x.toString(16).padStart(2,'0')).join('');
+  };
+  const read=async(table,id)=>request(api+'/rest/v1/'+table+'?id=eq.'+encodeURIComponent(id)+'&select=id,revision,payload',{headers:headers()});
+  const exportBtn=btn('1 — إنشاء وتنزيل نسخة من سجلات الاختبار',async()=>{
+   try{
+    status.textContent='جارٍ التحقق من سجلات الاختبار...';
+    const id='emcia-v2-synthetic-migration-check',tables=['emcia_operational_state_v2','emcia_financial_state_v2'],data={};
+    for(const table of tables){
+      const rows=await read(table,id);
+      if(rows.length!==1||rows[0].payload?._testOnly!==true)throw Error('سجل الاختبار غير متاح: '+table);
+      data[table]=rows[0];
+    }
+    const payload=JSON.stringify(data);
+    const envelope={format:'emcia-fixture-backup-v1',createdAt:new Date().toISOString(),sha256:await digest(payload),data};
+    const blob=new Blob([JSON.stringify(envelope,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='EMCIA_Test_Backup_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
+    status.textContent='✓ أُنشئ ملف النسخة التجريبية وبدأ تنزيله. تأكد من وجوده في مجلد التنزيلات ثم افحصه بالزر الثاني.';
+   }catch(e){status.textContent='✗ تعذر إنشاء النسخة: '+String(e.message||e).slice(0,200)}
+  });
+  const picker=document.createElement('input');picker.type='file';picker.accept='.json,application/json';picker.style.cssText='display:block;width:100%;margin:12px 0';
+  const verifyBtn=btn('2 — فحص سلامة الملف المختار (دون استعادة)',async()=>{
+   try{
+    const file=picker.files?.[0];if(!file)throw Error('اختر ملف النسخة الاحتياطية أولاً');
+    if(file.size>5000000)throw Error('حجم الملف أكبر من الحد المسموح للفحص');
+    const envelope=JSON.parse(await file.text());
+    if(envelope.format!=='emcia-fixture-backup-v1'||!envelope.data||typeof envelope.sha256!=='string')throw Error('تنسيق الملف غير صحيح');
+    const actual=await digest(JSON.stringify(envelope.data));
+    if(actual!==envelope.sha256)throw Error('بصمة الملف لا تطابق البيانات؛ لا تستخدمه');
+    const tables=['emcia_operational_state_v2','emcia_financial_state_v2'];
+    for(const table of tables){
+      const row=envelope.data[table];
+      if(!row||row.id!=='emcia-v2-synthetic-migration-check'||row.payload?._testOnly!==true)throw Error('محتوى غير متوقع في '+table);
+    }
+    status.textContent='✓ بصمة SHA-256 مطابقة، وملف الاختبار يحتوي على السجلين الاصطناعيين المتوقعين. لم تُستعد أي بيانات.';
+   }catch(e){status.textContent='✗ فشل التحقق: '+String(e.message||e).slice(0,200)}
+  });
+  panel.append(close,title,info,exportBtn,picker,verifyBtn,status);document.body.appendChild(panel);
+ });
  addAction('⌂ الرئيسية',()=>{if(typeof enterApp==='function')enterApp()});
  const logout=addAction('↪ الخروج',async()=>{clearAuthSession();logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
  logout.style.background='#fbe9e7';logout.style.color='#a32929';
