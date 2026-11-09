@@ -1712,7 +1712,10 @@ function rcFileBase(){
  }
  return `EMCIA_${code}_${m}`;
 }
+function emciaReportAllowed(type){return !['executive','monthly','financial'].includes(type)||emciaCanViewManagement()}
+function emciaGuardReport(type){if(emciaReportAllowed(type))return true;alert('هذا التقرير المالي متاح للمدير والمحاسب فقط.');rcClearPreview('هذا التقرير المالي متاح للمدير والمحاسب فقط.');return false}
 function rcDirectPrint(){
+ if(!emciaGuardReport($("#rcType")?.value))return;
  if($("#rcType")?.value==="executive"&&!emciaCanViewManagement()){alert("هذا التقرير متاح للمدير والمحاسب فقط.");return}
  if(!($("#rcType")?.value)){alert("اختر نوع التقرير أولاً.");return}
  let paper=document.querySelector("#rcPreview .rc-paper");
@@ -1740,6 +1743,7 @@ function rcDirectPrint(){
  },250);
 }
 function rcExportPDF(){
+ if(!emciaGuardReport($("#rcType")?.value))return;
  if($("#rcType")?.value==="executive"&&!emciaCanViewManagement()){alert("هذا التقرير متاح للمدير والمحاسب فقط.");return} if(!($("#rcType")?.value)){alert("اختر نوع التقرير أولاً.");return;} if($("#rcType").value==="executive"){rcDirectPrint();return;}
  let paper=document.querySelector("#rcPreview .rc-paper");if(!paper){if(rcBuildReport()===false)return;}
 
@@ -1749,6 +1753,7 @@ function rcExportPDF(){
  rcDownload(new Blob([doc],{type:"text/html;charset=utf-8"}),rcFileBase()+".html")
 }
 function rcExportExcel(){
+ if(!emciaGuardReport($("#rcType")?.value))return;
  if($("#rcType")?.value==="executive"&&!emciaCanViewManagement()){alert("هذا التقرير متاح للمدير والمحاسب فقط.");return} if(!($("#rcType")?.value)){alert("اختر نوع التقرير أولاً.");return;}
  let paper=document.querySelector("#rcPreview .rc-paper");if(!paper){if(rcBuildReport()===false)return;}
 
@@ -1788,6 +1793,7 @@ function monthlyTeacherAttendanceHTML(m){
 }
 
 function rcBuildReport(){
+ if(!emciaGuardReport($("#rcType")?.value))return false;
  let ok=true;
  let type=$("#rcType").value,m=$("#rcMonth").value||nowMonth(),teacherEl=$("#rcTeacher"),tid=teacherEl?teacherEl.value:"";
  if(type==="executive"){
@@ -1856,7 +1862,7 @@ function rcBuildReport(){
 }
 function reportcenter(){
  let teachers=db.t.filter(x=>x.active!==false);
- $("#reportcenter").innerHTML=`<div class="card"><p class="muted">اختر نوع التقرير من القائمة. يُقترح الشهر الحالي تلقائياً ويمكن تغييره، ثم تظهر المعاينة قبل الطباعة أو التصدير.</p><div class="row"><div><label>نوع التقرير</label><select id="rcType" onchange="rcToggleFields()"><option value="">— اختر من القائمة —</option>${emciaCanViewManagement()?`<option value="executive">التقرير الإداري والمالي الموحد للمدير</option>`:""}<option value="monthly">التقرير الشهري الشامل للمؤسسة</option><option value="teacher">كشف الأستاذ</option><option value="attendance">تقرير الحضور والغياب</option><option value="arrears">تقرير المتأخرات</option><option value="financial">التقرير المالي</option></select></div><div><label>الشهر</label><input id="rcMonth" type="month" value="${nowMonth()}" onchange="rcRefreshPreview()"></div></div><div id="rcTeacherBox" style="display:none"><label>الأستاذ</label><select id="rcTeacher" onchange="rcRefreshPreview()"><option value="">— اختر الأستاذ —</option>${teachers.map(x=>`<option value="${x.id}">${esc(objName(x))}</option>`).join("")}</select></div><div class="report-action-row" style="margin-top:12px">
+ $("#reportcenter").innerHTML=`<div class="card"><p class="muted">اختر نوع التقرير من القائمة. يُقترح الشهر الحالي تلقائياً ويمكن تغييره، ثم تظهر المعاينة قبل الطباعة أو التصدير.</p><div class="row"><div><label>نوع التقرير</label><select id="rcType" onchange="rcToggleFields()"><option value="">— اختر من القائمة —</option>${emciaCanViewManagement()?`<option value="executive">التقرير الإداري والمالي الموحد للمدير</option>`:""}${emciaCanViewManagement()?`<option value="monthly">التقرير الشهري الشامل للمؤسسة</option>`:""}<option value="teacher">كشف الأستاذ</option><option value="attendance">تقرير الحضور والغياب</option><option value="arrears">تقرير المتأخرات</option>${emciaCanViewManagement()?`<option value="financial">التقرير المالي</option>`:""}</select></div><div><label>الشهر</label><input id="rcMonth" type="month" value="${nowMonth()}" onchange="rcRefreshPreview()"></div></div><div id="rcTeacherBox" style="display:none"><label>الأستاذ</label><select id="rcTeacher" onchange="rcRefreshPreview()"><option value="">— اختر الأستاذ —</option>${teachers.map(x=>`<option value="${x.id}">${esc(objName(x))}</option>`).join("")}</select></div><div class="report-action-row" style="margin-top:12px">
 <button type="button" onclick="rcDirectPrint()">🖨️ طباعة</button>
 <button type="button" onclick="rcExportPDF()">📄 PDF</button>
 <button type="button" onclick="rcExportExcel()">📊 Excel</button>
