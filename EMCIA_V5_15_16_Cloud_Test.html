@@ -2464,6 +2464,7 @@ function cloudPaymentSplit(g,e,amount,month){
  const emcia=Math.max(0,base*(100-rate)/100-de)*scale+Math.max(0,(Number(amount)||0)-due);
  return {teacher,emcia};
 }
+const emciaPaymentSplitCore=cloudPaymentSplit;
 function joinState(op,fin){
  const state={...op};
  for(const k of operationalKeys)if(!Array.isArray(state[k]))state[k]=[];
