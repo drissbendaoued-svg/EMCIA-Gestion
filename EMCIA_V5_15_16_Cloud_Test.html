@@ -973,7 +973,7 @@ function editStudentRegistration(id){
  let requestedSubjectIds=pickedNames.map(n=>ensureSubjectRecordForGroupMaterial(n)?.id).filter(Boolean);
  o.nAr=ar.trim();o.nFr=fr.trim();o.n=o.nAr||o.nFr||o.n;o.ph=ph;o.parent=par;o.landline=land;o.educationLevel=edu;o.level=lev;o.preferredTime=ptime;
  o.note=note.trim();o.studentType=(typ.trim().toLowerCase()==="former"||typ.trim()==="سابق")?"former":"new";
- o.requestedSubjectIds=requestedSubjectIds;o.requestedSubjects=pickedNames;o.active=lead!=="notinterested";save();students()
+ o.requestedSubjectIds=requestedSubjectIds;o.requestedSubjects=pickedNames;save();students()
 }
 function groupSubjectsCatalog(){return activeSubjectRecords()}
 function groupSubjectOptions(selected=""){
