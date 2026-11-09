@@ -2737,6 +2737,70 @@ async function enter(user,accessToken){
   for(const line of lines){const row=document.createElement('p');row.textContent=line;panel.appendChild(row)}
   document.body.appendChild(panel);
  });
+ if(profile.role==='director'){
+  addAction('📋 تدقيق الترحيل التجريبي',()=>{
+   let source;
+   try{source=JSON.parse(localStorage.getItem(localKey)||'{}')}catch(e){alert('تعذر قراءة النسخة المحلية');return}
+   const operational=['subj','t','s','g','e','p','att','sch','rooms','tatt','wait','wls','cash','shifts'];
+   const financial=['tp','adj','x','oi','sv'];
+   const restricted={g:['r'],e:['discountTeacher','discountEmcia'],p:['d','e','t','discountTeacher','discountEmcia']};
+   const forbidden=/^(teacherShare|emciaShare|instituteShare|teacherDue|emciaDue|salary|profit|netProfit|commission)$/i;
+   const op={},fin={},problems=[],roundtrip={};
+   const known=new Set([...operational,...financial]);
+   const unknown=Object.keys(source).filter(k=>!known.has(k));
+   if(unknown.length)problems.push('مفاتيح غير مصنفة: '+unknown.join(', '));
+   for(const key of operational){
+    const value=source[key];
+    if(!Array.isArray(value)){op[key]=value??[];continue}
+    const secrets=[];
+    op[key]=value.map((record,index)=>{
+     if(!record||typeof record!=='object'||Array.isArray(record))return record;
+     const clean={},hidden={_index:index};
+     for(const [field,v] of Object.entries(record)){
+      if((restricted[key]||[]).includes(field)||forbidden.test(field))hidden[field]=v;
+      else clean[field]=v;
+     }
+     if(Object.keys(hidden).length>1)secrets.push(hidden);
+     return clean;
+    });
+    if(secrets.length)fin[key]=secrets;
+   }
+   for(const key of financial)fin[key]=source[key]??[];
+   for(const key of operational){
+    const items=op[key];
+    roundtrip[key]=Array.isArray(items)?items.map((item,index)=>{
+     if(!item||typeof item!=='object'||Array.isArray(item))return item;
+     const extra=(fin[key]||[]).find(x=>x._index===index);
+     if(!extra)return item;
+     const {_index,...rest}=extra;
+     return {...item,...rest};
+    }):items;
+   }
+   for(const key of financial)roundtrip[key]=fin[key];
+   const canonical=value=>JSON.stringify(value,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.keys(v).sort().reduce((a,k)=>(a[k]=v[k],a),{}):v);
+   for(const key of known){
+    if(canonical(source[key]??[])!==canonical(roundtrip[key]??[]))problems.push('عدم تطابق عند إعادة التركيب: '+key);
+   }
+   const count=keys=>keys.reduce((n,k)=>n+(Array.isArray(source[k])?source[k].length:0),0);
+   const totals=keys=>keys.reduce((sum,k)=>sum+(Array.isArray(source[k])?source[k]:[]).reduce((a,r)=>a+(r&&typeof r==='object'?(+r.a||0):0),0),0);
+   const lines=[
+    'تدقيق محلي للترحيل — دون إرسال أو حفظ أو تغيير المزامنة.',
+    'عدد السجلات التشغيلية: '+count(operational),
+    'عدد السجلات المالية: '+count(financial),
+    'إجمالي حقل المبلغ (a) في الأداءات والمصاريف والمداخيل الأخرى: '+totals(['p','x','oi']).toFixed(2)+' MAD',
+    'مجموعات مختلطة لها حقول معزولة: '+Object.keys(fin).filter(k=>operational.includes(k)).join('، '),
+    'مطابقة إعادة تركيب السجلات: '+(problems.length?'تحتاج مراجعة':'ناجحة في البيانات الحالية'),
+    ...problems,
+    'ملاحظة: هذا لا يثبت سلامة كل الحقول المتداخلة أو صلاحية ترحيل الإنتاج، ولا يقارن حصص الأساتذة الفعلية.'
+   ];
+   const panel=document.createElement('div');panel.style.cssText='position:fixed;inset:7vh 5vw;z-index:100005;background:white;color:#102a43;padding:18px;overflow:auto;border-radius:12px;box-shadow:0 0 0 100vmax #0008;direction:rtl;line-height:2';
+   const close=document.createElement('button');close.textContent='✕ إغلاق';close.onclick=()=>panel.remove();
+   const title=document.createElement('h3');title.textContent='تدقيق الترحيل التجريبي';
+   panel.append(close,title);
+   for(const line of lines){const row=document.createElement('p');row.textContent=line;panel.appendChild(row)}
+   document.body.appendChild(panel);
+  });
+ }
  addAction('⌂ الرئيسية',()=>{if(typeof enterApp==='function')enterApp()});
  const logout=addAction('↪ الخروج',async()=>{clearAuthSession();logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
  logout.style.background='#fbe9e7';logout.style.color='#a32929';
