@@ -3088,6 +3088,40 @@ async function enter(user,accessToken){
   };
   panel.append(close,title,intro,picker,button,status);document.body.appendChild(panel);
  });
+ addAction('🔐 فحص صلاحيات سجلات الاستعادة',()=>{
+  const panel=document.createElement('div');panel.style.cssText='position:fixed;inset:6vh 4vw;z-index:100014;background:#fff;color:#102a43;padding:18px;overflow:auto;border-radius:12px;box-shadow:0 0 0 100vmax #0008;direction:rtl;line-height:1.9';
+  const close=document.createElement('button');close.textContent='✕ إغلاق';close.style.cssText='display:block;width:100%;padding:12px;margin-bottom:15px';close.onclick=()=>panel.remove();
+  const title=document.createElement('h3');title.textContent='فحص صلاحيات سجلات الاستعادة — قراءة فقط';
+  const intro=document.createElement('p');intro.textContent='يقرأ هذا الاختبار معرف الاستعادة التجريبية باستخدام صلاحيات حسابك الحالي. لا يعرض مبالغ أو بيانات شخصية ولا يكتب أي تعديل.';
+  const field=document.createElement('input');field.value='emcia-v2-restore-test-mw8k4h19-lwldfd';field.style.cssText='box-sizing:border-box;width:100%;padding:12px;direction:ltr';field.setAttribute('aria-label','معرف الاستعادة التجريبية');
+  const run=document.createElement('button');run.textContent='اختبار القراءة حسب صلاحيات الحساب';run.style.cssText='display:block;width:100%;padding:12px;margin:12px 0';
+  const status=document.createElement('p');status.style.whiteSpace='pre-line';status.textContent='لم يبدأ الفحص.';
+  run.onclick=async()=>{
+   run.disabled=true;
+   const lines=['الدور الحالي: '+profile.role];
+   try{
+    const id=field.value.trim();
+    if(!/^emcia-v2-restore-test-[a-z0-9-]{8,80}$/.test(id))throw Error('يُقبل معرف استعادة تجريبية فقط');
+    const isStaff=profile.role==='secretary_morning'||profile.role==='secretary_evening';
+    for(const [table,label,expected] of [
+      ['emcia_operational_state_v2','التشغيل',true],
+      ['emcia_financial_state_v2','المالية',!isStaff]
+    ]){
+     try{
+      const rows=await request(api+'/rest/v1/'+table+'?id=eq.'+encodeURIComponent(id)+'&select=id',{headers:headers()});
+      const visible=Array.isArray(rows)&&rows.length===1;
+      const valid=visible===expected;
+      lines.push((valid?'✓ ':'✗ ')+label+': '+(visible?'مسموح':'محجوب أو غير موجود')+' — '+(valid?'مطابق للتوقع':'يحتاج مراجعة'));
+     }catch(e){
+      lines.push('⚠ '+label+': خطأ في الطلب؛ لا يُعد إثباتاً للحجب ('+String(e.message||e).slice(0,100)+')');
+     }
+    }
+    lines.push('هذا فحص قراءة حقيقي حسب جلسة المستخدم، ولا يثبت وحده منع الكتابة أو صلاحية باقي الجداول.');
+   }catch(e){lines.push('✗ '+String(e.message||e).slice(0,160))}
+   finally{status.textContent=lines.join('\n');run.disabled=false}
+  };
+  panel.append(close,title,intro,field,run,status);document.body.appendChild(panel);
+ });
  addAction('⌂ الرئيسية',()=>{if(typeof enterApp==='function')enterApp()});
  const logout=addAction('↪ الخروج',async()=>{clearAuthSession();logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
  logout.style.background='#fbe9e7';logout.style.color='#a32929';
