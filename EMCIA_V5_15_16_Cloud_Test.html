@@ -2441,6 +2441,29 @@ function splitState(state){
  if(canFinance())for(const k of financialKeys)fin[k]=Array.isArray(state[k])?state[k]:[];
  return {op,fin};
 }
+function cloudPaymentSplit(g,e,amount,month){
+ const rate=Number(g?.r)||0,base=Number(e?.fee==null?g?.f:e.fee)||0;
+ let d=Number(e?.discountAmount)||0,dt=0,de=0;
+ if(d&&month){
+  const start=e?.discountStart||(e?.start||'').slice(0,7);
+  let end='';
+  if(e?.discountTerm==='month')end=start;
+  else if(e?.discountTerm==='date')end=e?.discountEnd||'';
+  else if(e?.discountTerm==='season'&&start){const y=Number(start.slice(0,4)),m=Number(start.slice(5,7));end=(m>=9?y+1:y)+'-08';}
+  if((start&&month<start)||(end&&month>end))d=0;
+ }
+ if(d){
+  const bearer=e?.discountBearer||'emcia';
+  if(bearer==='teacher')dt=d;
+  else if(bearer==='emcia')de=d;
+  else if(bearer==='half'){dt=d/2;de=d/2}
+  else if(bearer==='custom'){dt=Number(e?.discountTeacher)||0;de=Number(e?.discountEmcia)||0}
+ }
+ const due=Math.max(0,base-d),scale=due>0?Math.min(1,(Number(amount)||0)/due):0;
+ const teacher=Math.max(0,base*rate/100-dt)*scale;
+ const emcia=Math.max(0,base*(100-rate)/100-de)*scale+Math.max(0,(Number(amount)||0)-due);
+ return {teacher,emcia};
+}
 function joinState(op,fin){
  const state={...op};
  for(const k of operationalKeys)if(!Array.isArray(state[k]))state[k]=[];
@@ -2462,12 +2485,12 @@ function joinState(op,fin){
    if(p.type==='composite'&&Array.isArray(p.allocations)){
     let teacher=0,emcia=0;
     for(const allocation of p.allocations){
-     const x=emciaPaymentSplitCore(g,e,Number(allocation.amount)||0,allocation.month);
+     const x=cloudPaymentSplit(g,e,Number(allocation.amount)||0,allocation.month);
      teacher+=x.teacher;emcia+=x.emcia;
     }
     p.d=teacher;p.e=emcia;
    }else{
-    const x=emciaPaymentSplitCore(g,e,Number(p.netAfterRefund??p.a)||0,month);
+    const x=cloudPaymentSplit(g,e,Number(p.netAfterRefund??p.a)||0,month);
     p.d=x.teacher;p.e=x.emcia;
    }
   }
