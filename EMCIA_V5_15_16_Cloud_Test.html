@@ -2911,6 +2911,49 @@ async function enter(user,accessToken){
   for(const line of lines){const row=document.createElement('p');row.textContent=line;panel.appendChild(row)}
   document.body.appendChild(panel);
  });
+ addAction('🔄 اختبار التزامن بين حسابين',()=>{
+  const table='emcia_operational_state_v2',id='emcia-v2-two-account-simulation';
+  const url=api+'/rest/v1/'+table,endpoint=url+'?id=eq.'+encodeURIComponent(id);
+  let captured=null;
+  const panel=document.createElement('div');
+  panel.style.cssText='position:fixed;inset:6vh 4vw;z-index:100009;background:#fff;color:#102a43;padding:18px;overflow:auto;border-radius:12px;box-shadow:0 0 0 100vmax #0008;direction:rtl;line-height:1.8';
+  const title=document.createElement('h3');title.textContent='اختبار التزامن الحقيقي بين حسابين';
+  const info=document.createElement('p');info.textContent='سجل اصطناعي مشترك فقط. افتح الاختبار على جهازين بحسابين مختلفين، والتقط المراجعة في الجهازين قبل أن تحفظ من أي منهما.';
+  const status=document.createElement('div');status.style.cssText='white-space:pre-line;padding:12px;border:1px solid #ccd;border-radius:8px;margin:12px 0';status.textContent='لم تبدأ التجربة بعد.';
+  const makeButton=(label,fn)=>{const b=document.createElement('button');b.textContent=label;b.style.cssText='display:block;width:100%;padding:10px;margin:8px 0';b.onclick=fn;return b};
+  const close=makeButton('✕ إغلاق',()=>panel.remove());
+  const initialize=makeButton('1 — تهيئة السجل (المدير فقط)',async()=>{
+   try{
+    const rows=await request(endpoint+'&select=id,revision',{headers:headers()});
+    const revision=rows[0]?.revision??0;
+    const payload={_testOnly:true,kind:'two-account-concurrency',marker:'initial-'+Date.now()};
+    const updated=await request(rows.length?endpoint+'&revision=eq.'+revision:url,{method:rows.length?'PATCH':'POST',headers:{...headers(),'Prefer':'return=representation'},body:JSON.stringify({...rows.length?{}:{id},payload,revision:revision+1,updated_by:userId})});
+    if(updated.length!==1)throw Error('تعارض أثناء التهيئة؛ أعد المحاولة');
+    captured=null;status.textContent='تمت تهيئة السجل؛ المراجعة '+(revision+1)+'. الآن التقط المراجعة على الجهازين.';
+   }catch(e){status.textContent='تعذر التهيئة: '+String(e.message||e).slice(0,160)}
+  });
+  initialize.disabled=profile.role!=='director';
+  const capture=makeButton('2 — التقاط المراجعة الحالية',async()=>{
+   try{
+    const rows=await request(endpoint+'&select=id,revision,payload',{headers:headers()});
+    if(rows.length!==1||rows[0].payload?._testOnly!==true||rows[0].payload?.kind!=='two-account-concurrency')throw Error('السجل التجريبي غير مهيأ');
+    captured=rows[0].revision;status.textContent='التقطت المراجعة '+captured+'. لا تضغط التقاط مجدداً حتى تنتهي محاولة الحفظ على الجهازين.';
+   }catch(e){status.textContent='تعذر الالتقاط: '+String(e.message||e).slice(0,160)}
+  });
+  const save=makeButton('3 — محاولة الحفظ بالمراجعة الملتقطة',async()=>{
+   if(captured===null){status.textContent='التقط المراجعة أولاً';return}
+   const old=captured;captured=null;
+   try{
+    const payload={_testOnly:true,kind:'two-account-concurrency',marker:'edit-'+Date.now(),actorRole:profile.role};
+    const updated=await request(endpoint+'&revision=eq.'+old,{method:'PATCH',headers:{...headers(),'Prefer':'return=representation'},body:JSON.stringify({payload,revision:old+1,updated_by:userId})});
+    const latest=await request(endpoint+'&select=revision,payload',{headers:headers()});
+    if(updated.length===1&&latest.length===1&&latest[0].revision>=old+1)status.textContent='✓ قُبل التعديل؛ المراجعة '+latest[0].revision+'. يجب رفض محاولة الجهاز الثاني التي التقطت المراجعة نفسها.';
+    else if(updated.length===0&&latest.length===1&&latest[0].revision>old)status.textContent='✓ رُفض التعديل المتأخر لأن المراجعة أصبحت '+latest[0].revision+'. لم تُستبدل كتابة الجهاز الأول.';
+    else status.textContent='⚠ نتيجة غير متوقعة؛ راجع حالة السجل قبل الاستمرار.';
+   }catch(e){status.textContent='تعذر الحفظ: '+String(e.message||e).slice(0,160)}
+  });
+  panel.append(close,title,info,initialize,capture,save,status);document.body.appendChild(panel);
+ });
  addAction('⌂ الرئيسية',()=>{if(typeof enterApp==='function')enterApp()});
  const logout=addAction('↪ الخروج',async()=>{clearAuthSession();logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
  logout.style.background='#fbe9e7';logout.style.color='#a32929';
