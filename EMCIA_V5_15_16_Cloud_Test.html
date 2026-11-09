@@ -1802,7 +1802,7 @@ function rcBuildReport(){
   const groups=new Set(ens.map(e=>e.gid).filter(id=>by(db.g,id)?.active!==false)).size;
   const pending=ens.filter(e=>{
    const amount=dueForEnrollmentMonth(e,m);
-   const received=allocated.filter(p=>p.eid===e.id).reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);
+   const received=allocated.filter(p=>p.sid===e.sid&&p.gid===e.gid).reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);
    return amount>0&&received<amount-0.001;
   }).length;
   const history=Array.from({length:6},(_,i)=>monthShift(m,i-5)).map(mm=>{
@@ -1846,7 +1846,7 @@ function rcBuildReport(){
    let rows=db.g.filter(g=>g.active!==false).map(g=>{let a=db.att.filter(x=>x.gid===g.id&&x.date.slice(0,7)===m);return[esc(g.n),a.filter(x=>x.status==="present").length,a.filter(x=>x.status==="absent").length,a.filter(x=>x.status==="late").length,a.filter(x=>x.status==="excused").length]});
    rcSetReport(`تقرير الحضور والغياب — ${m}`,rcTable(["الفوج","حاضر","غائب","متأخر","بعذر"],rows))
  } else if(type==="arrears"){
-   let rows=[];db.e.filter(e=>e.active).forEach(e=>{let d=dueForEnrollmentMonth(e,m),pa=db.p.filter(p=>p.eid===e.id&&p.allocMonth===m).reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);if(d-pa>0){let s=by(db.s,e.sid),g=by(db.g,e.gid);rows.push([esc(objName(s)),esc(g?g.n:"—"),esc(s&&s.ph?s.ph:"—"),money(d),money(pa),money(d-pa)])}});
+   let rows=[];db.e.filter(e=>e.active).forEach(e=>{let d=dueForEnrollmentMonth(e,m),pa=db.p.filter(p=>p.sid===e.sid&&p.gid===e.gid&&p.allocMonth===m).reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);if(d-pa>0){let s=by(db.s,e.sid),g=by(db.g,e.gid);rows.push([esc(objName(s)),esc(g?g.n:"—"),esc(s&&s.ph?s.ph:"—"),money(d),money(pa),money(d-pa)])}});
    rcSetReport(`تقرير المتأخرات — ${m}`,rcTable(["المتعلم","الفوج","الهاتف","المستحق","المؤدى","المتبقي"],rows))
  } else if(type==="financial"){
    let ps=db.p.filter(p=>(p.date||"").slice(0,7)===m),gross=ps.reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0),td=ps.reduce((z,p)=>z+teacherDueOf(p),0),em=ps.reduce((z,p)=>z+(+p.e||0),0),oi=db.oi.filter(x=>(x.date||"").slice(0,7)===m).reduce((z,x)=>z+(+x.a||0),0),ex=db.x.filter(x=>(x.date||"").slice(0,7)===m).reduce((z,x)=>z+(+x.a||0),0),sv=db.sv.filter(x=>(x.date||"").slice(0,7)===m).reduce((z,x)=>z+(+x.a||0),0);
@@ -1976,7 +1976,7 @@ function daily(){
  let capacity=sessions.map(s=>{let g=by(db.g,s.gid),r=by(db.rooms,s.rid),n=db.e.filter(e=>e.active&&e.gid===s.gid&&(!e.start||e.start<=date)).length;return{s,g,r,n}}).filter(x=>x.r&&x.n>x.r.cap);
  let abs=repeatedAbsences(date);
  let m=date.slice(0,7),debtors=0,debtTotal=0;
- db.e.filter(e=>e.active&&e.start&&e.start.slice(0,7)<=m).forEach(e=>{let debt=monthRange(e.start,m).reduce((z,mm)=>{let due=dueForEnrollmentMonth(e,mm),paid=db.p.filter(p=>p.eid===e.id&&p.allocMonth===mm).reduce((a,p)=>a+(+(p.netAfterRefund??p.a)||0),0);return z+Math.max(0,due-paid)},0);if(debt>0){debtors++;debtTotal+=debt}});
+ db.e.filter(e=>e.active&&e.start&&e.start.slice(0,7)<=m).forEach(e=>{let debt=monthRange(e.start,m).reduce((z,mm)=>{let due=dueForEnrollmentMonth(e,mm),paid=db.p.filter(p=>p.sid===e.sid&&p.gid===e.gid&&p.allocMonth===mm).reduce((a,p)=>a+(+(p.netAfterRefund??p.a)||0),0);return z+Math.max(0,due-paid)},0);if(debt>0){debtors++;debtTotal+=debt}});
  $("#daily").innerHTML=`<div class="card"><div class="row"><div><label>التاريخ</label><input type="date" value="${date}" onchange="window.dailyDate=this.value;daily()"></div><div><b>${day}</b></div></div></div>
  <div class="grid daily-stats-grid"><div class="card"><div class="muted">حصص اليوم</div><div class="kpi">${sessions.length}</div></div><div class="card"><div class="muted">حضور غير مكتمل</div><div class="kpi">${unfinished.length}</div></div><div class="card"><div class="muted">تنبيهات السعة</div><div class="kpi">${capacity.length}</div></div><div class="card"><div class="muted">غياب متكرر هذا الشهر</div><div class="kpi">${abs.length}</div></div><div class="card"><div class="muted">حالات متأخرة في الأداء</div><div class="kpi">${debtors}</div><div class="muted">${money(debtTotal)}</div></div></div>
  <div class="card"><h3>برنامج اليوم</h3>${sessions.length?`<table><tr><th>الوقت</th><th>الفوج</th><th>الأستاذ</th><th>القاعة</th><th>المسجلون</th><th>الحضور</th><th></th></tr>${sessions.map(s=>{let g=by(db.g,s.gid),r=by(db.rooms,s.rid),st=sessionAttendanceStatus(s,date);return`<tr><td>${s.start}–${s.end}</td><td>${esc(g?g.n:"—")}</td><td>${esc(g?objName(by(db.t,g.tid)):"—")}</td><td>${esc(r?r.n:"—")}</td><td>${st.n}${r?` / ${r.cap}`:""}</td><td><b>${st.label}</b></td><td><button onclick="goAttendance('${date}','${s.gid}')">تسجيل الحضور</button></td></tr>`}).join("")}</table>`:"<p class='muted'>لا توجد حصص مبرمجة لهذا اليوم.</p>"}</div>
@@ -2063,7 +2063,7 @@ function emciaPendingAlertCount(){
   if(!by(db.s,e.sid)||!by(db.g,e.gid))return;
   const pending=monthRange(e.start,month).some(mm=>{
    const due=dueForEnrollmentMonth(e,mm);
-   const paid=db.p.filter(p=>p.eid===e.id&&p.allocMonth===mm).reduce((sum,p)=>sum+(+(p.netAfterRefund??p.a)||0),0);
+   const paid=db.p.filter(p=>p.sid===e.sid&&p.gid===e.gid&&p.allocMonth===mm).reduce((sum,p)=>sum+(+(p.netAfterRefund??p.a)||0),0);
    return due-paid>0.001;
   });
   if(pending)count++;
@@ -2106,7 +2106,7 @@ function emciaAdministrativeAlerts(){
    months.forEach(mm=>{
     if(mm<e.start.slice(0,7)||mm>current)return;
     const due=dueForEnrollmentMonth(e,mm);
-    const paid=db.p.filter(p=>p.eid===e.id&&p.allocMonth===mm).reduce((sum,p)=>sum+(+(p.netAfterRefund??p.a)||0),0);
+    const paid=db.p.filter(p=>p.sid===e.sid&&p.gid===e.gid&&p.allocMonth===mm).reduce((sum,p)=>sum+(+(p.netAfterRefund??p.a)||0),0);
     const remaining=Math.max(0,due-paid);if(remaining<=0)return;
     const category=paid>0?'partial':'unpaid';
     if(typeSelect.value==='partial'&&category!=='partial')return;
@@ -2139,7 +2139,7 @@ function arrears(){
    let s=by(db.s,e.sid),g=by(db.g,e.gid),t=g?by(db.t,g.tid):null;if(!s||!g)return;
    let months=monthRange(e.start,m), debt=0, lateMonths=[], partialMonths=[], details=[];
    months.forEach(mm=>{
-     let due=dueForEnrollmentMonth(e,mm), paid=db.p.filter(p=>p.eid===e.id&&p.allocMonth===mm).reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);
+     let due=dueForEnrollmentMonth(e,mm), paid=db.p.filter(p=>p.sid===e.sid&&p.gid===e.gid&&p.allocMonth===mm).reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);
      let rem=Math.max(0,due-paid);debt+=rem;
      if(rem>0){if(paid>0)partialMonths.push(mm);else lateMonths.push(mm);details.push({m:mm,due,paid,rem})}
    });
@@ -2157,7 +2157,7 @@ function arrears(){
 
 function reminderText(eid){
  let e=by(db.e,eid),s=e?by(db.s,e.sid):null,g=e?by(db.g,e.gid):null;if(!e||!s||!g)return "";
- let m=window.arm||nowMonth(), lines=monthRange(e.start,m).map(mm=>{let due=dueForEnrollmentMonth(e,mm),paid=db.p.filter(p=>p.eid===e.id&&p.allocMonth===mm).reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0),rem=Math.max(0,due-paid);return{mm,due,paid,rem}}).filter(x=>x.rem>0);
+ let m=window.arm||nowMonth(), lines=monthRange(e.start,m).map(mm=>{let due=dueForEnrollmentMonth(e,mm),paid=db.p.filter(p=>p.sid===e.sid&&p.gid===e.gid&&p.allocMonth===mm).reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0),rem=Math.max(0,due-paid);return{mm,due,paid,rem}}).filter(x=>x.rem>0);
  let total=lines.reduce((z,x)=>z+x.rem,0), months=lines.map(x=>x.mm).join("، ");
  if(!total)return `السلام عليكم، نحيطكم علماً أن وضعية أداء المتعلم(ة) ${objName(s)} منتظمة إلى غاية ${m}. شكراً لتعاونكم.\nإدارة EMCIA`;
  return `السلام عليكم،\nنذكركم بكل احترام بأن بذمة المتعلم(ة) ${objName(s)} واجبات دراسية غير مسواة تخص: ${months}.\nالمبلغ المتبقي الإجمالي: ${money(total)}.\nالمرجو تسوية الوضعية لدى إدارة EMCIA، وشكراً لتعاونكم.\nإدارة EMCIA`;
@@ -2182,7 +2182,7 @@ function openWhatsApp(phone){
 
 function showDebt(eid){
  let e=by(db.e,eid),s=e?by(db.s,e.sid):null,g=e?by(db.g,e.gid):null;if(!e||!s||!g)return;
- let m=window.arm||nowMonth(), lines=monthRange(e.start,m).map(mm=>{let due=dueForEnrollmentMonth(e,mm),paid=db.p.filter(p=>p.eid===e.id&&p.allocMonth===mm).reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0),rem=Math.max(0,due-paid);return{mm,due,paid,rem}}).filter(x=>x.rem>0);
+ let m=window.arm||nowMonth(), lines=monthRange(e.start,m).map(mm=>{let due=dueForEnrollmentMonth(e,mm),paid=db.p.filter(p=>p.sid===e.sid&&p.gid===e.gid&&p.allocMonth===mm).reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0),rem=Math.max(0,due-paid);return{mm,due,paid,rem}}).filter(x=>x.rem>0);
  let body=lines.length?lines.map(x=>`${x.mm}: المستحق ${money(x.due)} | المؤدى ${money(x.paid)} | المتبقي ${money(x.rem)}`).join("\n"):"لا توجد متأخرات مسجلة.";
  alert(`${objName(s)} — ${g.n}\n\n${body}`)
 }
@@ -2201,7 +2201,7 @@ function analysis(){
  const paidStudentCount=new Set(ps.filter(p=>(+(p.netAfterRefund??p.a)||0)>0).map(p=>p.sid)).size;
  const unpaidEnrollments=ens.filter(e=>{
   const d=dueForEnrollmentMonth(e,m);
-  const received=ps.filter(p=>p.eid===e.id).reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);
+  const received=ps.filter(p=>p.sid===e.sid&&p.gid===e.gid).reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);
   return d>0&&received<d-0.001;
  }).length;
  const trendMonths=Array.from({length:6},(_,i)=>monthShift(m,i-5));
