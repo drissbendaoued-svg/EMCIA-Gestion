@@ -2560,6 +2560,62 @@ async function enter(user,accessToken){
    }
    dialog.append(close,pre);document.body.appendChild(dialog);
   });
+ if(profile.role==='director'){
+  addAction('🛡️ اختبار فصل الحقول دون نقل',()=>{
+   let state;
+   try{state=JSON.parse(localStorage.getItem(localKey)||'{}')}catch(e){alert('تعذر فحص البيانات المحلية');return;}
+   const financialGroups=['tp','adj','x','oi','sv'];
+   const operationalGroups=['subj','t','s','g','e','p','att','sch','rooms','tatt','wait','wls','cash','shifts'];
+   const fieldRules={
+    g:['r'],e:['discountTeacher','discountEmcia'],
+    p:['d','e','t','discountTeacher','discountEmcia']
+   };
+   const forbidden=/^(teacherShare|emciaShare|instituteShare|teacherDue|emciaDue|salary|profit|netProfit|commission)$/i;
+   const unknown=Object.keys(state).filter(k=>!financialGroups.includes(k)&&!operationalGroups.includes(k));
+   const violations=[];
+   const op={};const fin={};
+   for(const key of operationalGroups){
+    const rows=state[key];
+    if(!Array.isArray(rows)){op[key]=rows??[];continue;}
+    const protectedRows=[];
+    op[key]=rows.map((item,i)=>{
+     if(!item||typeof item!=='object'||Array.isArray(item))return item;
+     const safe={};const secret={id:item.id};
+     for(const [field,value] of Object.entries(item)){
+      if((fieldRules[key]||[]).includes(field)||forbidden.test(field))secret[field]=value;
+      else safe[field]=value;
+     }
+     if(Object.keys(secret).length>1)protectedRows.push(secret);
+     return safe;
+    });
+    if(protectedRows.length)fin[key]=protectedRows;
+   }
+   for(const key of financialGroups)fin[key]=state[key]??[];
+   if(unknown.length)violations.push('مجموعات غير مصنفة: '+unknown.join(', '));
+   for(const key of ['g','e','p']){
+    const original=Array.isArray(state[key])?state[key]:[];
+    const filtered=Array.isArray(op[key])?op[key]:[];
+    if(original.length!==filtered.length)violations.push('اختلاف عدد السجلات: '+key);
+    for(const item of filtered){
+     if(item&&typeof item==='object'&&Object.keys(item).some(k=>(fieldRules[key]||[]).includes(k)||forbidden.test(k)))violations.push('تسرب حقل مقيد: '+key);
+    }
+   }
+   const result=[
+    'اختبار تقسيم محلي فقط — لم تُرسل أي بيانات إلى الخادم.',
+    'مجموعات تشغيلية: '+Object.keys(op).length,
+    'مجموعات مالية: '+Object.keys(fin).length,
+    'مجموعات ذات حقول مختلطة: '+['g','e','p'].filter(k=>fin[k]?.length).join('، '),
+    'فحوصات الاتساق: '+(violations.length?'تحتاج مراجعة':'اجتازت الفحص الأولي'),
+    ...violations,
+    'تنبيه: لا يثبت هذا الاختبار أمان جميع الحقول المتداخلة أو صحة الحسابات المالية، ولا يفعّل المزامنة.'
+   ];
+   const overlay=document.createElement('div');
+   overlay.style.cssText='position:fixed;inset:8vh 5vw;z-index:100002;background:white;color:#102a43;padding:20px;overflow:auto;border-radius:12px;box-shadow:0 0 0 100vmax #0008;direction:rtl;white-space:pre-line;line-height:2';
+   const close=document.createElement('button');close.textContent='✕ إغلاق';close.onclick=()=>overlay.remove();
+   const message=document.createElement('div');message.textContent=result.join(String.fromCharCode(10));
+   overlay.append(close,message);document.body.appendChild(overlay);
+  });
+ }
  addAction('⌂ الرئيسية',()=>{if(typeof enterApp==='function')enterApp()});
  const logout=addAction('↪ الخروج',async()=>{clearAuthSession();logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
  logout.style.background='#fbe9e7';logout.style.color='#a32929';
