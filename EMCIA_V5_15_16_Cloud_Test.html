@@ -735,7 +735,12 @@ function subjectPickerOptions(selected=[]){
 }
 function chipsHTML(arr=[],kind="student"){return (arr||[]).map((x,i)=>`<span style="display:inline-flex;align-items:center;gap:6px;border:1px solid #ccc;border-radius:18px;padding:5px 9px;margin:3px;background:#fafafa">${esc(x)} <button type="button" style="padding:0 5px;min-width:auto" onclick="removeSubjectChip('${kind}',${i})">×</button></span>`).join("")||`<span class="muted">لم تُحدد مواد بعد</span>`}
 let tempTeacherSubjects=[],tempStudentSubjects=[];
-
+let tempStudentRequests=[];
+function studentLevelChoices(){return educationLevelCatalog()}
+function refreshStudentLevelPicker(){let el=$("#studentRequestLevel");if(!el)return;const name=$("#studentSubjectSelect")?.value||"";const language=/الألمانية|الفرنسية|الإنجليزية|الإسبانية|الهولندية/.test(name);const choices=studentLevelChoices().filter(x=>language||!/^(A1|A2|B1|B2|C1|C2|مبتدئ|متوسط|متقدم)$/.test(x));el.innerHTML='<option value="">— المستوى / التخصص —</option>'+choices.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('')+'<option value="__other__">مستوى آخر...</option>';}
+function studentRequestLevelValue(){const v=$("#studentRequestLevel")?.value||"";return v==='__other__'?($("#studentRequestLevelOther")?.value||'').trim():v}
+function studentRequestLevelChanged(){const el=$("#studentRequestLevelOther");if(el)el.classList.toggle('hide',$("#studentRequestLevel")?.value!=='__other__')}
+function studentRequestLabels(o){return (o.requestedSubjectLevels||[]).length?o.requestedSubjectLevels.map(x=>x.subject+(x.level?' — '+x.level:' — مستوى غير محدد')):(o.requestedSubjects||[])}
 function subjectCompact(o){return o?(o.code||[o.n,o.level,o.specialty].filter(Boolean).join("-")||"—"):"—"}
 function subjectRecordLabel(o){if(!o)return "—";return [o.n,o.level,o.specialty].filter(Boolean).join(" — ")+(o.code?` [${o.code}]`:"")}
 function subjectById(id){return db.subj.find(x=>x.id===id)}
@@ -836,7 +841,7 @@ function renderSubjectPicker(kind){
    if(sel){sel.innerHTML=teacherSubjectPickerOptions();sel.value=""}
    return
  }
- if(box)box.innerHTML=tempStudentSubjects.length?tempStudentSubjects.map(id=>{let s=subjectById(id),label=s?.n||"";return label?`<span class="subject-chip">${esc(label)} <button type="button" onclick="removeSubjectChip('student','${id}')">×</button></span>`:""}).join(""):`<span class="muted">لم تُحدد مواد بعد</span>`;
+ if(box)box.innerHTML=tempStudentRequests.length?tempStudentRequests.map((r,i)=>`<span class="subject-chip">${esc(r.subject)} — ${esc(r.level||"مستوى غير محدد")} <button type="button" onclick="removeSubjectChip('student',${i})">×</button></span>`).join(""):`<span class="muted">لم تُحدد مواد بعد</span>`;
  if(sel){sel.innerHTML=studentSubjectPickerOptions();sel.value=""}
 }
 function removeTeacherSubjectByIndex(i){
@@ -862,9 +867,9 @@ function addSubjectChip(kind){
  let arr=tempStudentSubjects,sel=$("#studentSubjectSelect"),v=sel?.value||"";if(!v)return;
  if(v==="__other__"){v=($("#studentOtherSubject")?.value||"").trim();if(!v)return alert("أدخل اسم المادة الأخرى.");v="name:"+v;}
  let rec=v.startsWith("name:")?ensureSubjectRecordForGroupMaterial(v.slice(5)):ensureSubjectRecordForGroupMaterial(v);
- if(!rec)return;if(!arr.includes(rec.id))arr.push(rec.id);renderSubjectPicker("student");let other=$("#studentOtherSubject");if(other)other.value="";$("#studentOtherSubjectWrap")?.classList.add("hide")
+ if(!rec)return;const level=studentRequestLevelValue();if(!level)return alert("حدد المستوى أو التخصص لهذه المادة أولاً.");if(!tempStudentRequests.some(r=>r.subject===rec.n&&r.level===level))tempStudentRequests.push({subject:rec.n,level});if(!arr.includes(rec.id))arr.push(rec.id);renderSubjectPicker("student");let other=$("#studentOtherSubject");if(other)other.value="";$("#studentOtherSubjectWrap")?.classList.add("hide")
 }
-function removeSubjectChip(kind,i){let arr=kind==="teacher"?tempTeacherSubjects:tempStudentSubjects;arr.splice(i,1);renderSubjectPicker(kind)}
+function removeSubjectChip(kind,i){if(kind==="student"){tempStudentRequests.splice(Number(i),1);tempStudentSubjects=tempStudentRequests.map(r=>subjectIdByLegacyName(r.subject)).filter(Boolean)}else tempTeacherSubjects.splice(Number(i),1);renderSubjectPicker(kind)}
 function teacherSubjectPickerOptions(){
  const cats=[
   ["اللغات",["الفرنسية","الإنجليزية","الإسبانية","الألمانية","الهولندية","العربية"]],
@@ -890,7 +895,7 @@ function studentSubjectPickerOptions(){
 }
 function studentSubjectChoiceChanged(){
  const w=$("#studentOtherSubjectWrap");
- if(w)w.classList.toggle("hide",$("#studentSubjectSelect")?.value!=="__other__");
+ if(w)w.classList.toggle("hide",$("#studentSubjectSelect")?.value!=="__other__");refreshStudentLevelPicker();
 }
 function teacherSubjectChoiceChanged(){
  let s=$("#teacherSubjectSelect"),w=$("#teacherOtherSubjectWrap");
@@ -970,18 +975,18 @@ function subjectCatalog(){return ["الفرنسية","الإنجليزية","ا�
 
 
 function students(){
- tempStudentSubjects=[];
+ tempStudentSubjects=[];tempStudentRequests=[];
  $("#students").innerHTML=`<div class="card"><div class="row"><input id="snAr" placeholder="الاسم بالعربية"><input id="snFr" placeholder="Nom en français"><input id="sph" placeholder="الهاتف الشخصي"><input id="spa" placeholder="هاتف ولي الأمر"><input id="sland" placeholder="الهاتف الثابت"><select id="sedu"><option value="">— المستوى التعليمي —</option><option>ابتدائي</option><option>إعدادي</option><option>ثانوي</option><option>جامعي</option><option>موظف/عامل</option><option>غير ذلك</option></select><input id="sl" placeholder="المستوى أو التخصص التفصيلي"><select id="stime"><option value="">— التوقيت المفضل —</option><option value="day">نهاراً</option><option value="evening">مساءً</option><option value="both">نهاراً أو مساءً</option><option value="unspecified">غير محدد</option></select><select id="stype"><option value="new">متعلم جديد بالمؤسسة</option><option value="former">متعلم سابق بالمؤسسة</option></select><div><label>تاريخ التسجيل بالمؤسسة</label><input id="sj" type="date" value="${today()}"></div></div>
- <div style="margin-top:12px"><label><b>ملاحظات</b></label><textarea id="snote" placeholder="التوقيت المناسب للمتعلم، شروطه الخاصة أو أي ملاحظات أخرى"></textarea></div><div style="margin-top:12px"><label><b>المادة أو المواد المطلوبة</b></label><div id="studentChips" style="margin:7px 0"><span class="muted">لم تُحدد مواد بعد</span></div><div class="row"><select id="studentSubjectSelect" onchange="studentSubjectChoiceChanged()">${studentSubjectPickerOptions()}</select><div id="studentOtherSubjectWrap" class="hide"><label>المادة الأخرى</label><input id="studentOtherSubject" placeholder="اكتب اسم المادة"></div><button type="button" onclick="addSubjectChip('student')">+ إضافة مادة</button></div></div>
+ <div style="margin-top:12px"><label><b>ملاحظات</b></label><textarea id="snote" placeholder="التوقيت المناسب للمتعلم، شروطه الخاصة أو أي ملاحظات أخرى"></textarea></div><div style="margin-top:12px"><label><b>المادة أو المواد المطلوبة</b></label><div id="studentChips" style="margin:7px 0"><span class="muted">لم تُحدد مواد بعد</span></div><div class="row"><select id="studentSubjectSelect" onchange="studentSubjectChoiceChanged()">${studentSubjectPickerOptions()}</select><div id="studentOtherSubjectWrap" class="hide"><label>المادة الأخرى</label><input id="studentOtherSubject" placeholder="اكتب اسم المادة"></div><select id="studentRequestLevel" onchange="studentRequestLevelChanged()">${groupLevelSpecialtyOptions()}</select><input id="studentRequestLevelOther" class="hide" placeholder="اكتب المستوى أو التخصص"><button type="button" onclick="addSubjectChip('student')">+ إضافة مادة ومستوى</button></div></div>
  <div class="row" style="margin-top:12px"><button onclick="addStudent()">إضافة متعلم</button></div></div>
- <div class="card"><table><tr><th>المتعلم</th><th>جديد/سابق</th><th>المواد المطلوبة</th><th>المستوى</th><th>الهاتف</th><th>الحالة</th><th></th></tr>${[...db.s].reverse().map(o=>`<tr><td>${esc(objName(o))}</td><td>${o.studentType==="former"?"سابق":"جديد"}</td><td>${esc((o.requestedSubjects||[]).join("، ")||"—")}</td><td>${esc(o.level)}</td><td>${esc(o.ph)}</td><td>${o.active?"نشط":"غير نشط"}</td><td class="actions"><button onclick="editStudentRegistration('${o.id}')">✏️</button>${o.active?"":`<button class="ok" onclick="activateObj('s','${o.id}')">✓ تنشيط</button>`}<button class="danger" onclick="removeObj('s','${o.id}')">🗑️</button></td></tr>`).join("")}</table></div>`;
+ <div class="card"><table><tr><th>المتعلم</th><th>جديد/سابق</th><th>المواد المطلوبة</th><th>المستوى</th><th>الهاتف</th><th>الحالة</th><th></th></tr>${[...db.s].reverse().map(o=>`<tr><td>${esc(objName(o))}</td><td>${o.studentType==="former"?"سابق":"جديد"}</td><td>${esc(studentRequestLabels(o).join("، ")||"—")}</td><td>${esc(o.level)}</td><td>${esc(o.ph)}</td><td>${o.active?"نشط":"غير نشط"}</td><td class="actions"><button onclick="editStudentRegistration('${o.id}')">✏️</button>${o.active?"":`<button class="ok" onclick="activateObj('s','${o.id}')">✓ تنشيط</button>`}<button class="danger" onclick="removeObj('s','${o.id}')">🗑️</button></td></tr>`).join("")}</table></div>`;
 }
 function addStudent(){
  let ar=$("#snAr").value.trim(),fr=$("#snFr").value.trim();if(!ar&&!fr)return alert("أدخل الاسم");
  let requestedSubjectIds=[...new Set(tempStudentSubjects)].filter(id=>subjectById(id));
- if(!requestedSubjectIds.length)return alert("يجب اختيار مادة واحدة على الأقل، ثم الضغط على زر «+ إضافة مادة» قبل تسجيل المتعلم.");
+ if(!tempStudentRequests.length)return alert("أضف مادة واحدة على الأقل مع مستواها قبل تسجيل المتعلم.");
  let subjects=requestedSubjectIds.map(id=>subjectNameFromId(id)).filter(Boolean);
- db.s.push({id:uid(),n:ar||fr,nAr:ar,nFr:fr,ph:$("#sph").value,parent:$("#spa").value,landline:$("#sland").value,educationLevel:$("#sedu").value,level:$("#sl").value,preferredTime:$("#stime").value,joined:$("#sj").value||today(),note:$("#snote").value.trim(),studentType:$("#stype").value,requestedSubjects:subjects,requestedSubjectIds,active:true});save();students()
+ db.s.push({id:uid(),n:ar||fr,nAr:ar,nFr:fr,ph:$("#sph").value,parent:$("#spa").value,landline:$("#sland").value,educationLevel:$("#sedu").value,level:$("#sl").value,preferredTime:$("#stime").value,joined:$("#sj").value||today(),note:$("#snote").value.trim(),studentType:$("#stype").value,requestedSubjects:subjects,requestedSubjectIds,requestedSubjectLevels:tempStudentRequests.map(r=>({...r})),active:true});save();students()
 }
 function editStudentRegistration(id){
  let o=by(db.s,id);if(!o)return;
@@ -1002,7 +1007,7 @@ function editStudentRegistration(id){
  let requestedSubjectIds=pickedNames.map(n=>ensureSubjectRecordForGroupMaterial(n)?.id).filter(Boolean);
  o.nAr=ar.trim();o.nFr=fr.trim();o.n=o.nAr||o.nFr||o.n;o.ph=ph;o.parent=par;o.landline=land;o.educationLevel=edu;o.level=lev;o.preferredTime=ptime;
  o.note=note.trim();o.studentType=(typ.trim().toLowerCase()==="former"||typ.trim()==="سابق")?"former":"new";
- o.requestedSubjectIds=requestedSubjectIds;o.requestedSubjects=pickedNames;save();students()
+ o.requestedSubjectIds=requestedSubjectIds;o.requestedSubjects=pickedNames;o.requestedSubjectLevels=pickedNames.map(n=>({subject:n,level:(o.requestedSubjectLevels||[]).find(r=>r.subject===n)?.level||lev||""}));save();students()
 }
 function groupSubjectsCatalog(){return activeSubjectRecords()}
 function groupSubjectOptions(selected=""){
@@ -1267,7 +1272,7 @@ function eligibleStudentsForGroup(gid,showAll=false,query=""){
  return db.s.filter(s=>{
    if(!s.active)return false;
    if(db.e.some(e=>e.sid===s.id&&e.gid===gid&&e.active))return false;
-   let requested=(s.requestedSubjects||[]).some(n=>normalizeSubjectName(n||"").toLocaleLowerCase()===subject);
+   let levels=s.requestedSubjectLevels||[];let requested=levels.length?levels.some(r=>normalizeSubjectName(r.subject||"").toLocaleLowerCase()===subject&&(!r.level||!g.level||r.level.trim()===g.level.trim())):(s.requestedSubjects||[]).some(n=>normalizeSubjectName(n||"").toLocaleLowerCase()===subject);
    if(!showAll&&subject&&!requested)return false;
    if(q){
      let names=[s.nAr||"",s.nFr||"",s.n||"",objName(s,"both")||""].join(" ").toLocaleLowerCase();
@@ -1284,7 +1289,7 @@ function enrollStudentOptions(){
  let sel=$("#es");
  if(sel)sel.innerHTML=list.length?`<option value="">— اختر المتعلم (${list.length}) —</option>`+list.map(s=>`<option value="${s.id}">${esc(objName(s))}${s.ph?` — ${esc(s.ph)}`:""}</option>`).join(""):`<option value="">— لا توجد نتائج —</option>`;
  let info=$("#einfo"),sub=groupSubject(gid);
- if(info)info.textContent=gid?(showAll?`عرض جميع المتعلمين غير المسجلين في هذا الفوج — النتائج: ${list.length}`:`المادة: ${sub||"غير محددة"} — المتعلمون الذين اختاروها: ${list.length}`):"";
+ if(info)info.textContent=gid?(showAll?`عرض جميع المتعلمين غير المسجلين في هذا الفوج — النتائج: ${list.length}`:`المادة: ${sub||"غير محددة"} — المستوى: ${by(db.g,gid)?.level||"غير محدد"} — المتعلمون المطابقون: ${list.length}`):"";
 }
 function onEnrollGroupChange(){showEnrollFee();enrollStudentOptions()}
 function hideEnrollSuccess(){let x=$("#enrollSuccess");if(x)x.classList.add("hidden")}
