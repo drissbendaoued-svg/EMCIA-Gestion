@@ -2864,6 +2864,53 @@ async function enter(user,accessToken){
    document.body.appendChild(panel);
   });
  }
+ addAction('☁️ فحص الترحيل السحابي الاصطناعي',async()=>{
+  const isDirector=profile.role==='director';
+  const id='emcia-v2-synthetic-migration-check';
+  const operational={_testOnly:true,version:1,g:[{id:'fixture-g',n:'فوج افتراضي',f:150}],e:[{id:'fixture-e',gid:'fixture-g',discountAmount:20,discountBearer:'shared'}],p:[{id:'fixture-p1',a:130},{id:'fixture-p2',a:65}]};
+  const financial={_testOnly:true,version:1,g:[{id:'fixture-g',r:60}],e:[{id:'fixture-e',discountTeacher:10,discountEmcia:10}],p:[{id:'fixture-p1',d:80,e:50},{id:'fixture-p2',d:40,e:25}]};
+  const stable=x=>JSON.stringify(x,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.keys(v).sort().reduce((a,k)=>(a[k]=v[k],a),{}):v);
+  const lines=[];
+  const get=async table=>request(api+'/rest/v1/'+table+'?id=eq.'+encodeURIComponent(id)+'&select=id,revision,payload',{headers:headers()});
+  const write=async(table,payload)=>{
+   const url=api+'/rest/v1/'+table;
+   const rows=await get(table),revision=rows[0]?.revision??0;
+   const options={method:rows.length?'PATCH':'POST',headers:{...headers(),'Prefer':'return=representation'},body:JSON.stringify({...rows.length?{}:{id},payload,revision:revision+1,updated_by:userId})};
+   const endpoint=rows.length?url+'?id=eq.'+encodeURIComponent(id)+'&revision=eq.'+revision:url;
+   const saved=await request(endpoint,options);
+   if(saved.length!==1)throw Error('تعذر تأكيد الحفظ أو تعارض المراجعة');
+  };
+  const opTable='emcia_operational_state_v2',finTable='emcia_financial_state_v2';
+  if(isDirector){
+   for(const [table,payload,label] of [[opTable,operational,'التشغيلي'],[finTable,financial,'المالي']]){
+    try{await write(table,payload);lines.push('✓ حفظ السجل '+label+' الاصطناعي')}catch(e){lines.push('✗ تعذر حفظ '+label+': '+String(e.message||e).slice(0,100))}
+   }
+  }
+  try{
+   const rows=await get(opTable),payload=rows[0]?.payload;
+   if(stable(payload)===stable(operational)){
+    const amount=payload.p.reduce((sum,p)=>sum+p.a,0);
+    lines.push(amount===195?'✓ استرجاع التشغيل ومطابقة 195.00 MAD':'✗ اختلاف مجموع الأداءات');
+    lines.push(!('r'in payload.g[0])&&!('d'in payload.p[0])&&!('e'in payload.p[0])?'✓ الحقول المالية المقيدة غير موجودة في الحمولة التشغيلية':'✗ حقل مالي ظاهر في الحمولة التشغيلية');
+   }else lines.push('✗ سجل التشغيل الاصطناعي غير موجود أو مختلف');
+  }catch(e){lines.push('✗ قراءة التشغيل: '+String(e.message||e).slice(0,100))}
+  try{
+   const rows=await get(finTable),payload=rows[0]?.payload;
+   if(isDirector){
+    if(stable(payload)===stable(financial)){
+     const teacher=payload.p.reduce((sum,p)=>sum+p.d,0),emcia=payload.p.reduce((sum,p)=>sum+p.e,0);
+     lines.push(teacher===120&&emcia===75?'✓ استرجاع المالي: الأستاذ 120.00 والمؤسسة 75.00 MAD':'✗ اختلاف الحصص المالية');
+    }else lines.push('✗ سجل المالي الاصطناعي غير موجود أو مختلف');
+   }else lines.push(rows.length===0?'✓ السجل المالي غير مرئي لهذا الحساب':'✗ تحذير: السجل المالي مرئي لهذا الحساب');
+  }catch(e){lines.push('✗ قراءة المالية: '+String(e.message||e).slice(0,100))}
+  const panel=document.createElement('div');panel.style.cssText='position:fixed;inset:7vh 5vw;z-index:100007;background:white;color:#102a43;padding:18px;overflow:auto;border-radius:12px;box-shadow:0 0 0 100vmax #0008;direction:rtl;line-height:2';
+  const close=document.createElement('button');close.textContent='✕ إغلاق';close.onclick=()=>panel.remove();
+  const title=document.createElement('h3');title.textContent='فحص الترحيل السحابي — '+profile.role;
+  const note=document.createElement('p');note.textContent=isDirector?'يكتب سجلات اختبار ثابتة في v2 فقط ثم يسترجعها.':'فحص قراءة فقط للسجلات الاصطناعية التي أنشأها المدير؛ لا يحفظ أي بيانات.';
+  panel.append(close,title,note);
+  for(const line of lines){const row=document.createElement('p');row.textContent=line;panel.appendChild(row)}
+  document.body.appendChild(panel);
+ });
  addAction('⌂ الرئيسية',()=>{if(typeof enterApp==='function')enterApp()});
  const logout=addAction('↪ الخروج',async()=>{clearAuthSession();logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
  logout.style.background='#fbe9e7';logout.style.color='#a32929';
