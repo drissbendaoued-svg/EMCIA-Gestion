@@ -3190,8 +3190,8 @@ async function enter(user,accessToken){
   const verify=button('3 — فحص بقاء السجل (المدير)',async()=>{
    if(profile.role!=='director')throw Error('هذه الخطوة للمدير فقط');
    const rows=await read();
-   const ok=rows.length===1&&rows[0].revision===1&&rows[0].payload?._testOnly===true&&rows[0].payload?._rlsFixture==='write-delete-v1'&&rows[0].payload?.marker==='unchanged'&&Object.keys(rows[0].payload).length===3;
-   status.textContent=ok?'✓ السجل المالي التجريبي موجود؛ المراجعة والمحتوى لم يتغيرا. نجاح فحص السلامة بعد المحاولات.':'⚠ السجل مفقود أو تغيّر؛ أوقف الاختبارات وراجع سياسات RLS. العدد: '+rows.length;
+   const ok=rows.length===1&&Number(rows[0].revision)===1&&rows[0].payload?._testOnly===true&&rows[0].payload?._rlsFixture==='write-delete-v1'&&rows[0].payload?.marker==='unchanged'&&Object.keys(rows[0].payload).length===3;
+   status.textContent=ok?'✓ السجل المالي التجريبي موجود؛ المراجعة والمحتوى لم يتغيرا. نجاح فحص السلامة بعد المحاولات.':'⚠ فحص غير مطابق؛ عدد السجلات: '+rows.length+'؛ رقم المراجعة: '+(rows[0]?.revision??'غير موجود')+'؛ نوع المراجعة: '+typeof rows[0]?.revision+'؛ علامة الاختبار: '+(rows[0]?.payload?._rlsFixture??'غير موجودة')+'؛ المحتوى: '+(rows[0]?.payload?.marker??'غير موجود')+'؛ عدد الحقول: '+Object.keys(rows[0]?.payload||{}).length;
   });
   panel.append(close,title,info,label,prepare,probe,verify,status);document.body.appendChild(panel);
  });
