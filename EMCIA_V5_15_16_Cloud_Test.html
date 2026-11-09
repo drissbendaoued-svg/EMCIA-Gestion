@@ -1298,8 +1298,8 @@ function activeDiscount(e,month){
  return {amount:d,teacher:td,emcia:ed,bearer:b}
 }
 function enrollmentFor(sid,gid){return db.e.find(e=>e.sid===sid&&e.gid===gid&&e.active)||db.e.find(e=>e.sid===sid&&e.gid===gid)}
-function paymentSplit(sid,gid,amount,month){
- let g=by(db.g,gid),e=enrollmentFor(sid,gid),rate=+g?.r||0;
+function emciaPaymentSplitCore(g,e,amount,month){
+ let rate=+g?.r||0;
  let base=+(e?.fee==null?g?.f:e.fee)||0,disc=activeDiscount(e,month),D=disc?.amount||0;
  let due=Math.max(0,base-D),teacherFull=base*rate/100-(disc?.teacher||0),emciaFull=base*(100-rate)/100-(disc?.emcia||0);
  teacherFull=Math.max(0,teacherFull);emciaFull=Math.max(0,emciaFull);
@@ -1307,6 +1307,9 @@ function paymentSplit(sid,gid,amount,month){
  let td=teacherFull*scale,ee=emciaFull*scale;
  if(a>due){let extra=a-due;ee+=extra}
  return {teacher:td,emcia:ee,discount:D,due,base,discountTeacher:disc?.teacher||0,discountEmcia:disc?.emcia||0}
+}
+function paymentSplit(sid,gid,amount,month){
+ return emciaPaymentSplitCore(by(db.g,gid),enrollmentFor(sid,gid),amount,month);
 }
 function addEnroll(){
  let sid=$("#es").value,gid=$("#eg").value,reason=$("#er").value;
@@ -2629,11 +2632,12 @@ async function enter(user,accessToken){
     {name:'مبلغ يفوق المستحق',base:150,rate:60,amount:160,discount:0,teacherDiscount:0,emciaDiscount:0,expectedTeacher:90,expectedEmcia:70}
    ];
    const calc=f=>{
-    const due=Math.max(0,f.base-f.discount);
-    const fullTeacher=Math.max(0,f.base*f.rate/100-f.teacherDiscount);
-    const fullEmcia=Math.max(0,f.base*(100-f.rate)/100-f.emciaDiscount);
-    const scale=due>0?Math.min(1,f.amount/due):0;
-    return {teacher:fullTeacher*scale,emcia:fullEmcia*scale+Math.max(0,f.amount-due)};
+    const bearer=f.discount===0?'none':f.teacherDiscount===f.discount?'teacher':f.emciaDiscount===f.discount?'emcia':f.teacherDiscount===f.emciaDiscount?'half':'custom';
+    return emciaPaymentSplitCore(
+     {f:f.base,r:f.rate},
+     {fee:null,start:'2026-11-01',discountAmount:f.discount,discountBearer:bearer,discountTeacher:f.teacherDiscount,discountEmcia:f.emciaDiscount,discountStart:'2026-11',discountTerm:'month'},
+     f.amount,'2026-11'
+    );
    };
    const results=fixtures.map(f=>{
     const v=calc(f);
@@ -2644,12 +2648,16 @@ async function enter(user,accessToken){
    overlay.style.cssText='position:fixed;inset:5vh 4vw;z-index:100002;background:#fff;color:#102a43;padding:16px;overflow:auto;border-radius:12px;box-shadow:0 0 0 100vmax #0008;direction:rtl;font:14px/1.7 system-ui';
    const close=document.createElement('button');close.textContent='✕ إغلاق';close.onclick=()=>overlay.remove();close.style.cssText='padding:8px 14px;margin-bottom:12px';
    const title=document.createElement('h3');title.textContent='اختبارات مالية افتراضية: '+results.filter(x=>x.pass).length+' / '+results.length+' ناجحة';
-   const warning=document.createElement('p');warning.textContent='اختبار مستقل لصيغة الحساب؛ لا يستخدم بيانات المؤسسة ولا يختبر بعد خادم المزامنة أو جميع حالات التطبيق.';
+   const warning=document.createElement('p');warning.textContent='الاختبار يستدعي الآن دالة الحساب الأساسية نفسها التي يستخدمها التطبيق، ببيانات افتراضية معزولة. لا يختبر المزامنة أو ترحيل البيانات.';
    overlay.append(close,title,warning);
    for(const r of results){
     const item=document.createElement('div');
     item.style.cssText='padding:10px;border:1px solid #cbd5e1;border-radius:8px;margin:8px 0';
-    item.textContent=(r.pass?'✓ ':'✗ ')+r.name+' — الأستاذ: '+r.teacher.toFixed(2)+' | المؤسسة: '+r.emcia.toFixed(2);
+    const label=document.createElement('strong');label.textContent=(r.pass?'✓ ':'✗ ')+r.name;
+    const figures=document.createElement('div');figures.style.cssText='direction:rtl;margin-top:4px';
+    const moneySpan=(name,value)=>{const span=document.createElement('span');span.textContent=name+' ';const num=document.createElement('b');num.dir='ltr';num.style.cssText='display:inline-block;unicode-bidi:isolate';num.textContent=value.toFixed(2)+' MAD';span.appendChild(num);return span};
+    figures.append(moneySpan('الأستاذ:',r.teacher),document.createTextNode(' | '),moneySpan('المؤسسة:',r.emcia));
+    item.append(label,figures);
     overlay.appendChild(item);
    }
    document.body.appendChild(overlay);
