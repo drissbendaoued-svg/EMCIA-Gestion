@@ -2414,7 +2414,7 @@ async function renewAuthSession(){
  }catch(error){clearAuthSession();throw error}
 }
 async function resumeAuthSession(){
- if(location.hash.includes('type=recovery')||location.hash.includes('error='))return;
+ if(/type=(recovery|invite|signup|magiclink)/.test(location.hash)||location.hash.includes('error='))return;
  let saved;try{saved=JSON.parse(sessionStorage.getItem(authSessionKey)||'null')}catch(e){}
  if(!saved?.refresh_token)return;
  document.body.classList.add('emcia-session-resuming');
@@ -2650,6 +2650,14 @@ async function enter(user,accessToken){
  alertsButton.onclick=()=>{accountActions.style.display='none';if(typeof emciaAdministrativeAlerts==='function')emciaAdministrativeAlerts()};
  controls.appendChild(alertsButton);
  if(typeof window.emciaUpdateAlertCounter==='function')window.emciaUpdateAlertCounter();
+ addAction('🔑 تغيير كلمة المرور',()=>{
+  const overlay=document.createElement('div');overlay.style.cssText='position:fixed;inset:0;z-index:100020;background:#0008;display:grid;place-items:center;direction:rtl;padding:14px';
+  const form=document.createElement('form');form.style.cssText='background:white;color:#102a43;padding:22px;border-radius:12px;width:min(100%,420px);box-sizing:border-box';
+  form.innerHTML='<h3>تغيير كلمة المرور</h3><label>كلمة المرور الجديدة<input type="password" name="pass" minlength="12" autocomplete="new-password" required></label><label>تأكيد كلمة المرور<input type="password" name="confirm" minlength="12" autocomplete="new-password" required></label><p role="status" class="muted"></p><button type="submit">حفظ كلمة المرور</button><button type="button" class="secondary" data-close>إلغاء</button>';
+  form.querySelector('[data-close]').onclick=()=>overlay.remove();
+  form.onsubmit=async event=>{event.preventDefault();const pass=form.elements.pass.value,confirmPass=form.elements.confirm.value,notice=form.querySelector('[role=status]'),submit=form.querySelector('[type=submit]');if(pass!==confirmPass){notice.textContent='كلمتا المرور غير متطابقتين';return}if(pass.length<12){notice.textContent='الحد الأدنى 12 حرفاً';return}submit.disabled=true;notice.textContent='جار حفظ كلمة المرور...';try{await request(api+'/auth/v1/user',{method:'PUT',headers:{'apikey':key,'Authorization':'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({password:pass})});notice.textContent='تم تغيير كلمة المرور بنجاح';setTimeout(()=>overlay.remove(),1200)}catch(error){notice.textContent='تعذر التغيير: '+error.message;submit.disabled=false}};
+  overlay.appendChild(form);document.body.appendChild(overlay);
+ });
  addAction('⌂ الرئيسية',()=>{if(typeof enterApp==='function')enterApp()});
  const logout=addAction('↪ الخروج',async()=>{clearAuthSession();logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
  logout.style.background='#fbe9e7';logout.style.color='#a32929';
@@ -2797,7 +2805,7 @@ async function enter(user,accessToken){
 const forgot=document.getElementById('emcia-forgot');
 const recovery=document.getElementById('emcia-recovery');
 const newPassword=document.getElementById('emcia-new-password');
-let recoveryToken=null;
+let recoveryToken=null,activationMode=false,activationSession=null;
 forgot.onclick=()=>{recovery.style.display=recovery.style.display==='none'?'block':'none';document.getElementById('emcia-recovery-email').value=document.getElementById('authEmail').value.trim();say('');};
 document.getElementById('emcia-recovery-form').addEventListener('submit',async e=>{
  e.preventDefault();
@@ -2811,11 +2819,15 @@ document.getElementById('emcia-recovery-form').addEventListener('submit',async e
 (function checkRecoveryLink(){
  const hash=new URLSearchParams(location.hash.replace(/^#/,''));
  const params=new URLSearchParams(location.search);
- if(hash.get('type')==='recovery'&&hash.get('access_token')){
-  recoveryToken=hash.get('access_token');
+ if(['recovery','invite','signup','magiclink'].includes(hash.get('type'))&&hash.get('access_token')){
+  recoveryToken=hash.get('access_token');activationMode=hash.get('type')!=='recovery';
+  activationSession={access_token:hash.get('access_token'),refresh_token:hash.get('refresh_token')};
   history.replaceState(null,'',location.pathname+location.search);
   document.getElementById('authForm').style.display='none';forgot.style.display='none';recovery.style.display='none';newPassword.style.display='block';
-  say('تم التحقق من رابط الاستعادة. عيّن كلمة المرور الجديدة ثم سجل الدخول.');
+  newPassword.querySelector('p').textContent=activationMode?'مرحباً بك في EMCIA. أنشئ كلمة مرور جديدة وأعد تأكيدها لتفعيل حسابك (12 حرفاً على الأقل).':'اختر كلمة مرور جديدة وأعد تأكيدها (12 حرفاً على الأقل).';
+  document.getElementById('emcia-new-password-value').minLength=12;document.getElementById('emcia-new-password-confirm').minLength=12;
+  newPassword.querySelector('button[type=submit]').textContent=activationMode?'تفعيل الحساب والدخول':'حفظ كلمة المرور الجديدة';
+  say(activationMode?'أكمل إنشاء كلمة المرور لتفعيل حسابك.':'تم التحقق من رابط الاستعادة. عيّن كلمة المرور الجديدة ثم سجل الدخول.');
  }else if(hash.get('error')||params.get('error')){
   say('رابط الاستعادة غير صالح أو انتهت صلاحيته. اطلب رابطًا جديدًا.');
   history.replaceState(null,'',location.pathname);
@@ -2826,11 +2838,17 @@ document.getElementById('emcia-new-password-form').addEventListener('submit',asy
  if(!recoveryToken){say('انتهت جلسة الاستعادة. اطلب رابطًا جديدًا.');return;}
  const pass=document.getElementById('emcia-new-password-value').value,confirmPass=document.getElementById('emcia-new-password-confirm').value;
  if(pass!==confirmPass){say('كلمتا المرور غير متطابقتين.');return;}
+ if(pass.length<12){say('يجب أن تتكون كلمة المرور من 12 حرفاً على الأقل.');return;}
  say('جار حفظ كلمة المرور...');
  try{
   await request(api+'/auth/v1/user',{method:'PUT',headers:{'apikey':key,'Authorization':'Bearer '+recoveryToken,'Content-Type':'application/json'},body:JSON.stringify({password:pass})});
   recoveryToken=null;document.getElementById('emcia-new-password-form').reset();newPassword.style.display='none';document.getElementById('authForm').style.display='block';forgot.style.display='block';
-  say('تم تغيير كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.');
+  if(activationMode){
+   activationMode=false;
+   const email=(await request(api+'/auth/v1/user',{headers:{'apikey':key,'Authorization':'Bearer '+activationSession.access_token}})).email;
+   const session=await request(api+'/auth/v1/token?grant_type=password',{method:'POST',headers:{'apikey':key,'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
+   activationSession=null;saveAuthSession(session);await enter(session.user,session.access_token);
+  }else say('تم تغيير كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.');
  }catch(err){say('تعذر تغيير كلمة المرور: '+err.message);}
 });
 document.getElementById('authForm').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();say('اضغط زر «دخول إلى الحساب» لبدء التحقق.')}});
