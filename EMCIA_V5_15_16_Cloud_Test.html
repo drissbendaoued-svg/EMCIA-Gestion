@@ -276,6 +276,18 @@ body.reception-mode #langMenu{display:block}
 @media print{
  #groups .card:has(table),#arrears .card:has(table),#reportcenter .card:has(table),#students .card:has(table){overflow:visible!important}
 }
+
+/* EMCIA V27 — visible compact navigation on desktop, balanced account control */
+@media screen and (min-width:651px){
+ body:not(.reception-mode) #emcia-top-controls #mobileNavToggle{
+  display:inline-flex!important;flex:0 0 auto!important;width:auto!important;
+  min-width:108px!important;max-width:150px!important;min-height:40px!important;
+  align-items:center;justify-content:center;padding:8px 12px!important;
+ }
+ #emcia-top-controls{justify-content:space-between!important;align-items:center!important;gap:12px!important}
+ #emcia-top-controls #emcia-account-menu{flex:0 0 auto!important;width:auto!important;max-width:210px!important;min-width:0!important}
+ #emcia-top-controls #emcia-account-menu>button{width:auto!important;max-width:210px!important;min-height:40px!important;padding:8px 12px!important;font-size:14px!important;white-space:nowrap!important}
+}
 </style>
 
 <style>
@@ -403,7 +415,7 @@ header,nav,#nav,.main-nav,.subnav-wrap,.subnav,#emcia-top-controls{position:stat
 body:not(.emcia-authorized) #emcia-top-controls{display:none!important}
 @media(max-width:650px){#emcia-top-controls #mobileNavToggle{position:static!important}}
 </style></head>
-<body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>تسجيل دخول المدير والموظفين المفعّلين</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label>كلمة المرور<input id="authPassword" type="password" required autocomplete="current-password"></label><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات متصلة بقاعدة Supabase السحابية.</small></div></div>
+<body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>تسجيل دخول المدير والموظفين المفعّلين</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label>كلمة المرور<input id="authPassword" type="password" required autocomplete="current-password"></label><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات محفوظة بأمان في النظام السحابي للمؤسسة.</small></div></div>
 <header><b>EMCIA Gestion</b></header>
 <div id="langMenu" class="lang-menu">
 <button id="langMenuBtn" type="button" onclick="toggleLangMenu()" aria-label="اختيار اللغة">🌐</button>
@@ -590,7 +602,7 @@ function toggleLang(){setLang(LANG==="ar"?"fr":"ar")}
 function toggleLangMenu(){document.getElementById("langChoices")?.classList.toggle("open")}
 
 const NAV_GROUPS=[
- ["academic","الإدارة",[["teachers","إضافة أستاذ"],["students","إضافة متعلم"],["waiting","لوائح الانتظار"],["groups","إضافة فوج"],["enroll","تسجيل متعلم"]]],
+ ["academic","الإدارة",[["teachers","إضافة أستاذ"],["students","إضافة متعلم"],["groups","إضافة فوج"],["enroll","تسجيل متعلم"],["waiting","لوائح الانتظار"]]],
  ["dailycat","التدبير اليومي",[["daily","التشغيل اليومي"],["schedule","استعمال الزمن"],["attendance","الحضور والغياب"],["teacheratt","حضور الأساتذة"]]],
  ["finance","المالية",[["payments","الأداءات"],["advances","التسبيقات"],["cashbox","الصندوق"],["shifts","المناوبات"],["adjustments","التسوية الاستثنائية"],["teacherpay","تسوية مستحقات الأساتذة"],["expenses","المداخيل والمصاريف"],["budget","تدبير الميزانية"],["analysis","التحليل المالي"],["arrears","متابعة المتأخرات"]]],
  ["filescat","الملفات والمتابعة",[["studentfile","ملف المتعلم"],["teacherfile","ملف الأستاذ"]]],
@@ -2361,7 +2373,7 @@ async function restoreVerifiedBackup(){
   localStorage.setItem(KEY,JSON.stringify(db));
   window.pendingBackup=null;
   nav();enterApp();applyLang();
-  alert("تم استرجاع البيانات وحفظها في Supabase بنجاح، دون تسجيل الخروج.");
+  alert("تم استرجاع البيانات وحفظها في النظام السحابي بنجاح، دون تسجيل الخروج.");
  }catch(error){
   db=original;
   alert("تعذر تأكيد الاسترجاع السحابي، ولم تُستبدل البيانات الحالية: "+error.message);
@@ -2608,7 +2620,7 @@ async function enter(user,accessToken){
    sessionStorage.setItem('emcia_cloud_backup_done','1');
   }
   localStorage.setItem(localKey,JSON.stringify(cloud.payload||{}));
-  cloudStatus('☁️ متصل بقاعدة Supabase — '+(profile.display_name||profile.role));
+  cloudStatus('☁️ متصل بنظام EMCIA — '+(profile.display_name||profile.role));
  }catch(e){started=false;say('تعذر تحميل البيانات السحابية، ولن يفتح التطبيق منعًا لفقدان التغييرات: '+e.message);return;}
  const source=document.getElementById('emcia-app-source');
  if(!source)throw Error('تعذر العثور على كود التطبيق.');
