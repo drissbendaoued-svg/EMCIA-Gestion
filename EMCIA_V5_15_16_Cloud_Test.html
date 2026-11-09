@@ -2616,6 +2616,45 @@ async function enter(user,accessToken){
    overlay.append(close,message);document.body.appendChild(overlay);
   });
  }
+ if(profile.role==='director'){
+  addAction('🧮 اختبار الحسابات الافتراضية',()=>{
+   // Pure isolated test: no localStorage, db mutation, or network request.
+   const fixtures=[
+    {name:'أداء كامل',base:150,rate:60,amount:150,discount:0,teacherDiscount:0,emciaDiscount:0,expectedTeacher:90,expectedEmcia:60},
+    {name:'أداء جزئي',base:150,rate:60,amount:75,discount:0,teacherDiscount:0,emciaDiscount:0,expectedTeacher:45,expectedEmcia:30},
+    {name:'تخفيض تتحمله المؤسسة',base:150,rate:60,amount:130,discount:20,teacherDiscount:0,emciaDiscount:20,expectedTeacher:90,expectedEmcia:40},
+    {name:'تخفيض يتحمله الأستاذ',base:150,rate:60,amount:130,discount:20,teacherDiscount:20,emciaDiscount:0,expectedTeacher:70,expectedEmcia:60},
+    {name:'تخفيض مشترك',base:150,rate:60,amount:130,discount:20,teacherDiscount:10,emciaDiscount:10,expectedTeacher:80,expectedEmcia:50},
+    {name:'تخفيض مخصص مع أداء جزئي',base:150,rate:60,amount:65,discount:20,teacherDiscount:15,emciaDiscount:5,expectedTeacher:37.5,expectedEmcia:27.5},
+    {name:'مبلغ يفوق المستحق',base:150,rate:60,amount:160,discount:0,teacherDiscount:0,emciaDiscount:0,expectedTeacher:90,expectedEmcia:70}
+   ];
+   const calc=f=>{
+    const due=Math.max(0,f.base-f.discount);
+    const fullTeacher=Math.max(0,f.base*f.rate/100-f.teacherDiscount);
+    const fullEmcia=Math.max(0,f.base*(100-f.rate)/100-f.emciaDiscount);
+    const scale=due>0?Math.min(1,f.amount/due):0;
+    return {teacher:fullTeacher*scale,emcia:fullEmcia*scale+Math.max(0,f.amount-due)};
+   };
+   const results=fixtures.map(f=>{
+    const v=calc(f);
+    const pass=Math.abs(v.teacher-f.expectedTeacher)<0.001&&Math.abs(v.emcia-f.expectedEmcia)<0.001&&Math.abs(v.teacher+v.emcia-f.amount)<0.001;
+    return {name:f.name,pass,teacher:v.teacher,emcia:v.emcia};
+   });
+   const overlay=document.createElement('div');
+   overlay.style.cssText='position:fixed;inset:5vh 4vw;z-index:100002;background:#fff;color:#102a43;padding:16px;overflow:auto;border-radius:12px;box-shadow:0 0 0 100vmax #0008;direction:rtl;font:14px/1.7 system-ui';
+   const close=document.createElement('button');close.textContent='✕ إغلاق';close.onclick=()=>overlay.remove();close.style.cssText='padding:8px 14px;margin-bottom:12px';
+   const title=document.createElement('h3');title.textContent='اختبارات مالية افتراضية: '+results.filter(x=>x.pass).length+' / '+results.length+' ناجحة';
+   const warning=document.createElement('p');warning.textContent='اختبار مستقل لصيغة الحساب؛ لا يستخدم بيانات المؤسسة ولا يختبر بعد خادم المزامنة أو جميع حالات التطبيق.';
+   overlay.append(close,title,warning);
+   for(const r of results){
+    const item=document.createElement('div');
+    item.style.cssText='padding:10px;border:1px solid #cbd5e1;border-radius:8px;margin:8px 0';
+    item.textContent=(r.pass?'✓ ':'✗ ')+r.name+' — الأستاذ: '+r.teacher.toFixed(2)+' | المؤسسة: '+r.emcia.toFixed(2);
+    overlay.appendChild(item);
+   }
+   document.body.appendChild(overlay);
+  });
+ }
  addAction('⌂ الرئيسية',()=>{if(typeof enterApp==='function')enterApp()});
  const logout=addAction('↪ الخروج',async()=>{clearAuthSession();logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
  logout.style.background='#fbe9e7';logout.style.color='#a32929';
