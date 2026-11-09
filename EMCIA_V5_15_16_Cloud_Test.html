@@ -3190,7 +3190,7 @@ async function enter(user,accessToken){
   const verify=button('3 — فحص بقاء السجل (المدير)',async()=>{
    if(profile.role!=='director')throw Error('هذه الخطوة للمدير فقط');
    const rows=await read();
-   const ok=rows.length===1&&rows[0].revision===1&&JSON.stringify(rows[0].payload)===JSON.stringify(expected());
+   const ok=rows.length===1&&rows[0].revision===1&&rows[0].payload?._testOnly===true&&rows[0].payload?._rlsFixture==='write-delete-v1'&&rows[0].payload?.marker==='unchanged'&&Object.keys(rows[0].payload).length===3;
    status.textContent=ok?'✓ السجل المالي التجريبي موجود؛ المراجعة والمحتوى لم يتغيرا. نجاح فحص السلامة بعد المحاولات.':'⚠ السجل مفقود أو تغيّر؛ أوقف الاختبارات وراجع سياسات RLS. العدد: '+rows.length;
   });
   panel.append(close,title,info,label,prepare,probe,verify,status);document.body.appendChild(panel);
