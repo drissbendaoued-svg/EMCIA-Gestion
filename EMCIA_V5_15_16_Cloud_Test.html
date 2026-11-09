@@ -2408,38 +2408,93 @@ window.addEventListener('beforeunload',event=>{
  event.preventDefault();
  event.returnValue='';
 });
-async function cloudFetch(){
- const rows=await request(cloudUrl+'?id=eq.'+cloudId+'&select=id,payload,revision',{headers:headers()});
- if(rows.length)return rows[0];
- try{await request(cloudUrl,{method:'POST',headers:{...headers(),'Prefer':'return=minimal'},body:JSON.stringify({id:cloudId,payload:{},updated_by:userId})});}
+const operationalUrl=api+'/rest/v1/emcia_operational_state_v2';
+const financialUrl=api+'/rest/v1/emcia_financial_state_v2';
+const operationalKeys=['subj','t','s','g','e','p','att','sch','rooms','tatt','wait','wls','cash','shifts'];
+const financialKeys=['tp','adj','x','oi','sv'];
+const restrictedFields={g:['r'],e:['discountTeacher','discountEmcia'],p:['d','e','t','discountTeacher','discountEmcia']};
+const financialFieldPattern=/^(teacherShare|emciaShare|instituteShare|teacherDue|emciaDue|salary|profit|netProfit|commission)$/i;
+let opRevision=0,finRevision=0;
+const canFinance=()=>['director','accountant'].includes(window.EMCIA_CURRENT_ROLE);
+function splitState(state){
+ const op={},fin={};
+ for(const k of operationalKeys){
+  const arr=Array.isArray(state[k])?state[k]:[];
+  op[k]=arr.map((item,i)=>{
+   if(!item||typeof item!=='object'||Array.isArray(item))return item;
+   const safe={},secret={_index:i};
+   for(const [field,value] of Object.entries(item)){
+    if((restrictedFields[k]||[]).includes(field)||financialFieldPattern.test(field))secret[field]=value;
+    else safe[field]=value;
+   }
+   if(Object.keys(secret).length>1)(fin[k]||(fin[k]=[])).push(secret);
+   return safe;
+  });
+ }
+ if(canFinance())for(const k of financialKeys)fin[k]=Array.isArray(state[k])?state[k]:[];
+ return {op,fin};
+}
+function joinState(op,fin){
+ const state={...op};
+ for(const k of operationalKeys)if(!Array.isArray(state[k]))state[k]=[];
+ for(const k of financialKeys)state[k]=canFinance()&&Array.isArray(fin?.[k])?fin[k]:[];
+ if(canFinance())for(const k of ['g','e','p']){
+  for(const item of fin?.[k]||[]){
+   const target=state[k]?.[item._index];
+   if(target&&typeof target==='object')for(const [field,value] of Object.entries(item))if(field!=='_index')target[field]=value;
+  }
+ }
+ return state;
+}
+async function v2Read(url){
+ const rows=await request(url+'?id=eq.'+cloudId+'&select=id,payload,revision',{headers:headers()});
+ return rows[0]||null;
+}
+async function v2Ensure(url){
+ let row=await v2Read(url);
+ if(row)return row;
+ try{await request(url,{method:'POST',headers:{...headers(),'Prefer':'return=minimal'},body:JSON.stringify({id:cloudId,payload:{},revision:0,updated_by:userId})});}
  catch(e){if(!/duplicate|conflict|23505/i.test(e.message))throw e;}
- const found=await request(cloudUrl+'?id=eq.'+cloudId+'&select=id,payload,revision',{headers:headers()});
- if(!found.length)throw Error('تعذر تهيئة التخزين السحابي.');
- return found[0];
+ row=await v2Read(url);
+ if(!row)throw Error('تعذر إنشاء سجل التخزين الجديد');
+ return row;
+}
+async function v2Write(url,revision,payload){
+ const rows=await request(url+'?id=eq.'+cloudId+'&revision=eq.'+revision,{method:'PATCH',headers:{...headers(),'Prefer':'return=representation'},body:JSON.stringify({payload,revision:revision+1,updated_by:userId,updated_at:new Date().toISOString()})});
+ if(rows.length!==1)throw Error('تعارض مراجعة سحابية؛ أعد تحميل البيانات');
+ return Number(rows[0].revision);
+}
+async function cloudFetch(){
+ const op=await v2Ensure(operationalUrl);
+ const fin=canFinance()?await v2Ensure(financialUrl):null;
+ opRevision=Number(op.revision)||0;
+ finRevision=Number(fin?.revision)||0;
+ return {payload:joinState(op.payload||{},fin?.payload||{}),revision:opRevision};
 }
 async function flushCloud(){
  if(saving||blocked||!dirty||!token)return;
  saving=true;dirty=false;
- const payload=JSON.parse(localStorage.getItem(localKey)||'{}');
  try{
-  const rows=await request(cloudUrl+'?id=eq.'+cloudId+'&revision=eq.'+revision,{method:'PATCH',headers:{...headers(),'Prefer':'return=representation'},body:JSON.stringify({payload,revision:revision+1,updated_by:userId,updated_at:new Date().toISOString()})});
-  if(!rows.length){blocked=true;dirty=true;cloudStatus('⚠️ تعارض في التعديل: لم تُحفظ التغييرات سحابياً. صدّر نسخة احتياطية أولاً، ثم راجع النسخة السحابية قبل إعادة التحميل.');return;}
-  revision=rows[0].revision;cloudStatus('☁️ تم تأكيد الحفظ السحابي — '+new Date().toLocaleTimeString('ar-MA'));
- }catch(e){blocked=true;dirty=true;cloudStatus('⚠️ فشل الحفظ السحابي؛ التغييرات محلية فقط. صدّر نسخة احتياطية قبل المغادرة. السبب: '+e.message);}
+  const state=JSON.parse(localStorage.getItem(localKey)||'{}');
+  const {op,fin}=splitState(state);
+  opRevision=await v2Write(operationalUrl,opRevision,op);
+  if(canFinance())finRevision=await v2Write(financialUrl,finRevision,fin);
+  revision=opRevision;
+  cloudStatus('☁️ تم الحفظ في التخزين المنفصل — '+new Date().toLocaleTimeString('ar-MA'));
+ }catch(e){blocked=true;dirty=true;cloudStatus('⚠️ تعذر تأكيد الحفظ: '+e.message+' — احتفظ بنسخة محلية');}
  finally{saving=false;if(dirty&&!blocked)flushCloud();}
 }
 window.EMCIA_CLOUD_SYNC={
- save(){if(blocked){dirty=true;cloudStatus('⚠️ الحفظ السحابي متوقف. التغييرات موجودة محلياً فقط؛ لا تغادر الصفحة قبل تصدير نسخة احتياطية ومراجعة التعارض.');return;}dirty=true;cloudStatus('☁️ تغييرات بانتظار الحفظ السحابي...');clearTimeout(debounce);debounce=setTimeout(flushCloud,550);},
+ save(){if(blocked){dirty=true;cloudStatus('⚠️ الحفظ متوقف بسبب تعارض. احتفظ بنسخة محلية.');return;}dirty=true;cloudStatus('☁️ جار حفظ التغييرات...');clearTimeout(debounce);debounce=setTimeout(flushCloud,550);},
  async restore(payload){
-  if(!token||blocked)throw Error('الجلسة غير متصلة أو الحفظ متوقف.');
-  clearTimeout(debounce);
-  if(saving||dirty){throw Error('هناك عملية حفظ جارية. انتظر قليلاً وأعد المحاولة.')}
+  if(!token||blocked||saving||dirty)throw Error('انتظر اكتمال الحفظ أو عالج التعارض أولاً');
   saving=true;
   try{
-   const rows=await request(cloudUrl+'?id=eq.'+cloudId+'&revision=eq.'+revision,{method:'PATCH',headers:{...headers(),'Prefer':'return=representation'},body:JSON.stringify({payload,revision:revision+1,updated_by:userId,updated_at:new Date().toISOString()})});
-   if(!rows.length)throw Error('تعارض مع تعديل آخر. حدّث البيانات قبل الاسترجاع.');
-   revision=rows[0].revision;
-   cloudStatus('☁️ تم استرجاع النسخة وحفظها في Supabase');
+   const {op,fin}=splitState(payload);
+   opRevision=await v2Write(operationalUrl,opRevision,op);
+   if(canFinance())finRevision=await v2Write(financialUrl,finRevision,fin);
+   revision=opRevision;
+   cloudStatus('☁️ تم استرجاع البيانات في التخزين المنفصل');
   }finally{saving=false}
  }
 };
