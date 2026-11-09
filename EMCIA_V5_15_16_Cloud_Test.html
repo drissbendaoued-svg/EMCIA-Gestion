@@ -3149,6 +3149,52 @@ async function enter(user,accessToken){
   };
   panel.append(close,title,info,btn,status);document.body.appendChild(panel);
  });
+ addAction('🧪 اختبار منع تعديل وحذف السجل المالي',()=>{
+  const panel=document.createElement('div');panel.style.cssText='position:fixed;inset:5vh 4vw;z-index:100016;background:#fff;color:#102a43;padding:18px;overflow:auto;border-radius:12px;box-shadow:0 0 0 100vmax #0008;direction:rtl;line-height:1.8';
+  const close=document.createElement('button');close.textContent='✕ إغلاق';close.style.cssText='display:block;width:100%;padding:12px;margin-bottom:12px';close.onclick=()=>panel.remove();
+  const title=document.createElement('h3');title.textContent='اختبار التعديل والحذف — سجل مالي اصطناعي معزول';
+  const info=document.createElement('p');info.textContent='المدير يجهّز سجلاً مستقلاً، ثم تحاول الكاتبة تعديله وحذفه، وأخيراً يتحقق المدير من بقاء المحتوى والمراجعة. إذا سمحت السياسات بعملية غير مصرح بها فقد يتغير سجل الاختبار وحده.';
+  const id='emcia-v2-rls-write-delete-fixture-20261109';
+  const label=document.createElement('p');label.textContent='معرف الاختبار: '+id;
+  const button=(label,action)=>{const b=document.createElement('button');b.textContent=label;b.style.cssText='display:block;width:100%;padding:12px;margin:10px 0';b.onclick=async()=>{b.disabled=true;try{await action()}catch(e){status.textContent='⚠ '+String(e.message||e).slice(0,180)}finally{b.disabled=false}};return b};
+  const status=document.createElement('p');status.style.whiteSpace='pre-line';status.textContent='اختر المرحلة المناسبة لحسابك.';
+  const url=api+'/rest/v1/emcia_financial_state_v2';
+  const read=()=>request(url+'?id=eq.'+encodeURIComponent(id)+'&select=id,revision,payload',{headers:headers()});
+  const expected=()=>({_testOnly:true,_rlsFixture:'write-delete-v1',marker:'unchanged'});
+  const prepare=button('1 — تجهيز سجل الاختبار (المدير)',async()=>{
+   if(profile.role!=='director')throw Error('هذه الخطوة للمدير فقط');
+   const old=await read();if(old.length){status.textContent='السجل التجريبي موجود بالفعل. لن نكتب فوقه. يمكن متابعة الاختبار أو التحقق.';return}
+   const created=await request(url,{method:'POST',headers:{...headers(),'Prefer':'return=representation'},body:JSON.stringify({id,revision:1,updated_by:userId,payload:expected()})});
+   if(!Array.isArray(created)||created.length!==1)throw Error('لم يؤكد الخادم إنشاء السجل');
+   const rows=await read();if(rows.length!==1||rows[0].revision!==1||JSON.stringify(rows[0].payload)!==JSON.stringify(expected()))throw Error('تعذر تأكيد السجل التجريبي');
+   status.textContent='✓ أنشأ المدير سجلاً مالياً اصطناعياً منفصلاً وثبتت قراءته. انتقل الآن إلى حساب الكاتبة.';
+  });
+  const probe=button('2 — اختبار التعديل والحذف (الكاتبة)',async()=>{
+   if(!['secretary_morning','secretary_evening'].includes(profile.role))throw Error('هذه الخطوة لحساب الكاتبة فقط');
+   const lines=['الدور: '+profile.role];
+   const target=url+'?id=eq.'+encodeURIComponent(id);
+   for(const [name,method,body] of [
+    ['التعديل','PATCH',JSON.stringify({revision:2,payload:{_testOnly:true,_rlsFixture:'write-delete-v1',marker:'unauthorized-change'}})],
+    ['الحذف','DELETE',undefined]
+   ]){
+    try{
+     const h={...headers(),'Prefer':'return=representation'};
+     const rows=await request(target,{method,headers:h,...(body?{body}:{})});
+     if(Array.isArray(rows)&&rows.length===0)lines.push('✓ '+name+': لم يرجع الخادم أي سجل متأثر؛ يلزم تأكيد المدير');
+     else lines.push('⚠ '+name+': لم يُرفض الطلب صراحة، وقد يكون أثر في سجل الاختبار؛ تحقق من حساب المدير');
+    }catch(e){lines.push('✓ '+name+': رفض الخادم الطلب — '+String(e.message||e).slice(0,130))}
+   }
+   lines.push('انتقل إلى حساب المدير لتنفيذ فحص بقاء السجل.');
+   status.textContent=lines.join('\n');
+  });
+  const verify=button('3 — فحص بقاء السجل (المدير)',async()=>{
+   if(profile.role!=='director')throw Error('هذه الخطوة للمدير فقط');
+   const rows=await read();
+   const ok=rows.length===1&&rows[0].revision===1&&JSON.stringify(rows[0].payload)===JSON.stringify(expected());
+   status.textContent=ok?'✓ السجل المالي التجريبي موجود؛ المراجعة والمحتوى لم يتغيرا. نجاح فحص السلامة بعد المحاولات.':'⚠ السجل مفقود أو تغيّر؛ أوقف الاختبارات وراجع سياسات RLS. العدد: '+rows.length;
+  });
+  panel.append(close,title,info,label,prepare,probe,verify,status);document.body.appendChild(panel);
+ });
  addAction('⌂ الرئيسية',()=>{if(typeof enterApp==='function')enterApp()});
  const logout=addAction('↪ الخروج',async()=>{clearAuthSession();logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
  logout.style.background='#fbe9e7';logout.style.color='#a32929';
