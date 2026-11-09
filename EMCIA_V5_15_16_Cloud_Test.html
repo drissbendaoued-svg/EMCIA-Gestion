@@ -2954,6 +2954,46 @@ async function enter(user,accessToken){
   });
   panel.append(close,title,info,initialize,capture,save,status);document.body.appendChild(panel);
  });
+ if(profile.role==='director')addAction('🛟 اختبار النسخ والاستعادة الآمنة',async()=>{
+  const panel=document.createElement('div');panel.style.cssText='position:fixed;inset:6vh 4vw;z-index:100011;background:#fff;color:#102a43;padding:18px;overflow:auto;border-radius:12px;box-shadow:0 0 0 100vmax #0008;direction:rtl;line-height:1.9';
+  const close=document.createElement('button');close.textContent='✕ إغلاق';close.onclick=()=>panel.remove();
+  const title=document.createElement('h3');title.textContent='اختبار النسخ والاستعادة — بيئة معزولة';
+  const status=document.createElement('div');status.textContent='جارٍ قراءة سجلات الاختبار فقط...';
+  panel.append(close,title,status);document.body.appendChild(panel);
+  const stable=x=>JSON.stringify(x,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.keys(v).sort().reduce((o,k)=>(o[k]=v[k],o),{}):v);
+  const clone=x=>JSON.parse(JSON.stringify(x));
+  const read=async(table,id)=>request(api+'/rest/v1/'+table+'?id=eq.'+encodeURIComponent(id)+'&select=id,revision,payload',{headers:headers()});
+  const checks=[];
+  try{
+   const specs=[
+    ['emcia_operational_state_v2','emcia-v2-synthetic-migration-check','operational'],
+    ['emcia_financial_state_v2','emcia-v2-synthetic-migration-check','financial']
+   ];
+   const backup={};
+   for(const [table,id,label] of specs){
+    const rows=await read(table,id);
+    if(rows.length!==1||rows[0].payload?._testOnly!==true)throw Error('سجل الاختبار '+label+' غير متاح أو ليس اصطناعياً');
+    backup[label]=clone(rows[0]);
+   }
+   checks.push('✓ قراءة سجلين اصطناعيين من التخزين السحابي');
+   const signature=stable(backup);
+   const sandboxCopy=clone(backup);
+   sandboxCopy.operational.payload.p[0].a=999999;
+   sandboxCopy.financial.payload.p[0].d=999999;
+   checks.push(stable(sandboxCopy)!==signature?'✓ اكتشاف التعديل داخل النسخة التجريبية':'✗ لم يُكتشف التعديل');
+   const restored=clone(backup);
+   checks.push(stable(restored)===signature?'✓ استعادة النسخة في الذاكرة دون فقد الحقول':'✗ فشل التطابق بعد الاستعادة');
+   const current={};
+   for(const [table,id,label] of specs){
+    const rows=await read(table,id);
+    if(rows.length!==1)throw Error('تعذر التحقق من '+label);
+    current[label]=clone(rows[0]);
+   }
+   checks.push(stable(current)===signature?'✓ السجلان السحابيان لم يتغيرا أثناء الاختبار':'⚠ تغير السجل السحابي أثناء الاختبار؛ قد يكون هناك تعديل من جلسة أخرى');
+   checks.push('تنبيه: لم تُنشأ نسخة احتياطية دائمة، ولم تُنفذ استعادة فعلية في قاعدة البيانات.');
+  }catch(e){checks.push('✗ تعذر إكمال الفحص: '+String(e.message||e).slice(0,180))}
+  status.textContent=checks.join('\n');status.style.whiteSpace='pre-line';
+ });
  addAction('⌂ الرئيسية',()=>{if(typeof enterApp==='function')enterApp()});
  const logout=addAction('↪ الخروج',async()=>{clearAuthSession();logout.disabled=true;logout.textContent='جار تسجيل الخروج...';try{await fetch(api+'/auth/v1/logout',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+token}})}catch(e){}token=null;location.reload()});
  logout.style.background='#fbe9e7';logout.style.color='#a32929';
