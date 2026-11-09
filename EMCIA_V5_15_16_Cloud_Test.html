@@ -259,6 +259,23 @@ body.reception-mode #langMenu{display:block}
 #budget .budget-kpi-strip>.card>.kpi,#analysis .analysis-kpi-strip>.card>.kpi,#arrears .arrears-kpi-strip>.card>.kpi{font-size:clamp(12px,3.3vw,20px)!important;line-height:1.35!important;white-space:normal!important;overflow-wrap:anywhere!important;font-variant-numeric:tabular-nums}
 @media(min-width:650px){#budget .budget-kpi-strip{grid-template-columns:repeat(4,minmax(0,1fr))!important}}
 
+
+/* EMCIA V26 — phone-sized table viewing without shrinking data columns */
+@media screen and (max-width:650px){
+ #groups .card:has(table),#arrears .card:has(table),#reportcenter .card:has(table),#students .card:has(table){
+  max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
+ }
+ #groups .card table,#arrears .card table,#reportcenter .card table,#students .card table{
+  width:max-content;min-width:100%;font-size:12px;
+ }
+ #groups .card th,#groups .card td,#arrears .card th,#arrears .card td,#reportcenter .card th,#reportcenter .card td,#students .card th,#students .card td{
+  padding:8px 9px;overflow-wrap:normal;white-space:normal;min-width:70px;
+ }
+ #groups .card .actions button,#arrears .card .actions button{min-height:38px}
+}
+@media print{
+ #groups .card:has(table),#arrears .card:has(table),#reportcenter .card:has(table),#students .card:has(table){overflow:visible!important}
+}
 </style>
 
 <style>
