@@ -308,6 +308,10 @@ body.reception-mode #langMenu{display:block}
 #authGate .emcia-password-field .emcia-eye-wrap>.emcia-eye-button{display:flex!important;visibility:visible!important;opacity:1!important;position:absolute!important;left:5px!important;right:auto!important;top:50%!important;transform:translateY(-50%)!important;width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important;z-index:50!important;background:#eef3f8!important;color:#102a43!important;border:1px solid #d9e2ec!important;border-radius:8px!important;pointer-events:auto!important}
 #authGate .emcia-password-field .emcia-eye-wrap>.emcia-eye-button svg{display:block!important;width:22px!important;height:22px!important;stroke:#102a43!important;visibility:visible!important}
 #authGate .emcia-password-field .emcia-eye-wrap>input{padding-left:55px!important}
+
+/* EMCIA student registration — grouped non-selectable level headings */
+#studentRequestLevel optgroup{color:#6b7280;font-weight:700;font-style:normal}
+#studentRequestLevel option{color:#102a43;font-weight:400}
 </style>
 
 <style>
@@ -757,7 +761,23 @@ function chipsHTML(arr=[],kind="student"){return (arr||[]).map((x,i)=>`<span sty
 let tempTeacherSubjects=[],tempStudentSubjects=[];
 let tempStudentRequests=[];
 function studentLevelChoices(){return educationLevelCatalog()}
-function refreshStudentLevelPicker(){let el=$("#studentRequestLevel");if(!el)return;const name=$("#studentSubjectSelect")?.value||"";const language=/الألمانية|الفرنسية|الإنجليزية|الإسبانية|الهولندية/.test(name);const choices=studentLevelChoices().filter(x=>language||!/^(A1|A2|B1|B2|C1|C2|مبتدئ|متوسط|متقدم)$/.test(x));el.innerHTML='<option value="">— المستوى / التخصص —</option>'+choices.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('')+'<option value="__other__">مستوى آخر...</option>';}
+function studentGroupedLevelOptions(selected=""){
+ const groups=[
+  ["الابتدائي",["الأول ابتدائي","الثاني ابتدائي","الثالث ابتدائي","الرابع ابتدائي","الخامس ابتدائي","السادس ابتدائي"]],
+  ["الإعدادي",["الأولى إعدادي","الثانية إعدادي","الثالثة إعدادي"]],
+  ["الثانوي",["الجذع المشترك","الأولى بكالوريا","الثانية بكالوريا"]],
+  ["التكوين المهني",["التأهيل المهني","التخصص المهني","تقني","تقني متخصص","Bac+2"]],
+  ["الجامعي",["الإجازة","الماستر","الدكتوراه"]],
+  ["النظام الأوروبي",["A1","A2","B1","B2","C1","C2"]],
+  ["حسب مستوى الإتقان",["مبتدئ","متوسط","متقدم"]]
+ ];
+ const existing=new Set(groups.flatMap(g=>g[1]));
+ const extra=studentLevelChoices().filter(v=>!existing.has(v));
+ if(extra.length)groups.push(["مستويات إضافية",extra]);
+ if(selected&&selected!=="__other__"&&!existing.has(selected)&&!extra.includes(selected))groups.push(["مستوى مسجل سابقاً",[selected]]);
+ return '<option value="">— اختر المستوى أو التخصص —</option>'+groups.map(([name,items])=>'<optgroup label="'+esc(name)+'">'+items.map(v=>'<option value="'+esc(v)+'"'+(v===selected?' selected':'')+'>'+esc(v)+'</option>').join('')+'</optgroup>').join('')+'<option value="__other__"'+(selected==="__other__"?' selected':'')+'>أخرى — إدخال مستوى أو تخصص...</option>';
+}
+function refreshStudentLevelPicker(){const el=$("#studentRequestLevel");if(!el)return;const previous=el.value;el.innerHTML=studentGroupedLevelOptions(previous);}
 function studentRequestLevelValue(){const v=$("#studentRequestLevel")?.value||"";return v==='__other__'?($("#studentRequestLevelOther")?.value||'').trim():v}
 function studentRequestLevelChanged(){const el=$("#studentRequestLevelOther");if(el)el.classList.toggle('hide',$("#studentRequestLevel")?.value!=='__other__')}
 function studentRequestLabels(o){return (o.requestedSubjectLevels||[]).length?o.requestedSubjectLevels.map(x=>x.subject+(x.level?' — '+x.level:' — مستوى غير محدد')):(o.requestedSubjects||[])}
@@ -1000,7 +1020,7 @@ function emciaStudentTableFilters(){return `<div class="row" style="margin:10px 
 function students(){
  tempStudentSubjects=[];tempStudentRequests=[];
  $("#students").innerHTML=`<div class="card"><div class="row"><input id="snAr" placeholder="الاسم بالعربية"><input id="snFr" placeholder="Nom en français"><input id="sph" placeholder="الهاتف الشخصي"><input id="spa" placeholder="هاتف ولي الأمر"><input id="sland" placeholder="الهاتف الثابت"><select id="sedu"><option value="">— المستوى التعليمي —</option><option>ابتدائي</option><option>إعدادي</option><option>ثانوي</option><option>جامعي</option><option>موظف/عامل</option><option>غير ذلك</option></select><input id="sl" placeholder="المستوى أو التخصص التفصيلي"><select id="stime"><option value="">— التوقيت المفضل —</option><option value="day">نهاراً</option><option value="evening">مساءً</option><option value="both">نهاراً أو مساءً</option><option value="unspecified">غير محدد</option></select><select id="stype"><option value="new">متعلم جديد بالمؤسسة</option><option value="former">متعلم سابق بالمؤسسة</option></select><div><label>تاريخ التسجيل بالمؤسسة</label><input id="sj" type="date" value="${today()}"></div></div>
- <div style="margin-top:12px"><label><b>ملاحظات</b></label><textarea id="snote" placeholder="التوقيت المناسب للمتعلم، شروطه الخاصة أو أي ملاحظات أخرى"></textarea></div><div style="margin-top:12px"><label><b>المادة أو المواد المطلوبة</b></label><div id="studentChips" style="margin:7px 0"><span class="muted">لم تُحدد مواد بعد</span></div><div class="row"><select id="studentSubjectSelect" onchange="studentSubjectChoiceChanged()">${studentSubjectPickerOptions()}</select><div id="studentOtherSubjectWrap" class="hide"><label>المادة الأخرى</label><input id="studentOtherSubject" placeholder="اكتب اسم المادة"></div><select id="studentRequestLevel" onchange="studentRequestLevelChanged()">${groupLevelSpecialtyOptions()}</select><input id="studentRequestLevelOther" class="hide" placeholder="اكتب المستوى أو التخصص"><button type="button" onclick="addSubjectChip('student')">+ إضافة مادة ومستوى</button></div></div>
+ <div style="margin-top:12px"><label><b>ملاحظات</b></label><textarea id="snote" placeholder="التوقيت المناسب للمتعلم، شروطه الخاصة أو أي ملاحظات أخرى"></textarea></div><div style="margin-top:12px"><label><b>المادة أو المواد المطلوبة</b></label><div id="studentChips" style="margin:7px 0"><span class="muted">لم تُحدد مواد بعد</span></div><div class="row"><select id="studentSubjectSelect" onchange="studentSubjectChoiceChanged()">${studentSubjectPickerOptions()}</select><div id="studentOtherSubjectWrap" class="hide"><label>المادة الأخرى</label><input id="studentOtherSubject" placeholder="اكتب اسم المادة"></div><select id="studentRequestLevel" onchange="studentRequestLevelChanged()">${studentGroupedLevelOptions()}</select><input id="studentRequestLevelOther" class="hide" placeholder="اكتب المستوى أو التخصص"><button type="button" onclick="addSubjectChip('student')">+ إضافة مادة ومستوى</button></div></div>
  <div class="row" style="margin-top:12px"><button onclick="addStudent()">إضافة متعلم</button></div></div>
  <div class="card"><h3>لائحة المتعلمين</h3>${emciaStudentTableFilters()}<table id="studentRecordsTable"><tbody><tr><th>المتعلم</th><th>جديد/سابق</th><th>المواد المطلوبة</th><th>المستوى</th><th>الهاتف</th><th>الحالة</th><th></th></tr>${[...db.s].reverse().map(o=>`<tr data-student-id="${o.id}"><td>${esc(objName(o))}</td><td>${o.studentType==="former"?"سابق":"جديد"}</td><td>${esc(studentRequestLabels(o).join("، ")||"—")}</td><td>${esc(o.level)}</td><td>${esc(o.ph)}</td><td>${o.active?"نشط":"غير نشط"}</td><td class="actions"><button onclick="editStudentRegistration('${o.id}')">✏️</button>${o.active?"":`<button class="ok" onclick="activateObj('s','${o.id}')">✓ تنشيط</button>`}<button class="danger" onclick="removeObj('s','${o.id}')">🗑️</button></td></tr>`).join("")}</tbody></table></div>`;
 }
