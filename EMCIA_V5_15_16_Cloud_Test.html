@@ -292,6 +292,12 @@ body.reception-mode #langMenu{display:block}
 /* EMCIA V109 — semantic non-selectable subject category headings */
 #teacherSubjectSelect optgroup,#studentSubjectSelect optgroup{font-weight:700;color:#6b7280;font-style:normal}
 #teacherSubjectSelect option,#studentSubjectSelect option{font-weight:400;color:inherit}
+
+/* EMCIA V110 — accessible password visibility control */
+#authGate .emcia-password-field{position:relative;display:flex;align-items:center;width:100%;margin:5px 0 12px}
+#authGate .emcia-password-field input{width:100%;padding-left:52px;margin:0;direction:ltr;text-align:right}
+#authGate .emcia-password-field button{position:absolute;left:5px;top:50%;transform:translateY(-50%);width:42px!important;height:42px!important;min-height:42px!important;padding:0!important;margin:0!important;display:flex;align-items:center;justify-content:center;background:transparent!important;color:#506b82!important;border:0!important;box-shadow:none!important;cursor:pointer}
+#authGate .emcia-password-field button:focus-visible{outline:2px solid #2563eb!important;border-radius:7px}
 </style>
 
 <style>
@@ -419,7 +425,7 @@ header,nav,#nav,.main-nav,.subnav-wrap,.subnav,#emcia-top-controls{position:stat
 body:not(.emcia-authorized) #emcia-top-controls{display:none!important}
 @media(max-width:650px){#emcia-top-controls #mobileNavToggle{position:static!important}}
 </style></head>
-<body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>تسجيل دخول المدير والموظفين المفعّلين</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label>كلمة المرور<input id="authPassword" type="password" required autocomplete="current-password"></label><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات محفوظة بأمان في النظام السحابي للمؤسسة.</small></div></div>
+<body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>تسجيل دخول المدير والموظفين المفعّلين</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label for="authPassword">كلمة المرور</label><div class="emcia-password-field"><input id="authPassword" type="password" required autocomplete="current-password"><button id="authPasswordToggle" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false" title="إظهار كلمة المرور" onclick="emciaToggleLoginPassword()"><svg id="authEyeIcon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات محفوظة بأمان في النظام السحابي للمؤسسة.</small></div></div>
 <header><b>EMCIA Gestion</b></header>
 <div id="langMenu" class="lang-menu">
 <button id="langMenuBtn" type="button" onclick="toggleLangMenu()" aria-label="اختيار اللغة">🌐</button>
@@ -2403,6 +2409,8 @@ async function restoreVerifiedBackup(){
  }
 }
 nav();home();applyLang();
+
+function emciaToggleLoginPassword(){const field=document.getElementById('authPassword'),button=document.getElementById('authPasswordToggle'),icon=document.getElementById('authEyeIcon');if(!field||!button)return;const visible=field.type==='password';field.type=visible?'text':'password';button.setAttribute('aria-label',visible?'إخفاء كلمة المرور':'إظهار كلمة المرور');button.setAttribute('title',visible?'إخفاء كلمة المرور':'إظهار كلمة المرور');button.setAttribute('aria-pressed',String(visible));if(icon)icon.innerHTML=visible?'<path d="M3 3l18 18"/><path d="M10.6 5.1A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a15.8 15.8 0 0 1-3.3 4.1"/><path d="M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7c1.7 0 3.2-.5 4.5-1.3"/><path d="M10 10a3 3 0 0 0 4 4"/>':'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>';}
 </script><script>
 (function(){
 const api='https://gfhmkijxiinoqkxhicza.supabase.co';
