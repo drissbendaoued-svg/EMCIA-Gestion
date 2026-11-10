@@ -288,6 +288,10 @@ body.reception-mode #langMenu{display:block}
  #emcia-top-controls #emcia-account-menu{flex:0 0 auto!important;width:auto!important;max-width:210px!important;min-width:0!important}
  #emcia-top-controls #emcia-account-menu>button{width:auto!important;max-width:210px!important;min-height:40px!important;padding:8px 12px!important;font-size:14px!important;white-space:nowrap!important}
 }
+
+/* EMCIA V109 — semantic non-selectable subject category headings */
+#teacherSubjectSelect optgroup,#studentSubjectSelect optgroup{font-weight:700;color:#6b7280;font-style:normal}
+#teacherSubjectSelect option,#studentSubjectSelect option{font-weight:400;color:inherit}
 </style>
 
 <style>
@@ -888,9 +892,9 @@ function studentSubjectPickerOptions(){
  ];
  const listed=new Set(cats.flatMap(c=>c[1]));
  const extra=[...new Set(activeSubjectRecords().map(x=>x.n).filter(n=>n&&!listed.has(n)))];
- const options=cats.flatMap(([cat,items])=>['<option disabled>━━━━━━━━ '+cat+' ━━━━━━━━</option>',...items.map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>')]);
- if(extra.length)options.push('<option disabled>━━━━ مواد أخرى ━━━━</option>');extra.forEach(n=>options.push('<option value="name:'+esc(n)+'">'+esc(n)+'</option>'));
- options.push('<option value="__other__">أخرى — إدخال مادة جديدة...</option>');
+ const options=cats.map(([cat,items])=>'<optgroup label="'+esc(cat)+'">'+items.map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>').join('')+'</optgroup>');
+ if(extra.length)options.push('<optgroup label="مواد أخرى">'+extra.map(n=>'<option value="name:'+esc(n)+'">'+esc(n)+'</option>').join('')+'</optgroup>');
+ options.push('<optgroup label="إضافة مادة أخرى"><option value="__other__">إدخال مادة جديدة...</option></optgroup>');
  return '<option value="">— اختر مادة —</option>'+options.join('');
 }
 function studentSubjectChoiceChanged(){
