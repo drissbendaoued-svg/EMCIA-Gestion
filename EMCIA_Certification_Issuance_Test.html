@@ -834,7 +834,8 @@ function certification(){
           if(type==='date')input.style.direction='ltr';
           wrap.append(title,input);form.append(wrap);return input;
          };
-         const course=field('المادة أو التكوين *','text',current.course_name,true);
+         const note=document.createElement('p');note.textContent='اكتب الاسم الرسمي الكامل للمادة كما سيظهر في الشهادة، وليس رمز الفوج أو اختصاره. مثال: اللغة الألمانية، وليس ALL-A1-01.';note.style.cssText='margin:0;color:#52667a;font-size:14px';form.append(note);
+         const course=field('الاسم الرسمي الكامل للمادة أو التكوين *','text',current.course_name,true);
          const level=field('المستوى (اختياري)','text',current.level,false);
          const start=field('تاريخ بداية التكوين *','date',current.start_date,true);
          const end=field('تاريخ نهاية التكوين *','date',current.end_date,true);
@@ -848,6 +849,7 @@ function certification(){
          cancel.onclick=()=>close(null);
          form.onsubmit=e=>{
           e.preventDefault();
+          if(/^[A-Z]{2,6}[-_][A-Z0-9_-]+$/i.test(course.value.trim())){error.textContent='المدخل يبدو رمز فوج. أدخل اسم المادة الكامل، مثل اللغة الألمانية';course.focus();return}
           if(end.value<start.value){error.textContent='تاريخ نهاية التكوين يجب ألا يسبق تاريخ البداية';end.focus();return}
           if(completed&&completed.value.trim()!=='نعم'){error.textContent='لتأكيد إتمام التكوين، اكتب نعم';completed.focus();return}
           close({course:course.value.trim(),level:level.value.trim(),start:start.value,end:end.value,completed:!!completed});
