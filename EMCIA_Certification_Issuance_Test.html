@@ -810,20 +810,40 @@ function certification(){
      preview.addEventListener('click',()=>{window.location.href='EMCIA_Certification_Print_Test.html?request='+encodeURIComponent(item.id)});
     }
     const role=window.EMCIA_CURRENT_ROLE||'';
-    const options=status==='draft'?[['submit','إرسال للمراجعة']]:status==='submitted'&&role==='director'?[['approve','اعتماد الطلب'],['reject','رفض الطلب']]:status==='approved'&&role==='director'?(item.details?.subject_name?[['issue','إصدار الشهادة']]:[['repair','استكمال اسم المستفيد']]):[];
+    const options=status==='draft'?[['submit','إرسال للمراجعة']]:status==='submitted'&&role==='director'?[['approve','اعتماد الطلب'],['reject','رفض الطلب']]:status==='approved'&&role==='director'?(item.details?.subject_name?((['attendance','completion'].includes(item.certificate_type)?[['training','بيانات التكوين']]:[]).concat([['issue','إصدار الشهادة']])):[['repair','استكمال اسم المستفيد']]):[];
     for(const [action,label] of options){
      const btn=document.createElement('button');btn.textContent=label;btn.style.margin='4px';wrapper.append(btn);
      btn.addEventListener('click',async()=>{
       if(!confirm('هل تؤكد: '+label+'؟'))return;
       btn.disabled=true;feedback.textContent='جار تنفيذ العملية...';
       try{
-       if(action==='repair'){
+       if(action==='training'){
+        const current=item.details||{};
+        const course=prompt('المادة أو التكوين (إجباري):',current.course_name||'');
+        if(course===null){btn.disabled=false;return}
+        const level=prompt('المستوى (اختياري):',current.level||'');
+        if(level===null){btn.disabled=false;return}
+        const start=prompt('تاريخ بداية التكوين YYYY-MM-DD:',current.start_date||'');
+        if(start===null){btn.disabled=false;return}
+        const end=prompt('تاريخ نهاية التكوين YYYY-MM-DD:',current.end_date||'');
+        if(end===null){btn.disabled=false;return}
+        const validDate=v=>/^\\d{4}-\\d{2}-\\d{2}$/.test(v)&&!Number.isNaN(Date.parse(v))&&new Date(v+'T00:00:00').toISOString().slice(0,10)===v;
+        if(!course.trim()||!validDate(start)||!validDate(end)||end<start)throw Error('تحقق من المادة والتواريخ بصيغة YYYY-MM-DD');
+        const completed=item.certificate_type==='completion'?confirm('هل تؤكد، استنادًا إلى سجل المؤسسة، أن المستفيد أتم التكوين؟'):false;
+        await certRpc('certification_set_training_details',{p_request_id:item.id,p_course_name:course.trim(),p_level:level.trim(),p_start_date:start,p_end_date:end,p_completion_confirmed:completed});
+        feedback.textContent='تم حفظ بيانات التكوين وتوثيق العملية قبل الإصدار';
+       }else if(action==='repair'){
         const record=getRecord(item);if(!record)throw Error('لم يتم العثور على المستفيد في السجل المحلي');
         const name=objName(record,'both');if(!name||name==='—')throw Error('اسم المستفيد غير متوفر');
         if(!confirm('هل تؤكد مطابقة هذا الاسم مع الطلب المعتمد؟ '+name)){btn.disabled=false;return}
         await certRpc('certification_repair_name',{p_request_id:item.id,p_subject_name:name});
         feedback.textContent='تم استكمال اسم المستفيد وتوثيق العملية';
        }else if(action==='issue'){
+        if(['attendance','completion'].includes(item.certificate_type)){
+         const d=item.details||{};
+         if(!d.course_name||!d.start_date||!d.end_date)throw Error('استكمل بيانات التكوين أولًا قبل الإصدار');
+         if(item.certificate_type==='completion'&&d.completion_confirmed!==true)throw Error('يجب تأكيد إتمام التكوين قبل إصدار شهادة الإتمام');
+        }
         const out=await certRpc('certification_issue',{p_request_id:item.id});
         feedback.textContent='تم تسجيل إصدار الشهادة برقم '+(out?.[0]?.certificate_ref||'جديد')+'؛ لم يتم إنشاء PDF بعد';
        }else{
