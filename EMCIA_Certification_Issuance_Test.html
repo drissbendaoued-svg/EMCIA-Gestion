@@ -801,10 +801,14 @@ function certification(){
     const wrapper=document.createElement('div');wrapper.style.cssText='padding:14px;margin:10px 0;border:1px solid #d6dee8;border-radius:14px;overflow-wrap:anywhere';listing.append(wrapper);
     const title=document.createElement('strong');title.textContent=nameOf(item)||'مستفيد غير معروف';wrapper.append(title);
     const meta=document.createElement('p');meta.textContent='المعرف الداخلي: '+item.subject_id;meta.style.cssText='font-size:13px;color:#52667a';wrapper.append(meta);
-    const detail=document.createElement('p');detail.textContent=(types[item.certificate_type]||item.certificate_type)+' | '+({ar:'العربية',fr:'الفرنسية',bi:'العربية والفرنسية'}[item.language]||item.language)+' | '+item.created_at.slice(0,10);wrapper.append(detail);
+    const detail=document.createElement('p');detail.textContent=(types[item.certificate_type]||item.certificate_type)+' | '+({ar:'العربية',fr:'الفرنسية',bi:'العربية والفرنسية'}[item.language]||item.language)+' | '+' | '+item.created_at.slice(0,10);detail.dir='auto';detail.style.overflowWrap='anywhere';wrapper.append(detail);
     const cohort=groupOf(item);if(cohort){const p=document.createElement('p');p.textContent='الفوج: '+cohort;wrapper.append(p)}
     const state=document.createElement('p');state.textContent='الحالة: '+(statuses[status]||status);wrapper.append(state);
-    if(issuedRecord){const number=document.createElement('strong');number.textContent='رقم الشهادة: '+issuedRecord.certificate_number;wrapper.append(number)}
+    if(issuedRecord){
+     const number=document.createElement('strong');number.textContent='رقم الشهادة: '+issuedRecord.certificate_number;wrapper.append(number);
+     const preview=document.createElement('button');preview.textContent='معاينة / طباعة الشهادة';preview.style.margin='8px 4px';wrapper.append(preview);
+     preview.addEventListener('click',()=>{window.open('EMCIA_Certification_Print_Test.html?request='+encodeURIComponent(item.id),'_blank','noopener')});
+    }
     const role=window.EMCIA_CURRENT_ROLE||'';
     const options=status==='draft'?[['submit','إرسال للمراجعة']]:status==='submitted'&&role==='director'?[['approve','اعتماد الطلب'],['reject','رفض الطلب']]:status==='approved'&&role==='director'?(item.details?.subject_name?[['issue','إصدار الشهادة']]:[['repair','استكمال اسم المستفيد']]):[];
     for(const [action,label] of options){
