@@ -744,8 +744,10 @@ function certification(){
  const refreshList=document.createElement('button');refreshList.textContent='تحديث قائمة طلباتي';card.append(refreshList);
  const feedback=document.createElement('p');feedback.setAttribute('role','status');card.append(feedback);
  const filterLabel=document.createElement('label');filterLabel.textContent='تصفية الطلبات';card.append(filterLabel);
- const requestFilter=document.createElement('select');[['active','الطلبات النشطة فقط'],['all','جميع الطلبات'],['draft','المسودات'],['submitted','قيد المراجعة'],['approved','المعتمدة'],['rejected','المرفوضة']].forEach(([v,t])=>requestFilter.add(new Option(t,v)));card.append(requestFilter);
- const listing=document.createElement('div');card.append(listing);
+ const requestFilter=document.createElement('select');[['active','الطلبات النشطة فقط'],['all','جميع الطلبات'],['draft','المسودات'],['submitted','قيد المراجعة'],['approved','المعتمدة غير الصادرة'],['issued','الشواهد الصادرة'],['rejected','المرفوضة']].forEach(([v,t])=>requestFilter.add(new Option(t,v)));card.append(requestFilter);
+ const searchLabel=document.createElement('label');searchLabel.textContent='البحث في الطلبات بالاسم أو المعرف';card.append(searchLabel);
+ const requestSearch=document.createElement('input');requestSearch.placeholder='اسم المستفيد أو معرفه الداخلي';card.append(requestSearch);
+  const listing=document.createElement('div');card.append(listing);
  function session(){let v;try{v=JSON.parse(sessionStorage.getItem('emcia_auth_session_v2')||'null')}catch(e){}return v&&v.expiresAt>Date.now()?v:null}
  async function call(method,body){
   const a=session();if(!a?.access_token||!a?.user?.id)throw Error('يرجى تسجيل الدخول مجددًا قبل حفظ الطلب');
@@ -760,20 +762,51 @@ function certification(){
   if(!res.ok){const e=await res.json().catch(()=>({}));throw Error(e.message||'تعذرت العملية');}
   return res.json();
  }
+ async function fetchIssued(){
+  const a=session();if(!a?.access_token)throw Error('انتهت جلسة الدخول');
+  const url='https://gfhmkijxiinoqkxhicza.supabase.co/rest/v1/certificates?select=request_id,certificate_number,issued_at,immutable_snapshot&order=issued_at.desc&limit=100';
+  const response=await fetch(url,{headers:{'apikey':'sb_publishable_AZWNmDjlNPpADgPFYwH3oA_71o4ABTM','Authorization':'Bearer '+a.access_token}});
+  if(!response.ok)throw Error('تعذر تحميل سجل الشواهد الصادرة');
+  return response.json();
+ }
  async function loadRequests(){
   listing.textContent='جار تحميل الطلبات...';
   try{
-   const items=await call('GET');listing.replaceChildren();
-   if(!items.length){listing.textContent='لا توجد طلبات بعد';return}
-   const rank={submitted:0,draft:1,approved:2,rejected:3};
-   items.sort((x,y)=>(rank[x.status]??9)-(rank[y.status]??9)||new Date(y.created_at)-new Date(x.created_at));
-   const visible=items.filter(x=>requestFilter.value==='all'||(requestFilter.value==='active'?x.status!=='rejected':x.status===requestFilter.value));
-   if(!visible.length){listing.textContent='لا توجد طلبات في هذا التصنيف';return}
+   const [items,issued]=await Promise.all([call('GET'),fetchIssued()]);
+   const issuedByRequest=new Map(issued.map(x=>[x.request_id,x]));
+   const getRecord=item=>(item.subject_kind==='student'?(db.s||[]):(db.t||[])).find(x=>String(x.id)===String(item.subject_id));
+   const nameOf=item=>item.details?.subject_name||objName(getRecord(item),'both');
+   const groupOf=item=>{
+    if(item.subject_kind!=='student')return '';
+    const gids=Array.isArray(item.details?.group_ids)&&item.details.group_ids.length?item.details.group_ids:(db.e||[]).filter(e=>String(e.sid)===String(item.subject_id)).map(e=>e.gid);
+    return (db.g||[]).filter(g=>gids.some(id=>String(id)===String(g.id))).map(g=>String(g.name||g.n||g.id)).join('، ');
+   };
+   const statusOf=item=>issuedByRequest.has(item.id)?'issued':item.status;
+   const rank={submitted:0,draft:1,approved:2,rejected:3,issued:4};
+   items.sort((x,y)=>(rank[statusOf(x)]??9)-(rank[statusOf(y)]??9)||new Date(y.created_at)-new Date(x.created_at));
+   const q=requestSearch.value.trim().toLocaleLowerCase();
+   const visible=items.filter(item=>{
+    const status=statusOf(item);
+    const selected=requestFilter.value;
+    const matches=selected==='all'||(selected==='active'?status!=='rejected'&&status!=='issued':status===selected);
+    const text=[nameOf(item),item.subject_id,groupOf(item),issuedByRequest.get(item.id)?.certificate_number||''].join(' ').toLocaleLowerCase();
+    return matches&&(!q||text.includes(q));
+   });
+   listing.replaceChildren();
+   if(!visible.length){listing.textContent='لا توجد طلبات مطابقة';return}
+   const types={attendance:'شهادة متابعة الدراسة / المواظبة',completion:'شهادة إتمام المستوى',participation:'شهادة المشاركة',work:'شهادة العمل',experience:'شهادة الخبرة',appreciation:'شهادة التقدير'};
+   const statuses={draft:'مسودة',submitted:'قيد المراجعة',approved:'معتمد',rejected:'مرفوض',issued:'تم الإصدار'};
    for(const item of visible){
-    const wrapper=document.createElement('div');wrapper.style.cssText='padding:12px 0;border-bottom:1px solid #d9e1e8';listing.append(wrapper);
-    const p=document.createElement('p');p.textContent=[item.created_at.slice(0,10),({student:'متعلم',teacher:'أستاذ أو مكون',staff:'إطار إداري'}[item.subject_kind]||item.subject_kind),({attendance:'شهادة متابعة الدراسة / المواظبة',completion:'شهادة إتمام المستوى',participation:'شهادة المشاركة',work:'شهادة العمل',experience:'شهادة الخبرة',appreciation:'شهادة التقدير'}[item.certificate_type]||item.certificate_type),({ar:'العربية',fr:'الفرنسية',bi:'العربية والفرنسية'}[item.language]||item.language),({draft:'مسودة',submitted:'قيد المراجعة',approved:'معتمد',rejected:'مرفوض'}[item.status]||item.status)].join(' | ');wrapper.append(p);
+    const issuedRecord=issuedByRequest.get(item.id),status=statusOf(item);
+    const wrapper=document.createElement('div');wrapper.style.cssText='padding:14px;margin:10px 0;border:1px solid #d6dee8;border-radius:14px;overflow-wrap:anywhere';listing.append(wrapper);
+    const title=document.createElement('strong');title.textContent=nameOf(item)||'مستفيد غير معروف';wrapper.append(title);
+    const meta=document.createElement('p');meta.textContent='المعرف الداخلي: '+item.subject_id;meta.style.cssText='font-size:13px;color:#52667a';wrapper.append(meta);
+    const detail=document.createElement('p');detail.textContent=(types[item.certificate_type]||item.certificate_type)+' | '+({ar:'العربية',fr:'الفرنسية',bi:'العربية والفرنسية'}[item.language]||item.language)+' | '+item.created_at.slice(0,10);wrapper.append(detail);
+    const cohort=groupOf(item);if(cohort){const p=document.createElement('p');p.textContent='الفوج: '+cohort;wrapper.append(p)}
+    const state=document.createElement('p');state.textContent='الحالة: '+(statuses[status]||status);wrapper.append(state);
+    if(issuedRecord){const number=document.createElement('strong');number.textContent='رقم الشهادة: '+issuedRecord.certificate_number;wrapper.append(number)}
     const role=window.EMCIA_CURRENT_ROLE||'';
-    const options=item.status==='draft'?[['submit','إرسال للمراجعة']]:item.status==='submitted'&&role==='director'?[['approve','اعتماد الطلب'],['reject','رفض الطلب']]:item.status==='approved'&&role==='director'?(item.details?.subject_name?[['issue','إصدار الشهادة']]:[['repair','استكمال اسم المستفيد']]):[];
+    const options=status==='draft'?[['submit','إرسال للمراجعة']]:status==='submitted'&&role==='director'?[['approve','اعتماد الطلب'],['reject','رفض الطلب']]:status==='approved'&&role==='director'?(item.details?.subject_name?[['issue','إصدار الشهادة']]:[['repair','استكمال اسم المستفيد']]):[];
     for(const [action,label] of options){
      const btn=document.createElement('button');btn.textContent=label;btn.style.margin='4px';wrapper.append(btn);
      btn.addEventListener('click',async()=>{
@@ -781,17 +814,18 @@ function certification(){
       btn.disabled=true;feedback.textContent='جار تنفيذ العملية...';
       try{
        if(action==='repair'){
-        const record=(item.subject_kind==='student'?(db.s||[]):(db.t||[])).find(x=>String(x.id)===String(item.subject_id));
-        if(!record)throw Error('لم يتم العثور على المستفيد في السجل المحلي؛ لا يمكن استكمال الاسم تلقائيًا');
-        const name=objName(record,'both');
-        if(!name||name==='—')throw Error('اسم المستفيد غير متوفر');
-        if(!confirm('هل تؤكد مطابقة هذا الاسم مع الطلب المعتمد؟ '+name))return;
+        const record=getRecord(item);if(!record)throw Error('لم يتم العثور على المستفيد في السجل المحلي');
+        const name=objName(record,'both');if(!name||name==='—')throw Error('اسم المستفيد غير متوفر');
+        if(!confirm('هل تؤكد مطابقة هذا الاسم مع الطلب المعتمد؟ '+name)){btn.disabled=false;return}
         await certRpc('certification_repair_name',{p_request_id:item.id,p_subject_name:name});
-        feedback.textContent='تم استكمال اسم المستفيد وتوثيق العملية؛ يمكنك الآن إصدار الشهادة';
+        feedback.textContent='تم استكمال اسم المستفيد وتوثيق العملية';
        }else if(action==='issue'){
         const out=await certRpc('certification_issue',{p_request_id:item.id});
         feedback.textContent='تم تسجيل إصدار الشهادة برقم '+(out?.[0]?.certificate_ref||'جديد')+'؛ لم يتم إنشاء PDF بعد';
-       }else{await certRpc('certification_transition',{p_request_id:item.id,p_action:action});feedback.textContent='تم تنفيذ العملية بنجاح'}
+       }else{
+        await certRpc('certification_transition',{p_request_id:item.id,p_action:action});
+        feedback.textContent='تم تنفيذ العملية بنجاح';
+       }
        await loadRequests();
       }catch(e){feedback.textContent='تعذرت العملية: '+e.message;btn.disabled=false}
      });
@@ -805,6 +839,7 @@ function certification(){
   try{const a=session();if(!a)throw Error('انتهت جلسة تسجيل الدخول');await call('POST',{subject_kind:category.value,subject_id:person.value,certificate_type:kind.value,language:language.value,status:'draft',requested_by:a.user.id,details:{subject_name:objName(source().find(x=>String(x.id)===person.value),'both'),group_ids:category.value==='student'?(db.e||[]).filter(e=>String(e.sid)===person.value).map(e=>String(e.gid)):[]}});feedback.textContent='تم حفظ مسودة الطلب سحابيًا';await loadRequests()}catch(e){feedback.textContent='لم يُحفظ الطلب: '+e.message}finally{save.disabled=false}
  });
  requestFilter.addEventListener('change',loadRequests);
+ requestSearch.addEventListener('input',loadRequests);
  refreshList.addEventListener('click',loadRequests);loadRequests();
  refresh();
 }
