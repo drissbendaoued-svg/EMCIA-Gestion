@@ -743,6 +743,8 @@ function certification(){
  const save=document.createElement('button');save.textContent='حفظ مسودة الطلب';card.append(save);
  const refreshList=document.createElement('button');refreshList.textContent='تحديث قائمة طلباتي';card.append(refreshList);
  const feedback=document.createElement('p');feedback.setAttribute('role','status');card.append(feedback);
+ const filterLabel=document.createElement('label');filterLabel.textContent='تصفية الطلبات';card.append(filterLabel);
+ const requestFilter=document.createElement('select');[['active','الطلبات النشطة فقط'],['all','جميع الطلبات'],['draft','المسودات'],['submitted','قيد المراجعة'],['approved','المعتمدة'],['rejected','المرفوضة']].forEach(([v,t])=>requestFilter.add(new Option(t,v)));card.append(requestFilter);
  const listing=document.createElement('div');card.append(listing);
  function session(){let v;try{v=JSON.parse(sessionStorage.getItem('emcia_auth_session_v2')||'null')}catch(e){}return v&&v.expiresAt>Date.now()?v:null}
  async function call(method,body){
@@ -763,7 +765,11 @@ function certification(){
   try{
    const items=await call('GET');listing.replaceChildren();
    if(!items.length){listing.textContent='لا توجد طلبات بعد';return}
-   for(const item of items){
+   const rank={submitted:0,draft:1,approved:2,rejected:3};
+   items.sort((x,y)=>(rank[x.status]??9)-(rank[y.status]??9)||new Date(y.created_at)-new Date(x.created_at));
+   const visible=items.filter(x=>requestFilter.value==='all'||(requestFilter.value==='active'?x.status!=='rejected':x.status===requestFilter.value));
+   if(!visible.length){listing.textContent='لا توجد طلبات في هذا التصنيف';return}
+   for(const item of visible){
     const wrapper=document.createElement('div');wrapper.style.cssText='padding:12px 0;border-bottom:1px solid #d9e1e8';listing.append(wrapper);
     const p=document.createElement('p');p.textContent=[item.created_at.slice(0,10),({student:'متعلم',teacher:'أستاذ أو مكون',staff:'إطار إداري'}[item.subject_kind]||item.subject_kind),({attendance:'شهادة متابعة الدراسة / المواظبة',completion:'شهادة إتمام المستوى',participation:'شهادة المشاركة',work:'شهادة العمل',experience:'شهادة الخبرة',appreciation:'شهادة التقدير'}[item.certificate_type]||item.certificate_type),({ar:'العربية',fr:'الفرنسية',bi:'العربية والفرنسية'}[item.language]||item.language),({draft:'مسودة',submitted:'قيد المراجعة',approved:'معتمد',rejected:'مرفوض'}[item.status]||item.status)].join(' | ');wrapper.append(p);
     const role=window.EMCIA_CURRENT_ROLE||'';
@@ -790,6 +796,7 @@ function certification(){
   save.disabled=true;feedback.textContent='جار حفظ المسودة...';
   try{const a=session();if(!a)throw Error('انتهت جلسة تسجيل الدخول');await call('POST',{subject_kind:category.value,subject_id:person.value,certificate_type:kind.value,language:language.value,status:'draft',requested_by:a.user.id,details:{subject_name:objName(source().find(x=>String(x.id)===person.value),'both'),group_ids:category.value==='student'?(db.e||[]).filter(e=>String(e.sid)===person.value).map(e=>String(e.gid)):[]}});feedback.textContent='تم حفظ مسودة الطلب سحابيًا';await loadRequests()}catch(e){feedback.textContent='لم يُحفظ الطلب: '+e.message}finally{save.disabled=false}
  });
+ requestFilter.addEventListener('change',loadRequests);
  refreshList.addEventListener('click',loadRequests);loadRequests();
  refresh();
 }
