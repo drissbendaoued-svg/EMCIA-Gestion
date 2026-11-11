@@ -20,8 +20,8 @@
   const [ar,fr]=types[c.certificate_type]||['شهادة','Attestation'];
   const lang=c.language, title=lang==='fr'?fr:lang==='bi'?ar+' / '+fr:ar;
   $('title').textContent=title;
-  const arBody='تشهد أمسية للثقافة والتربية والتكوين بأن السيد(ة) '+name+' قد استوفى(ت) متطلبات الشهادة المبينة أعلاه، وفق المعطيات المسجلة بالمؤسسة.';
-  const frBody="L’association EMCIA atteste que "+name+" est bénéficiaire de l’attestation indiquée ci-dessus, conformément aux informations enregistrées.";
+  const arBody='تشهد أمسية للثقافة والتربية والتكوين بأن هذه الشهادة صادرة باسم '+name+'، وفق البيانات المعتمدة في سجل الإشهاد بالمؤسسة.';
+  const frBody="L’association EMCIA confirme que la présente attestation est établie au nom de "+name+", selon les données de son registre.";
   $('body').textContent=lang==='fr'?frBody:lang==='bi'?arBody+'\n'+frBody:arBody;
   $('date').textContent=(lang==='fr'?'Date de délivrance : ':'تاريخ الإصدار: ')+new Date(c.issued_at).toLocaleDateString('fr-MA',{year:'numeric',month:'2-digit',day:'2-digit'});
   $('ref').textContent=c.certificate_number;
