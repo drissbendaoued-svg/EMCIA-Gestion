@@ -754,7 +754,7 @@ function certification(){
  }
  async function loadRequests(){
   listing.textContent='جار تحميل الطلبات...';
-  try{const items=await call('GET');listing.replaceChildren();if(!items.length){listing.textContent='لا توجد طلبات بعد';return}for(const item of items){const p=document.createElement('p');p.textContent=[item.created_at.slice(0,10),item.subject_kind,item.certificate_type,item.language,item.status].join(' | ');listing.append(p)}}catch(e){listing.textContent=e.message}
+  try{const items=await call('GET');listing.replaceChildren();if(!items.length){listing.textContent='لا توجد طلبات بعد';return}for(const item of items){const p=document.createElement('p');p.textContent=[item.created_at.slice(0,10),({student:'متعلم',teacher:'أستاذ أو مكون',staff:'إطار إداري'}[item.subject_kind]||item.subject_kind),({attendance:'شهادة متابعة الدراسة / المواظبة',completion:'شهادة إتمام المستوى',participation:'شهادة المشاركة',work:'شهادة العمل',experience:'شهادة الخبرة',appreciation:'شهادة التقدير'}[item.certificate_type]||item.certificate_type),({ar:'العربية',fr:'الفرنسية',bi:'العربية والفرنسية'}[item.language]||item.language),({draft:'مسودة',submitted:'قيد المراجعة',approved:'معتمد',rejected:'مرفوض'}[item.status]||item.status)].join(' | ');listing.append(p)}}catch(e){listing.textContent=e.message}
  }
  save.addEventListener('click',async()=>{
   if(!person.value){feedback.textContent='اختر المستفيد أولًا';return}
