@@ -752,9 +752,20 @@ function certification(){
   if(!res.ok)throw Error('تعذر الاتصال بقاعدة الطلبات (HTTP '+res.status+')');
   return method==='GET'?res.json():null;
  }
+ async function transition(id,action){
+  const a=session();if(!a?.access_token)throw Error('يرجى تسجيل الدخول مجددًا');
+  const res=await fetch('https://gfhmkijxiinoqkxhicza.supabase.co/rest/v1/rpc/certification_transition',{method:'POST',headers:{'apikey':'sb_publishable_AZWNmDjlNPpADgPFYwH3oA_71o4ABTM','Authorization':'Bearer '+a.access_token,'Content-Type':'application/json'},body:JSON.stringify({p_request_id:id,p_action:action})});
+  if(!res.ok){const data=await res.json().catch(()=>({}));throw Error(data.message||'تعذرت العملية')}
+  return res.json();
+ }
  async function loadRequests(){
   listing.textContent='جار تحميل الطلبات...';
-  try{const items=await call('GET');listing.replaceChildren();if(!items.length){listing.textContent='لا توجد طلبات بعد';return}for(const item of items){const p=document.createElement('p');p.textContent=[item.created_at.slice(0,10),({student:'متعلم',teacher:'أستاذ أو مكون',staff:'إطار إداري'}[item.subject_kind]||item.subject_kind),({attendance:'شهادة متابعة الدراسة / المواظبة',completion:'شهادة إتمام المستوى',participation:'شهادة المشاركة',work:'شهادة العمل',experience:'شهادة الخبرة',appreciation:'شهادة التقدير'}[item.certificate_type]||item.certificate_type),({ar:'العربية',fr:'الفرنسية',bi:'العربية والفرنسية'}[item.language]||item.language),({draft:'مسودة',submitted:'قيد المراجعة',approved:'معتمد',rejected:'مرفوض'}[item.status]||item.status)].join(' | ');listing.append(p)}}catch(e){listing.textContent=e.message}
+  try{const items=await call('GET');listing.replaceChildren();if(!items.length){listing.textContent='لا توجد طلبات بعد';return}for(const item of items){const p=document.createElement('p');p.textContent=[item.created_at.slice(0,10),({student:'متعلم',teacher:'أستاذ أو مكون',staff:'إطار إداري'}[item.subject_kind]||item.subject_kind),({attendance:'شهادة متابعة الدراسة / المواظبة',completion:'شهادة إتمام المستوى',participation:'شهادة المشاركة',work:'شهادة العمل',experience:'شهادة الخبرة',appreciation:'شهادة التقدير'}[item.certificate_type]||item.certificate_type),({ar:'العربية',fr:'الفرنسية',bi:'العربية والفرنسية'}[item.language]||item.language),({draft:'مسودة',submitted:'قيد المراجعة',approved:'معتمد',rejected:'مرفوض'}[item.status]||item.status)].join(' | ');listing.append(p);
+ const actions=document.createElement('div');listing.append(actions);
+ const a=session();const myRole=window.EMCIA_CURRENT_ROLE||'';
+ const options=item.status==='draft'?[['submit','إرسال للمراجعة']]:item.status==='submitted'&&myRole==='director'?[['approve','اعتماد الطلب'],['reject','رفض الطلب']]:[];
+ for(const [action,label] of options){const b=document.createElement('button');b.textContent=label;actions.append(b);b.addEventListener('click',async()=>{if(!confirm('تأكيد العملية: '+label+'؟'))return;b.disabled=true;feedback.textContent='جار تنفيذ العملية...';try{await transition(item.id,action);feedback.textContent='تم تنفيذ العملية بنجاح';await loadRequests()}catch(e){feedback.textContent=e.message;b.disabled=false}})}
+ }}catch(e){listing.textContent=e.message}
  }
  save.addEventListener('click',async()=>{
   if(!person.value){feedback.textContent='اختر المستفيد أولًا';return}
