@@ -30,7 +30,7 @@
   const level=String(details.level||'').trim();
   const start=String(details.start_date||'').trim(),end=String(details.end_date||'').trim();
   const safeDate=d=>d.length===10&&d[4]==='-'?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):d;
-  const isolate=d=>'\\u2066'+safeDate(d)+'\\u2069';
+  const isolate=d=>String.fromCharCode(8294)+safeDate(d)+String.fromCharCode(8297);
   const arContext=(course?' في '+course:'')+(level?'، المستوى '+level:'')+(start&&end?'، خلال الفترة من '+isolate(start)+' إلى '+isolate(end):'');
   const frContext=(course?' en '+course:'')+(level?', niveau '+level:'')+(start&&end?', du '+start+' au '+end:'');
   const hasEvidence=Boolean(course&&start&&end);
