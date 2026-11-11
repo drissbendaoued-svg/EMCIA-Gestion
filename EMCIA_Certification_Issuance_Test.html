@@ -713,7 +713,7 @@ function delTx(arr,id){if(confirm("حذف هذه العملية المالية؟
 /* EMCIA Certification — isolated, read-only beneficiary selector (prototype). */
 function certification(){
  const host=document.getElementById('certification');if(!host)return;
- host.innerHTML='<div class="card"><h2>الإشهاد والشواهد — نسخة اختبارية</h2><p class="muted">اختيار المستفيد من سجلات المؤسسة ومعاينة بياناته فقط. لم تُفعّل المصادقة أو الأرشفة أو الإصدار الرسمي.</p><div class="row"><div><label>فئة المستفيد</label><select id="certCategory"><option value="student">متعلم</option><option value="teacher">أستاذ أو مكون</option></select></div><div><label>البحث عن المستفيد</label><input id="certSearch" placeholder="اكتب الاسم"></div><div><label>المستفيد</label><select id="certPerson"></select></div></div><div id="certDetails" class="card"></div><button id="certOpenPreview">فتح نموذج المعاينة التجريبي</button></div>';
+ host.innerHTML='<div class="card"><h2>الإشهاد والشواهد — نسخة اختبارية</h2><p class="muted">اختيار المستفيد وإعداد طلب شهادة. يمكن للمدير اعتماد الطلب وإصدار سجل شهادة برقم فريد. طباعة PDF والأرشفة النهائية لم تُفعّل بعد.</p><div class="row"><div><label>فئة المستفيد</label><select id="certCategory"><option value="student">متعلم</option><option value="teacher">أستاذ أو مكون</option></select></div><div><label>البحث عن المستفيد</label><input id="certSearch" placeholder="اكتب الاسم"></div><div><label>المستفيد</label><select id="certPerson"></select></div></div><div id="certDetails" class="card"></div><button id="certOpenPreview">فتح نموذج المعاينة التجريبي</button></div>';
  const category=document.getElementById('certCategory'),search=document.getElementById('certSearch'),person=document.getElementById('certPerson'),details=document.getElementById('certDetails');
  const source=()=>category.value==='student'?(Array.isArray(db.s)?db.s:[]):(Array.isArray(db.t)?db.t:[]);
  const safeText=v=>String(v==null?'':v);
@@ -752,9 +752,38 @@ function certification(){
   if(!res.ok)throw Error('تعذر الاتصال بقاعدة الطلبات (HTTP '+res.status+')');
   return method==='GET'?res.json():null;
  }
+ async function certRpc(fn,payload){
+  const a=session();if(!a?.access_token)throw Error('انتهت جلسة الدخول');
+  const res=await fetch('https://gfhmkijxiinoqkxhicza.supabase.co/rest/v1/rpc/'+fn,{method:'POST',headers:{'apikey':'sb_publishable_AZWNmDjlNPpADgPFYwH3oA_71o4ABTM','Authorization':'Bearer '+a.access_token,'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  if(!res.ok){const e=await res.json().catch(()=>({}));throw Error(e.message||'تعذرت العملية');}
+  return res.json();
+ }
  async function loadRequests(){
   listing.textContent='جار تحميل الطلبات...';
-  try{const items=await call('GET');listing.replaceChildren();if(!items.length){listing.textContent='لا توجد طلبات بعد';return}for(const item of items){const p=document.createElement('p');p.textContent=[item.created_at.slice(0,10),({student:'متعلم',teacher:'أستاذ أو مكون',staff:'إطار إداري'}[item.subject_kind]||item.subject_kind),({attendance:'شهادة متابعة الدراسة / المواظبة',completion:'شهادة إتمام المستوى',participation:'شهادة المشاركة',work:'شهادة العمل',experience:'شهادة الخبرة',appreciation:'شهادة التقدير'}[item.certificate_type]||item.certificate_type),({ar:'العربية',fr:'الفرنسية',bi:'العربية والفرنسية'}[item.language]||item.language),({draft:'مسودة',submitted:'قيد المراجعة',approved:'معتمد',rejected:'مرفوض'}[item.status]||item.status)].join(' | ');listing.append(p)}}catch(e){listing.textContent=e.message}
+  try{
+   const items=await call('GET');listing.replaceChildren();
+   if(!items.length){listing.textContent='لا توجد طلبات بعد';return}
+   for(const item of items){
+    const wrapper=document.createElement('div');wrapper.style.cssText='padding:12px 0;border-bottom:1px solid #d9e1e8';listing.append(wrapper);
+    const p=document.createElement('p');p.textContent=[item.created_at.slice(0,10),({student:'متعلم',teacher:'أستاذ أو مكون',staff:'إطار إداري'}[item.subject_kind]||item.subject_kind),({attendance:'شهادة متابعة الدراسة / المواظبة',completion:'شهادة إتمام المستوى',participation:'شهادة المشاركة',work:'شهادة العمل',experience:'شهادة الخبرة',appreciation:'شهادة التقدير'}[item.certificate_type]||item.certificate_type),({ar:'العربية',fr:'الفرنسية',bi:'العربية والفرنسية'}[item.language]||item.language),({draft:'مسودة',submitted:'قيد المراجعة',approved:'معتمد',rejected:'مرفوض'}[item.status]||item.status)].join(' | ');wrapper.append(p);
+    const role=window.EMCIA_CURRENT_ROLE||'';
+    const options=item.status==='draft'?[['submit','إرسال للمراجعة']]:item.status==='submitted'&&role==='director'?[['approve','اعتماد الطلب'],['reject','رفض الطلب']]:item.status==='approved'&&role==='director'?[['issue','إصدار الشهادة']]:[];
+    for(const [action,label] of options){
+     const btn=document.createElement('button');btn.textContent=label;btn.style.margin='4px';wrapper.append(btn);
+     btn.addEventListener('click',async()=>{
+      if(!confirm('هل تؤكد: '+label+'؟'))return;
+      btn.disabled=true;feedback.textContent='جار تنفيذ العملية...';
+      try{
+       if(action==='issue'){
+        const out=await certRpc('certification_issue',{p_request_id:item.id});
+        feedback.textContent='تم تسجيل إصدار الشهادة برقم '+(out?.[0]?.certificate_ref||'جديد')+'؛ لم يتم إنشاء PDF بعد';
+       }else{await certRpc('certification_transition',{p_request_id:item.id,p_action:action});feedback.textContent='تم تنفيذ العملية بنجاح'}
+       await loadRequests();
+      }catch(e){feedback.textContent='تعذرت العملية: '+e.message;btn.disabled=false}
+     });
+    }
+   }
+  }catch(e){listing.textContent=e.message}
  }
  save.addEventListener('click',async()=>{
   if(!person.value){feedback.textContent='اختر المستفيد أولًا';return}
