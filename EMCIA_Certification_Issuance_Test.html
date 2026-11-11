@@ -807,7 +807,7 @@ function certification(){
     if(issuedRecord){
      const number=document.createElement('strong');number.textContent='رقم الشهادة: '+issuedRecord.certificate_number;wrapper.append(number);
      const preview=document.createElement('button');preview.textContent='معاينة / طباعة الشهادة';preview.style.margin='8px 4px';wrapper.append(preview);
-     preview.addEventListener('click',()=>{window.open('EMCIA_Certification_Print_Test.html?request='+encodeURIComponent(item.id),'_blank','noopener')});
+     preview.addEventListener('click',()=>{window.location.href='EMCIA_Certification_Print_Test.html?request='+encodeURIComponent(item.id)});
     }
     const role=window.EMCIA_CURRENT_ROLE||'';
     const options=status==='draft'?[['submit','إرسال للمراجعة']]:status==='submitted'&&role==='director'?[['approve','اعتماد الطلب'],['reject','رفض الطلب']]:status==='approved'&&role==='director'?(item.details?.subject_name?[['issue','إصدار الشهادة']]:[['repair','استكمال اسم المستفيد']]):[];
