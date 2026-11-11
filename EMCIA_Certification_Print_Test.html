@@ -1,0 +1,32 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EMCIA — شهادة صادرة</title><style>
+*{box-sizing:border-box}body{margin:0;background:#edf2f7;color:#102a43;font-family:Tahoma,Arial,sans-serif}.toolbar{padding:12px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.toolbar button{padding:12px 22px;background:#102a43;color:white;border:0;border-radius:9px;font:inherit}.status{text-align:center;padding:8px}.paper{width:min(96vw,1120px);min-height:650px;margin:14px auto;background:linear-gradient(130deg,#fff,#fffdf7);border:9px double #b89a55;box-shadow:0 8px 30px #102a4322;padding:32px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;gap:12px}.paper img{max-height:85px;max-width:60%;object-fit:contain}.org{font-size:20px}.paper h1{font-size:32px;color:#173a5e;margin:12px 0;border-bottom:1px solid #b89a55;padding-bottom:10px}.body{font-size:23px;line-height:2;max-width:90%;white-space:pre-line}.date{font-size:18px}.footer{display:flex;width:95%;justify-content:space-between;gap:20px;align-items:end;font-size:15px}.footer>div{flex:1}.stamp{border:1px dashed #b89a55;border-radius:50%;width:150px;height:75px;margin:12px auto 0;display:grid;place-items:center;color:#7d8791;font-size:13px}.ref{font-family:Arial,sans-serif;direction:ltr;unicode-bidi:isolate;font-weight:bold}.warning{font-size:12px;color:#687887}.hidden{display:none!important}
+@media print{@page{size:A4 landscape;margin:8mm}html,body{width:100%;height:auto;background:white}.toolbar,.status{display:none!important}.paper{width:100%;height:180mm;min-height:0;max-height:180mm;margin:0;padding:9mm 12mm;border:2mm double #b89a55;box-shadow:none;break-inside:avoid;page-break-inside:avoid;overflow:hidden}.paper img{height:22mm}.paper h1{font-size:23pt}.body{font-size:15pt}.footer{margin-top:4mm}}
+</style></head><body><div class="toolbar"><button id="print" disabled>طباعة / حفظ PDF</button><button id="back">العودة إلى التطبيق</button></div><p id="status" class="status">جار التحقق من سجل الشهادة...</p><section id="paper" class="paper hidden"><img src="EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA"><div class="org">أمسية للثقافة والتربية والتكوين</div><h1 id="title"></h1><div id="body" class="body"></div><div id="date" class="date"></div><div class="footer"><div><strong>رقم الشهادة / Référence</strong><p id="ref" class="ref"></p></div><div><strong>توقيع المدير وختم المؤسسة</strong><div>Signature et cachet</div><div class="stamp">مكان التوقيع والختم</div></div></div><div class="warning">نسخة للطباعة من سجل الإصدار الإلكتروني — التوقيع والختم غير مدرجين إلكترونيًا. التحقق عبر QR غير مفعل بعد.</div></section><script>
+(function(){
+ const $=id=>document.getElementById(id), status=$('status');
+ $('back').onclick=()=>{location.href='EMCIA_Certification_Issuance_Test.html'};
+ const params=new URLSearchParams(location.search),requestId=params.get('request');
+ if(!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/.test(requestId||'')){status.textContent='مرجع الطلب غير صالح';return}
+ const auth=JSON.parse(sessionStorage.getItem('emcia_auth_session_v2')||'null');
+ if(!auth?.access_token||auth.expiresAt<=Date.now()){status.textContent='انتهت جلسة الدخول. افتح التطبيق وسجل الدخول مجددًا.';return}
+ const api='https://gfhmkijxiinoqkxhicza.supabase.co/rest/v1/certificates?select=certificate_number,issued_at,subject_kind,certificate_type,language,immutable_snapshot&request_id=eq.'+encodeURIComponent(requestId)+'&limit=1';
+ const types={attendance:['شهادة متابعة الدراسة / المواظبة','Attestation de scolarité / assiduité'],completion:['شهادة إتمام المستوى','Attestation de fin de niveau'],participation:['شهادة المشاركة','Attestation de participation'],work:['شهادة العمل','Attestation de travail'],experience:['شهادة الخبرة','Attestation d’expérience'],appreciation:['شهادة التقدير','Attestation de reconnaissance']};
+ fetch(api,{headers:{apikey:'sb_publishable_AZWNmDjlNPpADgPFYwH3oA_71o4ABTM',Authorization:'Bearer '+auth.access_token}})
+ .then(async r=>{if(!r.ok)throw Error('تعذر التحقق من صلاحية عرض الشهادة');return r.json()})
+ .then(rows=>{
+  const c=rows[0];if(!c)throw Error('الشهادة غير موجودة أو غير متاحة لهذا الحساب');
+  const details=c.immutable_snapshot?.details||{},name=details.subject_name;
+  if(!name)throw Error('اسم المستفيد غير محفوظ في سجل الإصدار');
+  const [ar,fr]=types[c.certificate_type]||['شهادة','Attestation'];
+  const lang=c.language, title=lang==='fr'?fr:lang==='bi'?ar+' / '+fr:ar;
+  $('title').textContent=title;
+  const arBody='تشهد أمسية للثقافة والتربية والتكوين بأن السيد(ة) '+name+' قد استوفى(ت) متطلبات الشهادة المبينة أعلاه، وفق المعطيات المسجلة بالمؤسسة.';
+  const frBody="L’association EMCIA atteste que "+name+" est bénéficiaire de l’attestation indiquée ci-dessus, conformément aux informations enregistrées.";
+  $('body').textContent=lang==='fr'?frBody:lang==='bi'?arBody+'\n'+frBody:arBody;
+  $('date').textContent=(lang==='fr'?'Date de délivrance : ':'تاريخ الإصدار: ')+new Date(c.issued_at).toLocaleDateString('fr-MA',{year:'numeric',month:'2-digit',day:'2-digit'});
+  $('ref').textContent=c.certificate_number;
+  $('paper').classList.remove('hidden');$('print').disabled=false;status.textContent='معاينة سجل شهادة صادرة. راجع المحتوى قبل الطباعة.';
+ }).catch(e=>{status.textContent=e.message});
+ $('print').onclick=()=>window.print();
+})();
+</script></body></html>
