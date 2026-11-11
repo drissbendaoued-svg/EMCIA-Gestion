@@ -4,7 +4,7 @@
 </style></head><body><div class="toolbar"><button id="print" disabled>طباعة / حفظ PDF</button><button id="back">العودة إلى التطبيق</button></div><p id="status" class="status">جار التحقق من سجل الشهادة...</p><section id="paper" class="paper hidden"><img src="EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA"><div class="org">أمسية للثقافة والتربية والتكوين</div><h1 id="title"></h1><div id="body" class="body"></div><div id="date" class="date"></div><div class="footer"><div><strong>رقم الشهادة / Référence</strong><p id="ref" class="ref"></p></div><div><strong>توقيع المدير وختم المؤسسة</strong><div>Signature et cachet</div><div class="stamp">مكان التوقيع والختم</div></div></div><div class="warning">نسخة للطباعة من سجل الإصدار الإلكتروني — التوقيع والختم غير مدرجين إلكترونيًا. التحقق عبر QR غير مفعل بعد.</div></section><script>
 (function(){
  const $=id=>document.getElementById(id), status=$('status');
- $('back').onclick=()=>{location.href='EMCIA_Certification_Issuance_Test.html'};
+ $('back').onclick=()=>{location.href='EMCIA_Certification_Issuance_Test.html?v=7'};
  const params=new URLSearchParams(location.search),requestId=params.get('request');
  if(!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/.test(requestId||'')){status.textContent='مرجع الطلب غير صالح';return}
  const auth=JSON.parse(sessionStorage.getItem('emcia_auth_session_v2')||'null');
