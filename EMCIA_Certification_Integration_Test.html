@@ -736,6 +736,32 @@ function certification(){
  });
  category.addEventListener('change',()=>{search.value='';refresh()});search.addEventListener('input',refresh);
  document.getElementById('certOpenPreview').addEventListener('click',()=>window.open('certification-prototype.html','_blank','noopener'));
+ const card=document.createElement('div');card.className='card';host.append(card);
+ const heading=document.createElement('h3');heading.textContent='طلبات الشواهد — حفظ مسودة سحابية';card.append(heading);
+ const language=document.createElement('select');[['ar','العربية'],['fr','Français'],['bi','العربية + Français']].forEach(([v,n])=>language.add(new Option(n,v)));card.append(language);
+ const kind=document.createElement('select');[['attendance','شهادة متابعة الدراسة / المواظبة'],['completion','شهادة إتمام المستوى'],['participation','شهادة المشاركة'],['work','شهادة العمل'],['experience','شهادة الخبرة'],['appreciation','شهادة التقدير']].forEach(([v,n])=>kind.add(new Option(n,v)));card.append(kind);
+ const save=document.createElement('button');save.textContent='حفظ مسودة الطلب';card.append(save);
+ const refreshList=document.createElement('button');refreshList.textContent='تحديث قائمة طلباتي';card.append(refreshList);
+ const feedback=document.createElement('p');feedback.setAttribute('role','status');card.append(feedback);
+ const listing=document.createElement('div');card.append(listing);
+ function session(){let v;try{v=JSON.parse(sessionStorage.getItem('emcia_auth_session_v2')||'null')}catch(e){}return v&&v.expiresAt>Date.now()?v:null}
+ async function call(method,body){
+  const a=session();if(!a?.access_token||!a?.user?.id)throw Error('يرجى تسجيل الدخول مجددًا قبل حفظ الطلب');
+  const url='https://gfhmkijxiinoqkxhicza.supabase.co/rest/v1/certificate_requests';
+  const res=await fetch(url+(method==='GET'?'?select=id,subject_kind,certificate_type,language,status,created_at&order=created_at.desc&limit=30':''),{method,headers:{'apikey':'sb_publishable_AZWNmDjlNPpADgPFYwH3oA_71o4ABTM','Authorization':'Bearer '+a.access_token,'Content-Type':'application/json','Prefer':'return=minimal'},...(body?{body:JSON.stringify(body)}:{})});
+  if(!res.ok)throw Error('تعذر الاتصال بقاعدة الطلبات (HTTP '+res.status+')');
+  return method==='GET'?res.json():null;
+ }
+ async function loadRequests(){
+  listing.textContent='جار تحميل الطلبات...';
+  try{const items=await call('GET');listing.replaceChildren();if(!items.length){listing.textContent='لا توجد طلبات بعد';return}for(const item of items){const p=document.createElement('p');p.textContent=[item.created_at.slice(0,10),item.subject_kind,item.certificate_type,item.language,item.status].join(' | ');listing.append(p)}}catch(e){listing.textContent=e.message}
+ }
+ save.addEventListener('click',async()=>{
+  if(!person.value){feedback.textContent='اختر المستفيد أولًا';return}
+  save.disabled=true;feedback.textContent='جار حفظ المسودة...';
+  try{const a=session();if(!a)throw Error('انتهت جلسة تسجيل الدخول');await call('POST',{subject_kind:category.value,subject_id:person.value,certificate_type:kind.value,language:language.value,status:'draft',requested_by:a.user.id});feedback.textContent='تم حفظ مسودة الطلب سحابيًا';await loadRequests()}catch(e){feedback.textContent='لم يُحفظ الطلب: '+e.message}finally{save.disabled=false}
+ });
+ refreshList.addEventListener('click',loadRequests);loadRequests();
  refresh();
 }
 
