@@ -750,7 +750,7 @@ function certification(){
  async function call(method,body){
   const a=session();if(!a?.access_token||!a?.user?.id)throw Error('يرجى تسجيل الدخول مجددًا قبل حفظ الطلب');
   const url='https://gfhmkijxiinoqkxhicza.supabase.co/rest/v1/certificate_requests';
-  const res=await fetch(url+(method==='GET'?'?select=id,subject_kind,certificate_type,language,status,created_at&order=created_at.desc&limit=30':''),{method,headers:{'apikey':'sb_publishable_AZWNmDjlNPpADgPFYwH3oA_71o4ABTM','Authorization':'Bearer '+a.access_token,'Content-Type':'application/json','Prefer':'return=minimal'},...(body?{body:JSON.stringify(body)}:{})});
+  const res=await fetch(url+(method==='GET'?'?select=id,subject_kind,subject_id,details,certificate_type,language,status,created_at&order=created_at.desc&limit=30':''),{method,headers:{'apikey':'sb_publishable_AZWNmDjlNPpADgPFYwH3oA_71o4ABTM','Authorization':'Bearer '+a.access_token,'Content-Type':'application/json','Prefer':'return=minimal'},...(body?{body:JSON.stringify(body)}:{})});
   if(!res.ok)throw Error('تعذر الاتصال بقاعدة الطلبات (HTTP '+res.status+')');
   return method==='GET'?res.json():null;
  }
@@ -773,14 +773,22 @@ function certification(){
     const wrapper=document.createElement('div');wrapper.style.cssText='padding:12px 0;border-bottom:1px solid #d9e1e8';listing.append(wrapper);
     const p=document.createElement('p');p.textContent=[item.created_at.slice(0,10),({student:'متعلم',teacher:'أستاذ أو مكون',staff:'إطار إداري'}[item.subject_kind]||item.subject_kind),({attendance:'شهادة متابعة الدراسة / المواظبة',completion:'شهادة إتمام المستوى',participation:'شهادة المشاركة',work:'شهادة العمل',experience:'شهادة الخبرة',appreciation:'شهادة التقدير'}[item.certificate_type]||item.certificate_type),({ar:'العربية',fr:'الفرنسية',bi:'العربية والفرنسية'}[item.language]||item.language),({draft:'مسودة',submitted:'قيد المراجعة',approved:'معتمد',rejected:'مرفوض'}[item.status]||item.status)].join(' | ');wrapper.append(p);
     const role=window.EMCIA_CURRENT_ROLE||'';
-    const options=item.status==='draft'?[['submit','إرسال للمراجعة']]:item.status==='submitted'&&role==='director'?[['approve','اعتماد الطلب'],['reject','رفض الطلب']]:item.status==='approved'&&role==='director'?[['issue','إصدار الشهادة']]:[];
+    const options=item.status==='draft'?[['submit','إرسال للمراجعة']]:item.status==='submitted'&&role==='director'?[['approve','اعتماد الطلب'],['reject','رفض الطلب']]:item.status==='approved'&&role==='director'?(item.details?.subject_name?[['issue','إصدار الشهادة']]:[['repair','استكمال اسم المستفيد']]):[];
     for(const [action,label] of options){
      const btn=document.createElement('button');btn.textContent=label;btn.style.margin='4px';wrapper.append(btn);
      btn.addEventListener('click',async()=>{
       if(!confirm('هل تؤكد: '+label+'؟'))return;
       btn.disabled=true;feedback.textContent='جار تنفيذ العملية...';
       try{
-       if(action==='issue'){
+       if(action==='repair'){
+        const record=(item.subject_kind==='student'?(db.s||[]):(db.t||[])).find(x=>String(x.id)===String(item.subject_id));
+        if(!record)throw Error('لم يتم العثور على المستفيد في السجل المحلي؛ لا يمكن استكمال الاسم تلقائيًا');
+        const name=objName(record,'both');
+        if(!name||name==='—')throw Error('اسم المستفيد غير متوفر');
+        if(!confirm('هل تؤكد مطابقة هذا الاسم مع الطلب المعتمد؟ '+name))return;
+        await certRpc('certification_repair_name',{p_request_id:item.id,p_subject_name:name});
+        feedback.textContent='تم استكمال اسم المستفيد وتوثيق العملية؛ يمكنك الآن إصدار الشهادة';
+       }else if(action==='issue'){
         const out=await certRpc('certification_issue',{p_request_id:item.id});
         feedback.textContent='تم تسجيل إصدار الشهادة برقم '+(out?.[0]?.certificate_ref||'جديد')+'؛ لم يتم إنشاء PDF بعد';
        }else{await certRpc('certification_transition',{p_request_id:item.id,p_action:action});feedback.textContent='تم تنفيذ العملية بنجاح'}
