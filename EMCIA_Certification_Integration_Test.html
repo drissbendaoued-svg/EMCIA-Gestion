@@ -770,7 +770,7 @@ function certification(){
  save.addEventListener('click',async()=>{
   if(!person.value){feedback.textContent='اختر المستفيد أولًا';return}
   save.disabled=true;feedback.textContent='جار حفظ المسودة...';
-  try{const a=session();if(!a)throw Error('انتهت جلسة تسجيل الدخول');await call('POST',{subject_kind:category.value,subject_id:person.value,certificate_type:kind.value,language:language.value,status:'draft',requested_by:a.user.id});feedback.textContent='تم حفظ مسودة الطلب سحابيًا';await loadRequests()}catch(e){feedback.textContent='لم يُحفظ الطلب: '+e.message}finally{save.disabled=false}
+  try{const a=session();if(!a)throw Error('انتهت جلسة تسجيل الدخول');await call('POST',{subject_kind:category.value,subject_id:person.value,certificate_type:kind.value,language:language.value,status:'draft',requested_by:a.user.id,details:{subject_name:objName(source().find(x=>String(x.id)===person.value),'both'),group_ids:category.value==='student'?(db.e||[]).filter(e=>String(e.sid)===person.value).map(e=>String(e.gid)):[]}}});feedback.textContent='تم حفظ مسودة الطلب سحابيًا';await loadRequests()}catch(e){feedback.textContent='لم يُحفظ الطلب: '+e.message}finally{save.disabled=false}
  });
  refreshList.addEventListener('click',loadRequests);loadRequests();
  refresh();
