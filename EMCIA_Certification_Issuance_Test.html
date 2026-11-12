@@ -764,7 +764,7 @@ function certification(){
  }
  async function fetchIssued(){
   const a=session();if(!a?.access_token)throw Error('انتهت جلسة الدخول');
-  const url='https://gfhmkijxiinoqkxhicza.supabase.co/rest/v1/certificates?select=request_id,certificate_number,issued_at,immutable_snapshot&order=issued_at.desc&limit=100';
+  const url='https://gfhmkijxiinoqkxhicza.supabase.co/rest/v1/certificates?select=id,request_id,certificate_number,issued_at,immutable_snapshot,archived_at&archived_at=is.null&order=issued_at.desc&limit=100';
   const response=await fetch(url,{headers:{'apikey':'sb_publishable_AZWNmDjlNPpADgPFYwH3oA_71o4ABTM','Authorization':'Bearer '+a.access_token}});
   if(!response.ok)throw Error('تعذر تحميل سجل الشواهد الصادرة');
   return response.json();
@@ -808,6 +808,18 @@ function certification(){
      const number=document.createElement('strong');number.textContent='رقم الشهادة: '+issuedRecord.certificate_number;wrapper.append(number);
      const preview=document.createElement('button');preview.textContent='معاينة / طباعة الشهادة';preview.style.margin='8px 4px';wrapper.append(preview);
      preview.addEventListener('click',()=>{window.location.href='EMCIA_Certification_Print_Test.html?request='+encodeURIComponent(item.id)});
+     if((window.EMCIA_CURRENT_ROLE||'')==='director'){
+      const archive=document.createElement('button');archive.textContent='حذف الشهادة المكررة';archive.style.cssText='margin:8px 4px;background:#a33;color:white';wrapper.append(archive);
+      archive.addEventListener('click',async()=>{
+       const reason=prompt('أدخل سبب حذف هذه الشهادة من الأرشيف (8 أحرف على الأقل). سيبقى رقمها مسجلاً وسيصبح رمز QR غير صالح.','شهادة تجريبية مكررة');
+       if(reason===null)return;
+       if(reason.trim().length<8){feedback.textContent='يرجى كتابة سبب واضح لا يقل عن 8 أحرف';return}
+       if(!confirm('تأكيد حذف الشهادة '+issuedRecord.certificate_number+' من القائمة؟ لا يمكن التراجع من هذه الواجهة، ولن يعاد استعمال الرقم.'))return;
+       archive.disabled=true;
+       try{await certRpc('certification_archive_duplicate',{p_certificate_id:issuedRecord.id,p_reason:reason.trim()});feedback.textContent='تم نقل الشهادة '+issuedRecord.certificate_number+' إلى الأرشيف المحذوف مع حفظ سجل العملية';await loadRequests()}
+       catch(e){feedback.textContent='تعذر حذف الشهادة: '+e.message;archive.disabled=false}
+      });
+     }
     }
     const role=window.EMCIA_CURRENT_ROLE||'';
     const options=status==='draft'?[['submit','إرسال للمراجعة']]:status==='submitted'&&role==='director'?[['approve','اعتماد الطلب'],['reject','رفض الطلب']]:status==='approved'&&role==='director'?(item.details?.subject_name?((['attendance','completion'].includes(item.certificate_type)?[['training','بيانات التكوين']]:[]).concat([['issue','إصدار الشهادة']])):[['repair','استكمال اسم المستفيد']]):[];
