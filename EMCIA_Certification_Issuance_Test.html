@@ -747,6 +747,63 @@ function certification(){
  const searchLabel=document.createElement('label');searchLabel.textContent='البحث في الطلبات بالاسم أو المعرف';card.append(searchLabel);
  const requestSearch=document.createElement('input');requestSearch.placeholder='اسم المستفيد أو معرفه الداخلي';card.append(requestSearch);
   const listing=document.createElement('div');card.append(listing);
+ const archiveBox=document.createElement('section');archiveBox.style.cssText='margin-top:22px;padding:14px;border:1px solid #cbd5e1;border-radius:12px;background:#f8fafc';card.append(archiveBox);
+ const archiveHeading=document.createElement('h3');archiveHeading.textContent='أرشيف الشواهد والطلبات';archiveBox.append(archiveHeading);
+ const archiveControls=document.createElement('div');archiveControls.style.cssText='display:flex;flex-wrap:wrap;gap:8px';archiveBox.append(archiveControls);
+ const archiveMode=document.createElement('select');[['issued','الشواهد الصادرة'],['removed','المحذوفة'],['requests','الطلبات النشطة']].forEach(([v,t])=>archiveMode.add(new Option(t,v)));archiveControls.append(archiveMode);
+ const archiveType=document.createElement('select');[['','كل الأنواع'],['attendance','المواظبة'],['completion','الإتمام'],['participation','المشاركة'],['work','العمل'],['experience','الخبرة'],['appreciation','التقدير']].forEach(([v,t])=>archiveType.add(new Option(t,v)));archiveControls.append(archiveType);
+ const archiveSearch=document.createElement('input');archiveSearch.placeholder='الاسم أو رقم الشهادة';archiveControls.append(archiveSearch);
+ const archiveDate=document.createElement('input');archiveDate.type='month';archiveDate.title='شهر الإصدار';archiveControls.append(archiveDate);
+ const archiveRefresh=document.createElement('button');archiveRefresh.textContent='↻ تحديث';archiveControls.append(archiveRefresh);
+ const archiveResults=document.createElement('div');archiveBox.append(archiveResults);
+ let archivePage=0;
+ const archivePages=document.createElement('div');archivePages.style.cssText='display:flex;gap:8px;align-items:center;margin-top:10px';archiveBox.append(archivePages);
+ const archivePrev=document.createElement('button');archivePrev.textContent='السابق';archivePages.append(archivePrev);
+ const archivePageLabel=document.createElement('span');archivePages.append(archivePageLabel);
+ const archiveNext=document.createElement('button');archiveNext.textContent='التالي';archivePages.append(archiveNext);
+ async function loadArchive(){
+  archiveResults.textContent='جار تحميل الأرشيف...';
+  try{
+   const a=session();if(!a?.access_token)throw Error('انتهت جلسة الدخول');
+   const mode=archiveMode.value;
+   const base='https://gfhmkijxiinoqkxhicza.supabase.co/rest/v1/';
+   const table=mode==='requests'?'certificate_requests':'certificates';
+   const columns=mode==='requests'?'id,subject_id,certificate_type,details,created_at,status':'id,request_id,certificate_number,certificate_type,immutable_snapshot,issued_at,archived_at,revoked_at';
+   let query='?select='+columns+'&order='+(mode==='requests'?'created_at':'issued_at')+'.desc&limit=100';
+   if(mode==='issued')query+='&archived_at=is.null';
+   if(mode==='removed')query+='&archived_at=not.is.null';
+   if(mode==='requests')query+='&archived_at=is.null';
+   if(archiveType.value)query+='&certificate_type=eq.'+encodeURIComponent(archiveType.value);
+   const response=await fetch(base+table+query,{headers:{apikey:'sb_publishable_AZWNmDjlNPpADgPFYwH3oA_71o4ABTM',Authorization:'Bearer '+a.access_token}});
+   if(!response.ok)throw Error('تعذر قراءة الأرشيف: HTTP '+response.status);
+   const rows=await response.json();
+   const q=archiveSearch.value.trim().toLocaleLowerCase();
+   const filtered=rows.filter(x=>{
+    const name=mode==='requests'?x.details?.subject_name:x.immutable_snapshot?.details?.subject_name;
+    const text=[name,x.certificate_number,x.subject_id].join(' ').toLocaleLowerCase();
+    const date=mode==='requests'?x.created_at:x.issued_at;
+    return (!q||text.includes(q))&&(!archiveDate.value||String(date||'').startsWith(archiveDate.value));
+   });
+   const size=15,max=Math.max(0,Math.ceil(filtered.length/size)-1);archivePage=Math.min(archivePage,max);
+   archiveResults.replaceChildren();
+   for(const x of filtered.slice(archivePage*size,(archivePage+1)*size)){
+    const row=document.createElement('div');row.style.cssText='border-bottom:1px solid #d9e2ea;padding:10px 0;overflow-wrap:anywhere';archiveResults.append(row);
+    const name=mode==='requests'?x.details?.subject_name:x.immutable_snapshot?.details?.subject_name;
+    const title=document.createElement('strong');title.textContent=(name||'مستفيد غير محدد')+' — '+(x.certificate_number||x.status||'طلب');row.append(title);
+    const info=document.createElement('div');info.style.cssText='font-size:12px;color:#64748b';info.textContent=(mode==='requests'?x.created_at:x.issued_at||'').slice(0,10)+(x.archived_at?' | محذوفة من القائمة النشطة':'')+(x.revoked_at?' | ملغاة':'');row.append(info);
+    if(mode==='issued'){
+     const open=document.createElement('button');open.textContent='🖨 طباعة';open.style.margin='5px';row.append(open);
+     open.onclick=()=>{location.href='EMCIA_Certification_Print_Test.html?request='+encodeURIComponent(x.request_id)+'&v=18'};
+    }
+   }
+   if(!filtered.length)archiveResults.textContent='لا توجد سجلات مطابقة';
+   archivePageLabel.textContent='صفحة '+(archivePage+1)+' من '+(max+1)+' | '+filtered.length+' نتيجة';
+   archivePrev.disabled=archivePage===0;archiveNext.disabled=archivePage>=max;
+  }catch(e){archiveResults.textContent=e.message}
+ }
+ [archiveMode,archiveType,archiveSearch,archiveDate].forEach(el=>el.addEventListener(el===archiveSearch?'input':'change',()=>{archivePage=0;loadArchive()}));
+ archiveRefresh.onclick=()=>loadArchive();archivePrev.onclick=()=>{archivePage--;loadArchive()};archiveNext.onclick=()=>{archivePage++;loadArchive()};
+
  function session(){let v;try{v=JSON.parse(sessionStorage.getItem('emcia_auth_session_v2')||'null')}catch(e){}return v&&v.expiresAt>Date.now()?v:null}
  async function call(method,body){
   const a=session();if(!a?.access_token||!a?.user?.id)throw Error('يرجى تسجيل الدخول مجددًا قبل حفظ الطلب');
