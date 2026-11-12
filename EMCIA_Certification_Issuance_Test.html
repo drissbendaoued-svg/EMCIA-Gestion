@@ -752,7 +752,7 @@ function certification(){
  async function call(method,body){
   const a=session();if(!a?.access_token||!a?.user?.id)throw Error('يرجى تسجيل الدخول مجددًا قبل حفظ الطلب');
   const url='https://gfhmkijxiinoqkxhicza.supabase.co/rest/v1/certificate_requests';
-  const res=await fetch(url+(method==='GET'?'?select=id,subject_kind,subject_id,details,certificate_type,language,status,created_at&order=created_at.desc&limit=30':''),{method,headers:{'apikey':'sb_publishable_AZWNmDjlNPpADgPFYwH3oA_71o4ABTM','Authorization':'Bearer '+a.access_token,'Content-Type':'application/json','Prefer':'return=minimal'},...(body?{body:JSON.stringify(body)}:{})});
+  const res=await fetch(url+(method==='GET'?'?select=id,subject_kind,subject_id,details,certificate_type,language,status,created_at&archived_at=is.null&order=created_at.desc&limit=200':''),{method,headers:{'apikey':'sb_publishable_AZWNmDjlNPpADgPFYwH3oA_71o4ABTM','Authorization':'Bearer '+a.access_token,'Content-Type':'application/json','Prefer':'return=minimal'},...(body?{body:JSON.stringify(body)}:{})});
   if(!res.ok)throw Error('تعذر الاتصال بقاعدة الطلبات (HTTP '+res.status+')');
   return method==='GET'?res.json():null;
  }
@@ -822,6 +822,19 @@ function certification(){
      }
     }
     const role=window.EMCIA_CURRENT_ROLE||'';
+    if(role==='director'){
+     const remove=document.createElement('button');remove.textContent='حذف الطلب التجريبي / المكرر';remove.style.cssText='margin:8px 4px;background:#8c3140;color:white';wrapper.append(remove);
+     remove.addEventListener('click',async()=>{
+      if(issuedRecord){feedback.textContent='احذف الشهادة الصادرة أولاً من زر «حذف الشهادة المكررة»، ثم أعد تحميل القائمة لحذف الطلب المرتبط بها.';return}
+      const reason=prompt('سبب حذف الطلب (8 أحرف على الأقل):','طلب تجريبي مكرر');
+      if(reason===null)return;
+      if(reason.trim().length<8){feedback.textContent='يرجى كتابة سبب واضح لا يقل عن 8 أحرف';return}
+      if(!confirm('هل تؤكد حذف هذا الطلب من القائمة النشطة؟ سيظل محفوظاً في سجل الأرشفة.'))return;
+      remove.disabled=true;
+      try{await certRpc('certification_archive_request',{p_request_id:item.id,p_reason:reason.trim()});feedback.textContent='تم حذف الطلب من القائمة النشطة مع حفظ سبب الحذف';await loadRequests()}
+      catch(e){feedback.textContent='تعذر حذف الطلب: '+e.message;remove.disabled=false}
+     });
+    }
     const options=status==='draft'?[['submit','إرسال للمراجعة']]:status==='submitted'&&role==='director'?[['approve','اعتماد الطلب'],['reject','رفض الطلب']]:status==='approved'&&role==='director'?(item.details?.subject_name?((['attendance','completion'].includes(item.certificate_type)?[['training','بيانات التكوين']]:[]).concat([['issue','إصدار الشهادة']])):[['repair','استكمال اسم المستفيد']]):[];
     for(const [action,label] of options){
      const btn=document.createElement('button');btn.textContent=label;btn.style.margin='4px';wrapper.append(btn);
