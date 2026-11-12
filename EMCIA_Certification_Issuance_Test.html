@@ -750,7 +750,7 @@ function certification(){
  const archiveBox=document.createElement('section');archiveBox.style.cssText='margin-top:22px;padding:14px;border:1px solid #cbd5e1;border-radius:12px;background:#f8fafc';card.append(archiveBox);
  const archiveHeading=document.createElement('h3');archiveHeading.textContent='أرشيف الشواهد والطلبات';archiveBox.append(archiveHeading);
  const archiveControls=document.createElement('div');archiveControls.style.cssText='display:flex;flex-wrap:wrap;gap:8px';archiveBox.append(archiveControls);
- const archiveMode=document.createElement('select');[['issued','الشواهد الصادرة'],['removed','المحذوفة'],['requests','الطلبات النشطة']].forEach(([v,t])=>archiveMode.add(new Option(t,v)));archiveControls.append(archiveMode);
+ const archiveMode=document.createElement('select');[['issued','الشواهد الصادرة'],['removed','الشواهد المحذوفة'],['removedRequests','الطلبات المحذوفة'],['requests','الطلبات النشطة']].forEach(([v,t])=>archiveMode.add(new Option(t,v)));archiveControls.append(archiveMode);
  const archiveType=document.createElement('select');[['','كل الأنواع'],['attendance','المواظبة'],['completion','الإتمام'],['participation','المشاركة'],['work','العمل'],['experience','الخبرة'],['appreciation','التقدير']].forEach(([v,t])=>archiveType.add(new Option(t,v)));archiveControls.append(archiveType);
  const archiveSearch=document.createElement('input');archiveSearch.placeholder='الاسم أو رقم الشهادة';archiveControls.append(archiveSearch);
  const archiveDate=document.createElement('input');archiveDate.type='month';archiveDate.title='شهر الإصدار';archiveControls.append(archiveDate);
@@ -767,21 +767,23 @@ function certification(){
    const a=session();if(!a?.access_token)throw Error('انتهت جلسة الدخول');
    const mode=archiveMode.value;
    const base='https://gfhmkijxiinoqkxhicza.supabase.co/rest/v1/';
-   const table=mode==='requests'?'certificate_requests':'certificates';
-   const columns=mode==='requests'?'id,subject_id,certificate_type,details,created_at,status':'id,request_id,certificate_number,certificate_type,immutable_snapshot,issued_at,archived_at,revoked_at';
-   let query='?select='+columns+'&order='+(mode==='requests'?'created_at':'issued_at')+'.desc&limit=100';
+   const isRequest=mode==='requests'||mode==='removedRequests';
+   const table=isRequest?'certificate_requests':'certificates';
+   const columns=isRequest?'id,subject_id,certificate_type,details,created_at,status':'id,request_id,certificate_number,certificate_type,immutable_snapshot,issued_at,archived_at,revoked_at';
+   let query='?select='+columns+'&order='+(isRequest?'created_at':'issued_at')+'.desc&limit=100';
    if(mode==='issued')query+='&archived_at=is.null';
    if(mode==='removed')query+='&archived_at=not.is.null';
    if(mode==='requests')query+='&archived_at=is.null';
+   if(mode==='removedRequests')query+='&archived_at=not.is.null';
    if(archiveType.value)query+='&certificate_type=eq.'+encodeURIComponent(archiveType.value);
    const response=await fetch(base+table+query,{headers:{apikey:'sb_publishable_AZWNmDjlNPpADgPFYwH3oA_71o4ABTM',Authorization:'Bearer '+a.access_token}});
    if(!response.ok)throw Error('تعذر قراءة الأرشيف: HTTP '+response.status);
    const rows=await response.json();
    const q=archiveSearch.value.trim().toLocaleLowerCase();
    const filtered=rows.filter(x=>{
-    const name=mode==='requests'?x.details?.subject_name:x.immutable_snapshot?.details?.subject_name;
+    const name=isRequest?x.details?.subject_name:x.immutable_snapshot?.details?.subject_name;
     const text=[name,x.certificate_number,x.subject_id].join(' ').toLocaleLowerCase();
-    const date=mode==='requests'?x.created_at:x.issued_at;
+    const date=isRequest?x.created_at:x.issued_at;
     return (!q||text.includes(q))&&(!archiveDate.value||String(date||'').startsWith(archiveDate.value));
    });
    const size=15,max=Math.max(0,Math.ceil(filtered.length/size)-1);archivePage=Math.min(archivePage,max);
@@ -849,7 +851,7 @@ function certification(){
     return matches&&(!q||text.includes(q));
    });
    listing.replaceChildren();
-   if(!visible.length){listing.textContent='لا توجد طلبات مطابقة';return}
+   if(!visible.length){listing.textContent='لا توجد طلبات مطابقة';loadArchive();return}
    const types={attendance:'شهادة متابعة الدراسة / المواظبة',completion:'شهادة إتمام المستوى',participation:'شهادة المشاركة',work:'شهادة العمل',experience:'شهادة الخبرة',appreciation:'شهادة التقدير'};
    const statuses={draft:'مسودة',submitted:'قيد المراجعة',approved:'معتمد',rejected:'مرفوض',issued:'تم الإصدار'};
    for(const item of visible){
@@ -964,6 +966,7 @@ function certification(){
      });
     }
    }
+   loadArchive();
   }catch(e){listing.textContent=e.message}
  }
  save.addEventListener('click',async()=>{
