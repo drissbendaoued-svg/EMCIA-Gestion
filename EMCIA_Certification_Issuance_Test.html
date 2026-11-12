@@ -2089,7 +2089,7 @@ function rcFileCode(){
   teacher:"Releve_Professeur",
   attendance:"Rapport_Presences",
   arrears:"Rapport_Impayes",
-  financial:"Rapport_Financier"
+  financial:"Rapport_Financier",discounts:"Rapport_Reductions"
  }[type]||"Rapport";
 }
 function rcFileBase(){
@@ -2101,7 +2101,7 @@ function rcFileBase(){
  }
  return `EMCIA_${code}_${m}`;
 }
-function emciaReportAllowed(type){return !['executive','monthly','financial'].includes(type)||emciaCanViewManagement()}
+function emciaReportAllowed(type){return !['executive','monthly','financial','discounts'].includes(type)||emciaCanViewManagement()}
 function emciaGuardReport(type){if(emciaReportAllowed(type))return true;alert('هذا التقرير المالي متاح للمدير والمحاسب فقط.');rcClearPreview('هذا التقرير المالي متاح للمدير والمحاسب فقط.');return false}
 function rcDirectPrint(){
  if(!emciaGuardReport($("#rcType")?.value))return;
@@ -2167,7 +2167,7 @@ function rcRefreshPreview(){
 }
 function rcToggleFields(){
  let type=$("#rcType")?$("#rcType").value:"",b=$("#rcTeacherBox");
- if(b)b.style.display=type==="teacher"?"block":"none";
+ if(b)b.style.display=type==="teacher"?"block":"none";let df=$("#rcDiscountFilters");if(df)df.style.display=type==="discounts"?"flex":"none";
  if(!type){rcClearPreview("اختر نوع التقرير من القائمة.");return}
  if(type==="teacher"){
    let s=$("#rcTeacher");if(s)s.value="";
@@ -2181,11 +2181,31 @@ function monthlyTeacherAttendanceHTML(m){
  return `<div class="card"><h3>غيابات الأساتذة والتعويضات</h3>${rows.length?`<table><tr><th>الأستاذ</th><th>التاريخ</th><th>الفوج</th><th>حالة التعويض</th></tr>${rows.map(r=>{let s=by(db.sch,r.sid),g=s?by(db.g,s.gid):null,tr=g?by(db.t,g.tid):null;return`<tr><td>${esc(objName(tr)||"—")}</td><td>${r.date}</td><td>${esc(g?.linkCode||g?.n||"—")}</td><td>${teacherMakeupStatus(r)}</td></tr>`}).join("")}</table>`:"<p>لا توجد غيابات أساتذة مسجلة خلال هذا الشهر.</p>"}</div>`
 }
 
+function emciaDiscountReportHTML(m){
+ const gid=$("#rcDiscountGroup")?.value||"",tid=$("#rcDiscountTeacher")?.value||"",bearer=$("#rcDiscountBearer")?.value||"";
+ const scoped=db.e.filter(e=>e.active&&e.start&&e.start.slice(0,7)<=m&&by(db.g,e.gid)&&by(db.s,e.sid)&&(!gid||e.gid===gid)&&(!tid||by(db.g,e.gid).tid===tid));
+ const base=e=>{const g=by(db.g,e.gid);return e.start.slice(0,7)===m&&e.fee!=null?Math.max(0,+e.fee||0):Math.max(0,+g.f||0)};
+ const entries=scoped.map(e=>({e,g:by(db.g,e.gid),d:activeDiscount(e,m),b:base(e)})).map(x=>({...x,v:Math.min(x.b,Math.max(0,x.d?.amount||0))})).filter(x=>x.v>0&&(!bearer||x.d.bearer===bearer));
+ const sum=(a,fn)=>a.reduce((z,x)=>z+fn(x),0),total=sum(entries,x=>x.v),gross=sum(scoped,base);
+ const share=(x,k)=>x.d.amount?x.v*(x.d[k]||0)/x.d.amount:0;
+ const pct=(a,b)=>b?(a*100/b).toFixed(1)+"%":"0%";
+ const groups=[...new Set(scoped.map(e=>e.gid))].map(id=>{const g=by(db.g,id),es=scoped.filter(e=>e.gid===id),ds=entries.filter(x=>x.e.gid===id),v=sum(ds,x=>x.v);return [esc(g.n),esc(objName(by(db.t,g.tid))||"—"),es.length,ds.length,pct(ds.length,es.length),money(v),pct(v,sum(es,base)),money(sum(ds,x=>share(x,"teacher"))),money(sum(ds,x=>share(x,"emcia")))];});
+ const labels={teacher:"الأستاذ",emcia:"المؤسسة",half:"مشترك 50/50",custom:"توزيع مخصص"};
+ const details=entries.map(x=>[esc(objName(by(db.s,x.e.sid))),esc(x.g.n),esc(objName(by(db.t,x.g.tid))||"—"),money(x.b),money(x.v),money(x.b-x.v),esc(labels[x.d.bearer]||"—"),money(share(x,"teacher")),money(share(x,"emcia")),esc(x.e.discountStart||x.e.start.slice(0,7)),esc(x.e.discountTerm==="month"?"شهر واحد":x.e.discountTerm==="season"?"نهاية الموسم":x.e.discountTerm==="date"?(x.e.discountEnd||"—"):"حتى الإيقاف")]);
+ return '<p class="muted">تقرير قراءة فقط للتخفيضات السارية في الشهر المحدد. كل تسجيل في فوج يحسب مستقلاً.</p>'+
+ rcTable(["المؤشر","القيمة"],[["التسجيلات المشمولة",scoped.length],["التسجيلات المستفيدة",entries.length],["المتعلمون المستفيدون دون تكرار",new Set(entries.map(x=>x.e.sid)).size],["نسبة التسجيلات المستفيدة",pct(entries.length,scoped.length)],["الواجبات الأصلية",money(gross)],["التخفيض الشهري",money(total)],["نسبة التخفيض المالي",pct(total,gross)],["يتحمله الأساتذة",money(sum(entries,x=>share(x,"teacher")))],["تتحمله المؤسسة",money(sum(entries,x=>share(x,"emcia")))]])+
+ '<h3>التخفيضات حسب الفوج</h3>'+rcTable(["الفوج","الأستاذ","التسجيلات","المستفيدون","نسبة المستفيدين","مبلغ التخفيض","نسبة التخفيض المالي","حصة الأستاذ","حصة المؤسسة"],groups)+
+ '<h3>تفاصيل المستفيدين</h3>'+(details.length?rcTable(["المتعلم","الفوج","الأستاذ","الواجب الأصلي","التخفيض","الواجب النهائي","الجهة","حصة الأستاذ","حصة المؤسسة","بداية التخفيض","المدة"],details):"<p>لا توجد تخفيضات سارية وفق الاختيارات.</p>")+
+ '<p class="muted">الأرقام تعبر عن التخفيضات المقررة وليست التحصيل الفعلي. تقييم القدرة على تقديم تخفيضات إضافية يتطلب بيانات التكاليف.</p>';
+}
 function rcBuildReport(){
  if(!emciaGuardReport($("#rcType")?.value))return false;
  let ok=true;
  let type=$("#rcType").value,m=$("#rcMonth").value||nowMonth(),teacherEl=$("#rcTeacher"),tid=teacherEl?teacherEl.value:"";
- if(type==="executive"){
+ if(type==="discounts"){
+  if(!emciaCanViewManagement()){rcClearPreview("هذا التقرير متاح للمدير والمحاسب فقط.");return false}
+  rcSetReport(`تقرير التخفيضات — ${m}`,emciaDiscountReportHTML(m));
+ }else if(type==="executive"){
   if(!emciaCanViewManagement()){rcClearPreview("هذا التقرير متاح للمدير والمحاسب فقط.");return false}
   const ens=activeEnrollmentsForMonth(m),due=ens.reduce((z,e)=>z+dueForEnrollmentMonth(e,m),0);
   const allocated=db.p.filter(p=>p.allocMonth===m),paid=allocated.reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);
@@ -2251,7 +2271,7 @@ function rcBuildReport(){
 }
 function reportcenter(){
  let teachers=db.t.filter(x=>x.active!==false);
- $("#reportcenter").innerHTML=`<div class="card"><p class="muted">اختر نوع التقرير من القائمة. يُقترح الشهر الحالي تلقائياً ويمكن تغييره، ثم تظهر المعاينة قبل الطباعة أو التصدير.</p><div class="row"><div><label>نوع التقرير</label><select id="rcType" onchange="rcToggleFields()"><option value="">— اختر من القائمة —</option>${emciaCanViewManagement()?`<option value="executive">التقرير الإداري والمالي الموحد للمدير</option>`:""}${emciaCanViewManagement()?`<option value="monthly">التقرير الشهري الشامل للمؤسسة</option>`:""}<option value="teacher">كشف الأستاذ</option><option value="attendance">تقرير الحضور والغياب</option><option value="arrears">تقرير المتأخرات</option>${emciaCanViewManagement()?`<option value="financial">التقرير المالي</option>`:""}</select></div><div><label>الشهر</label><input id="rcMonth" type="month" value="${nowMonth()}" onchange="rcRefreshPreview()"></div></div><div id="rcTeacherBox" style="display:none"><label>الأستاذ</label><select id="rcTeacher" onchange="rcRefreshPreview()"><option value="">— اختر الأستاذ —</option>${teachers.map(x=>`<option value="${x.id}">${esc(objName(x))}</option>`).join("")}</select></div><div class="report-action-row" style="margin-top:12px">
+ $("#reportcenter").innerHTML=`<div class="card"><p class="muted">اختر نوع التقرير من القائمة. يُقترح الشهر الحالي تلقائياً ويمكن تغييره، ثم تظهر المعاينة قبل الطباعة أو التصدير.</p><div class="row"><div><label>نوع التقرير</label><select id="rcType" onchange="rcToggleFields()"><option value="">— اختر من القائمة —</option>${emciaCanViewManagement()?`<option value="executive">التقرير الإداري والمالي الموحد للمدير</option>`:""}${emciaCanViewManagement()?`<option value="monthly">التقرير الشهري الشامل للمؤسسة</option>`:""}<option value="teacher">كشف الأستاذ</option><option value="attendance">تقرير الحضور والغياب</option><option value="arrears">تقرير المتأخرات</option>${emciaCanViewManagement()?`<option value="financial">التقرير المالي</option><option value="discounts">تقرير التخفيضات</option>`:""}</select></div><div><label>الشهر</label><input id="rcMonth" type="month" value="${nowMonth()}" onchange="rcRefreshPreview()"></div></div><div id="rcDiscountFilters" style="display:none" class="row"><div><label>الفوج</label><select id="rcDiscountGroup" onchange="rcRefreshPreview()"><option value="">جميع الأفواج</option>${db.g.map(g=>`<option value="${esc(g.id)}">${esc(g.n)}</option>`).join("")}</select></div><div><label>الأستاذ</label><select id="rcDiscountTeacher" onchange="rcRefreshPreview()"><option value="">جميع الأساتذة</option>${db.t.map(t=>`<option value="${esc(t.id)}">${esc(objName(t))}</option>`).join("")}</select></div><div><label>الجهة المتحملة</label><select id="rcDiscountBearer" onchange="rcRefreshPreview()"><option value="">جميع الأنواع</option><option value="teacher">الأستاذ</option><option value="emcia">المؤسسة</option><option value="half">مشترك 50/50</option><option value="custom">توزيع مخصص</option></select></div></div><div id="rcTeacherBox" style="display:none"><label>الأستاذ</label><select id="rcTeacher" onchange="rcRefreshPreview()"><option value="">— اختر الأستاذ —</option>${teachers.map(x=>`<option value="${x.id}">${esc(objName(x))}</option>`).join("")}</select></div><div class="report-action-row" style="margin-top:12px">
 <button type="button" onclick="rcDirectPrint()">🖨️ طباعة</button>
 <button type="button" onclick="rcExportPDF()">📄 PDF</button>
 <button type="button" onclick="rcExportExcel()">📊 Excel</button>
