@@ -804,12 +804,14 @@ function certification(){
     const detail=document.createElement('p');detail.textContent=(types[item.certificate_type]||item.certificate_type)+' | '+({ar:'العربية',fr:'الفرنسية',bi:'العربية والفرنسية'}[item.language]||item.language)+' | '+' | '+item.created_at.slice(0,10);detail.dir='auto';detail.style.overflowWrap='anywhere';wrapper.append(detail);
     const cohort=groupOf(item);if(cohort){const p=document.createElement('p');p.textContent='الفوج: '+cohort;wrapper.append(p)}
     const state=document.createElement('p');state.textContent='الحالة: '+(statuses[status]||status);wrapper.append(state);
+    const actionRow=document.createElement('div');actionRow.style.cssText='display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;align-items:center';wrapper.append(actionRow);
+    const styleAction=(button,danger=false)=>{button.style.cssText='flex:1 1 100px;min-width:0;max-width:100%;padding:9px 7px;border-radius:8px;font:inherit;font-size:12px;line-height:1.3;white-space:normal;min-height:40px;'+(danger?'background:#9f2938;color:#fff;order:99':'');};
     if(issuedRecord){
      const number=document.createElement('strong');number.textContent='رقم الشهادة: '+issuedRecord.certificate_number;wrapper.append(number);
-     const preview=document.createElement('button');preview.textContent='معاينة / طباعة الشهادة';preview.style.margin='8px 4px';wrapper.append(preview);
+     const preview=document.createElement('button');preview.textContent='🖨 طباعة';styleAction(preview);actionRow.append(preview);
      preview.addEventListener('click',()=>{window.location.href='EMCIA_Certification_Print_Test.html?request='+encodeURIComponent(item.id)});
      if((window.EMCIA_CURRENT_ROLE||'')==='director'){
-      const archive=document.createElement('button');archive.textContent='حذف الشهادة المكررة';archive.style.cssText='margin:8px 4px;background:#a33;color:white';wrapper.append(archive);
+      const archive=document.createElement('button');archive.textContent='🗑 حذف الشهادة';styleAction(archive,true);actionRow.append(archive);
       archive.addEventListener('click',async()=>{
        const reason=prompt('أدخل سبب حذف هذه الشهادة من الأرشيف (8 أحرف على الأقل). سيبقى رقمها مسجلاً وسيصبح رمز QR غير صالح.','شهادة تجريبية مكررة');
        if(reason===null)return;
@@ -823,7 +825,7 @@ function certification(){
     }
     const role=window.EMCIA_CURRENT_ROLE||'';
     if(role==='director'){
-     const remove=document.createElement('button');remove.textContent='حذف الطلب التجريبي / المكرر';remove.style.cssText='margin:8px 4px;background:#8c3140;color:white';wrapper.append(remove);
+     const remove=document.createElement('button');remove.textContent='🗑 حذف الطلب';styleAction(remove,true);actionRow.append(remove);
      remove.addEventListener('click',async()=>{
       if(issuedRecord){feedback.textContent='احذف الشهادة الصادرة أولاً من زر «حذف الشهادة المكررة»، ثم أعد تحميل القائمة لحذف الطلب المرتبط بها.';return}
       const reason=prompt('سبب حذف الطلب (8 أحرف على الأقل):','طلب تجريبي مكرر');
@@ -837,7 +839,7 @@ function certification(){
     }
     const options=status==='draft'?[['submit','إرسال للمراجعة']]:status==='submitted'&&role==='director'?[['approve','اعتماد الطلب'],['reject','رفض الطلب']]:status==='approved'&&role==='director'?(item.details?.subject_name?((['attendance','completion'].includes(item.certificate_type)?[['training','بيانات التكوين']]:[]).concat([['issue','إصدار الشهادة']])):[['repair','استكمال اسم المستفيد']]):[];
     for(const [action,label] of options){
-     const btn=document.createElement('button');btn.textContent=label;btn.style.margin='4px';wrapper.append(btn);
+     const btn=document.createElement('button');btn.textContent=({submit:'📤 إرسال',approve:'✓ اعتماد',reject:'✕ رفض',training:'✎ التكوين',issue:'✓ إصدار',repair:'✎ الاسم'}[action]||label);styleAction(btn);actionRow.append(btn);
      btn.addEventListener('click',async()=>{
       if(!confirm('هل تؤكد: '+label+'؟'))return;
       btn.disabled=true;feedback.textContent='جار تنفيذ العملية...';
