@@ -752,6 +752,7 @@ function certification(){
  const archiveControls=document.createElement('div');archiveControls.style.cssText='display:flex;flex-wrap:wrap;gap:8px';archiveBox.append(archiveControls);
  const archiveMode=document.createElement('select');[['issued','الشواهد الصادرة'],['removed','الشواهد المحذوفة'],['removedRequests','الطلبات المحذوفة'],['requests','الطلبات النشطة']].forEach(([v,t])=>archiveMode.add(new Option(t,v)));archiveControls.append(archiveMode);
  const archiveType=document.createElement('select');[['','كل الأنواع'],['attendance','المواظبة'],['completion','الإتمام'],['participation','المشاركة'],['work','العمل'],['experience','الخبرة'],['appreciation','التقدير']].forEach(([v,t])=>archiveType.add(new Option(t,v)));archiveControls.append(archiveType);
+ const deliveryFilter=document.createElement('select');[['all','جميع حالات التسليم'],['pending','لم تُسلّم'],['delivered','تم تسليمها']].forEach(([v,t])=>deliveryFilter.add(new Option(t,v)));archiveControls.append(deliveryFilter);
  const archiveSearch=document.createElement('input');archiveSearch.placeholder='الاسم أو رقم الشهادة';archiveControls.append(archiveSearch);
  const archiveDate=document.createElement('input');archiveDate.type='month';archiveDate.title='شهر الإصدار';archiveControls.append(archiveDate);
  const archiveRefresh=document.createElement('button');archiveRefresh.textContent='↻ تحديث';archiveControls.append(archiveRefresh);
@@ -769,7 +770,7 @@ function certification(){
    const base='https://gfhmkijxiinoqkxhicza.supabase.co/rest/v1/';
    const isRequest=mode==='requests'||mode==='removedRequests';
    const table=isRequest?'certificate_requests':'certificates';
-   const columns=isRequest?'id,subject_id,certificate_type,details,created_at,status':'id,request_id,certificate_number,certificate_type,immutable_snapshot,issued_at,archived_at,revoked_at';
+   const columns=isRequest?'id,subject_id,certificate_type,details,created_at,status':'id,request_id,certificate_number,certificate_type,immutable_snapshot,issued_at,archived_at,revoked_at,delivered_at,delivered_by';
    let query='?select='+columns+'&order='+(isRequest?'created_at':'issued_at')+'.desc&limit=100';
    if(mode==='issued')query+='&archived_at=is.null';
    if(mode==='removed')query+='&archived_at=not.is.null';
@@ -784,7 +785,7 @@ function certification(){
     const name=isRequest?x.details?.subject_name:x.immutable_snapshot?.details?.subject_name;
     const text=[name,x.certificate_number,x.subject_id].join(' ').toLocaleLowerCase();
     const date=isRequest?x.created_at:x.issued_at;
-    return (!q||text.includes(q))&&(!archiveDate.value||String(date||'').startsWith(archiveDate.value));
+    return (!q||text.includes(q))&&(!archiveDate.value||String(date||'').startsWith(archiveDate.value))&&(isRequest||deliveryFilter.value==='all'||(deliveryFilter.value==='delivered'?!!x.delivered_at:!x.delivered_at));
    });
    const size=15,max=Math.max(0,Math.ceil(filtered.length/size)-1);archivePage=Math.min(archivePage,max);
    archiveResults.replaceChildren();
@@ -792,7 +793,8 @@ function certification(){
     const row=document.createElement('div');row.style.cssText='border-bottom:1px solid #d9e2ea;padding:10px 0;overflow-wrap:anywhere';archiveResults.append(row);
     const name=mode==='requests'?x.details?.subject_name:x.immutable_snapshot?.details?.subject_name;
     const title=document.createElement('strong');title.textContent=(name||'مستفيد غير محدد')+' — '+(x.certificate_number||x.status||'طلب');row.append(title);
-    const info=document.createElement('div');info.style.cssText='font-size:12px;color:#64748b';info.textContent=(mode==='requests'?x.created_at:x.issued_at||'').slice(0,10)+(x.archived_at?' | محذوفة من القائمة النشطة':'')+(x.revoked_at?' | ملغاة':'');row.append(info);
+    const info=document.createElement('div');info.style.cssText='font-size:12px;color:#64748b';info.textContent=(mode==='requests'?x.created_at:x.issued_at||'').slice(0,10)+(x.archived_at?' | محذوفة من القائمة النشطة':'')+(x.revoked_at?' | ملغاة':'')+(!isRequest?' | '+(x.delivered_at?'تم التسليم: '+x.delivered_at.slice(0,10):'لم تُسلّم بعد'):'');row.append(info);
+    if(mode==='issued'&&!x.revoked_at){const deliveryBtn=document.createElement('button');deliveryBtn.textContent=x.delivered_at?'↩ إلغاء تأكيد التسليم':'✓ تأكيد التسليم';deliveryBtn.style.margin='5px';row.append(deliveryBtn);deliveryBtn.onclick=async()=>{if(!confirm(x.delivered_at?'هل تريد التراجع عن تسجيل التسليم؟':'هل تؤكد تسليم هذه الشهادة للمستفيد؟'))return;deliveryBtn.disabled=true;try{await certRpc('certification_set_delivery',{p_certificate_id:x.id,p_delivered:!x.delivered_at});await loadArchive()}catch(e){alert('تعذر تحديث التسليم: '+e.message);deliveryBtn.disabled=false}};}
     if(mode==='issued'){
      const open=document.createElement('button');open.textContent='🖨 طباعة';open.style.margin='5px';row.append(open);
      open.onclick=()=>{location.href='EMCIA_Certification_Print_Test.html?request='+encodeURIComponent(x.request_id)+'&v=18'};
@@ -803,7 +805,7 @@ function certification(){
    archivePrev.disabled=archivePage===0;archiveNext.disabled=archivePage>=max;
   }catch(e){archiveResults.textContent=e.message}
  }
- [archiveMode,archiveType,archiveSearch,archiveDate].forEach(el=>el.addEventListener(el===archiveSearch?'input':'change',()=>{archivePage=0;loadArchive()}));
+ [archiveMode,archiveType,archiveSearch,archiveDate,deliveryFilter].forEach(el=>el.addEventListener(el===archiveSearch?'input':'change',()=>{archivePage=0;loadArchive()}));
  archiveRefresh.onclick=()=>loadArchive();archivePrev.onclick=()=>{archivePage--;loadArchive()};archiveNext.onclick=()=>{archivePage++;loadArchive()};
 
  function session(){let v;try{v=JSON.parse(sessionStorage.getItem('emcia_auth_session_v2')||'null')}catch(e){}return v&&v.expiresAt>Date.now()?v:null}
