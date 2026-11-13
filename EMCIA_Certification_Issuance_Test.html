@@ -1903,7 +1903,7 @@ function emciaAddSessionPayment(){
  if(!e||e.billingMode!=="session")return alert("اختر متعلماً بنظام الأداء بالحصة");
  const a=Number($("#spa")?.value),date=$("#spd")?.value,receiptNo=($("#spr")?.value||"").trim(),paymentTiming=$("#spt")?.value;
  if(!(a>0&&Number.isFinite(a)))return alert("أدخل المبلغ المقبوض");
- if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date))return alert("حدد تاريخ الأداء الصحيح");
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return alert("حدد تاريخ الأداء الصحيح");
  if(!receiptNo)return alert("أدخل رقم التوصيل");
  if([...db.p,...db.sp].some(p=>(p.receiptNo||"").trim()===receiptNo))return alert("رقم التوصيل مستعمل سابقاً");
  if(!confirm("تسجيل مبلغ مقبوض فعلياً قدره "+money(a)+" في سجل دفعات الحصص المستقل؟"))return;
