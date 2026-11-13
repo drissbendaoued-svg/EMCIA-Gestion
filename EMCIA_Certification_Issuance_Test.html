@@ -443,7 +443,16 @@ header,nav,#nav,.main-nav,.subnav-wrap,.subnav,#emcia-top-controls{position:stat
 #emcia-account-menu>div{z-index:80!important}
 body:not(.emcia-authorized) #emcia-top-controls{display:none!important}
 @media(max-width:650px){#emcia-top-controls #mobileNavToggle{position:static!important}}
-</style></head>
+</style>
+<style>html.emcia-early-resume #authGate{visibility:hidden!important}</style>
+<script>
+try{
+ const saved=JSON.parse(sessionStorage.getItem('emcia_auth_session_v2')||'null');
+ if(saved&&saved.refresh_token&&!/type=(recovery|invite|signup|magiclink)/.test(location.hash)&&!location.hash.includes('error=')){
+  document.documentElement.classList.add('emcia-early-resume');
+ }
+}catch(e){}
+</script></head>
 <body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>تسجيل دخول المدير والموظفين المفعّلين</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label for="authPassword">كلمة المرور</label><div class="emcia-password-field"><div class="emcia-eye-wrap"><input id="authPassword" type="password" required autocomplete="current-password"><input id="authPasswordVisible" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" style="display:none" oninput="document.getElementById('authPassword').value=this.value"><button class="emcia-eye-button" id="authPasswordEye" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false" onclick="emciaLoginEyeClick()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات محفوظة بأمان في النظام السحابي للمؤسسة.</small></div></div>
 <header><b>EMCIA Gestion</b></header>
 <div id="langMenu" class="lang-menu">
@@ -2892,7 +2901,7 @@ async function resumeAuthSession(){
    if(data)await enter(data.user,data.access_token);
   }
  }catch(error){say('تعذرت استعادة الجلسة. يرجى تسجيل الدخول.')}
- finally{document.body.classList.remove('emcia-session-resuming')}
+ finally{document.body.classList.remove('emcia-session-resuming');document.documentElement.classList.remove('emcia-early-resume')}
 }
 
 const cloudUrl=api+'/rest/v1/emcia_cloud_state';
