@@ -2412,6 +2412,23 @@ function sessionTypeLabel(v){return ({official:"رسمية",extra:"إضافية"
 function sessionTypeOptions(v="official"){return [["official","رسمية"],["extra","إضافية"],["makeup","تعويضية"],["exceptional","استثنائية"]].map(x=>`<option value="${x[0]}" ${v===x[0]?"selected":""}>${x[1]}</option>`).join("")}
 function onSessionTypeChange(){let b=$("#makeupBox");if(b)b.classList.toggle("hidden",$("#scType")?.value!=="makeup")}
 function editableScheduleOptions(selected=""){return `<option value="">— اختر الحصة الأصلية إن وجدت —</option>`+db.sch.filter(x=>x.active&&x.type!=="makeup").map(x=>{let g=by(db.g,x.gid);return `<option value="${x.id}" ${x.id===selected?"selected":""}>${esc(g?.n||"فوج")} — ${esc(x.day)} ${x.start}-${x.end}</option>`}).join("")}
+function emciaScheduleAttendance(sid){
+ const ses=by(db.sch,sid);if(!ses)return "";
+ const date=today(),day=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"][new Date(date+"T12:00:00").getDay()];
+ const enrolled=[...new Set(db.e.filter(e=>e.active&&e.gid===ses.gid&&(!e.start||e.start<=date)).map(e=>e.sid))];
+ const records=db.att.filter(a=>a.date===date&&a.gid===ses.gid&&enrolled.includes(a.sid)&&a.status);
+ const unique=new Map(records.map(a=>[a.sid,a.status]));
+ const count=st=>[...unique.values()].filter(x=>x===st).length;
+ const scheduled=ses.day===day;
+ const registered=unique.size,complete=enrolled.length>0&&registered>=enrolled.length;
+ return '<strong>'+esc(date)+'</strong><div>المسجلون: '+enrolled.length+'</div>'+(scheduled?'<div>الحاضرون: '+count("present")+'</div><div>المتأخرون: '+count("late")+'</div><div>الغائبون: '+count("absent")+'</div><div>بعذر: '+count("excused")+'</div><div>حالة التسجيل: '+(registered===0?"لم يسجل بعد":complete?"مكتمل":"جزئي ("+registered+"/"+enrolled.length+")")+'</div>':'<div>هذا الفوج غير مبرمج اليوم.</div>')+'<button type="button" style="margin-top:5px;padding:5px" onclick="editSchedule(\''+ses.id+'\')">✏️ تعديل الحصة</button>';
+}
+function emciaSchedulePopup(id){
+ const box=document.getElementById("emciaSchedulePopup");if(!box)return;
+ if(box.dataset.sid===id&&box.style.display!=="none"){box.style.display="none";box.dataset.sid="";return}
+ box.dataset.sid=id;box.innerHTML=emciaScheduleAttendance(id);box.style.display="block";
+}
+function emciaScheduleHover(id){const box=document.getElementById("emciaSchedulePopup");if(box&&box.style.display!=="block"){box.dataset.sid=id;box.innerHTML=emciaScheduleAttendance(id);box.style.display="block"}}
 function emciaScheduleGrid(){
  const rooms=db.rooms.filter(r=>r.active!==false).sort((a,b)=>{const an=Number((String(a.n).match(/[0-9٠-٩]+/)||[])[0]?.replace(/[٠-٩]/g,c=>String(c.charCodeAt(0)-1632))||999),bn=Number((String(b.n).match(/[0-9٠-٩]+/)||[])[0]?.replace(/[٠-٩]/g,c=>String(c.charCodeAt(0)-1632))||999);return an-bn||a.n.localeCompare(b.n,"ar")});
  const sessions=db.sch.filter(x=>x.active!==false);
@@ -2430,12 +2447,12 @@ function emciaScheduleGrid(){
    if(!ses){cells+='<td style="'+style+';background:#fafafa;color:#cbd5e1">·</td>';index++;continue}
    let count=1;while(index+count<slots.length&&minutes(ses.start)<slots[index+count]+30&&minutes(ses.end)>slots[index+count])count++;
    const g=by(db.g,ses.gid),teacher=by(db.t,g?.tid);
-   cells+='<td colspan="'+count+'" title="'+esc((g?.n||"—")+" | "+ses.start+"–"+ses.end+" | "+(objName(teacher)||"")+" | "+sessionTypeLabel(ses.type))+'" style="'+style+';background:#e0f2fe;border:1px solid #7dd3fc;min-width:65px;cursor:pointer" onclick="editSchedule(\''+ses.id+'\')"><strong>'+esc(g?.linkCode||g?.n||"—")+'</strong></td>';
+   cells+='<td colspan="'+count+'" style="'+style+';background:#e0f2fe;border:1px solid #7dd3fc;min-width:65px;cursor:pointer" onclick="emciaSchedulePopup(\''+ses.id+'\')" onmouseenter="emciaScheduleHover(\''+ses.id+'\')"><strong>'+esc(g?.linkCode||g?.n||"—")+'</strong></td>';
    index+=count;
   }
   return '<tr>'+(ri===0?'<th rowspan="'+rooms.length+'" style="'+style+';background:#e8eef5;font-weight:bold;min-width:75px">'+day+'</th>':'')+'<th style="'+style+';white-space:nowrap;background:#f1f5f9">'+esc((r.n.match(/[0-9٠-٩]+/)||[])[0]||r.n)+'</th>'+cells+'</tr>';
  }).join('')).join('');
- return '<div class="card"><h3>استعمال الزمن الأسبوعي حسب القاعات</h3><p class="muted">الأيام عمودياً والقاعات من الأصغر إلى الأكبر، والساعات أفقياً. مرر الجدول أفقياً على الهاتف. اضغط على اسم الفوج لتعديل الحصة.</p><div style="overflow-x:auto;max-width:100%;direction:rtl"><table style="border-collapse:collapse;width:max-content;min-width:100%;table-layout:fixed">'+head+body+'</table></div></div>';
+ return '<div class="card"><h3>استعمال الزمن الأسبوعي حسب القاعات</h3><div id="emciaSchedulePopup" data-sid="" style="display:none;position:sticky;top:5px;z-index:5;background:#fff;border:1px solid #94a3b8;border-radius:8px;padding:10px;max-width:280px;box-shadow:0 3px 10px #0002"><button type="button" style="float:left" onclick="this.parentNode.style.display=\'none\'">✕</button></div><p class="muted">الأيام عمودياً والقاعات من الأصغر إلى الأكبر، والساعات أفقياً. مرر الجدول أفقياً على الهاتف. مرر الفأرة أو اضغط على الفوج لعرض حضور اليوم، ثم اختر تعديل الحصة عند الحاجة.</p><div style="overflow-x:auto;max-width:100%;direction:rtl"><table style="border-collapse:collapse;width:max-content;min-width:100%;table-layout:fixed">'+head+body+'</table></div></div>';
 }
 function schedule(){
  $("#schedule").innerHTML=`<div class="card"><p class="muted">يمكن الآن تحديد نوع الحصة وتعديل الحصص الموجودة دون حذفها.</p>
