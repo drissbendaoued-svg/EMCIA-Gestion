@@ -2436,11 +2436,13 @@ function emciaScheduleGrid(){
  const label=n=>String(Math.floor(n/60)).padStart(2,"0")+":"+String(n%60).padStart(2,"0");
  const slots=[...Array.from({length:6},(_,i)=>9*60+i*30),...Array.from({length:15},(_,i)=>14*60+i*30)];
  const style='border:1px solid #cbd5e1;padding:5px;text-align:center;vertical-align:middle;font-size:12px';
- const head='<tr><th style="'+style+';position:sticky;right:0;background:#e8eef5">اليوم</th><th style="'+style+';background:#e8eef5">القاعة</th>'+slots.map(t=>'<th style="'+style+';min-width:62px;background:'+(t===14*60?'#dbeafe':'#e8eef5')+';direction:ltr">'+label(t)+'</th>').join('')+'</tr>';
+ const breakCell='<td aria-label="استراحة من 12:00 إلى 14:00" style="background:#475569;border-left:3px solid #1e293b;border-right:3px solid #1e293b;min-width:9px;width:9px;padding:0"></td>';
+ const head='<tr><th style="'+style+';position:sticky;right:0;background:#e8eef5">اليوم</th><th style="'+style+';background:#e8eef5">القاعة</th>'+slots.map(t=>(t===14*60?'<th title="استراحة 12:00–14:00" style="background:#475569;min-width:9px;width:9px;padding:0;border:3px solid #1e293b"></th>':'')+'<th style="'+style+';min-width:'+(t===11*60+30?'105':'62')+'px;background:'+(t===14*60?'#dbeafe':'#e8eef5')+';direction:ltr">'+(t===11*60+30?'11:30–12:00':label(t))+'</th>').join('')+'</tr>';
  const body=DAYS.map(day=>rooms.map((r,ri)=>{
   const found=sessions.filter(x=>x.day===day&&x.rid===r.id).sort((a,b)=>a.start.localeCompare(b.start));
   let cells='',index=0;
   while(index<slots.length){
+   if(slots[index]===14*60)cells+=breakCell;
    const t=slots[index],ses=found.find(x=>minutes(x.start)<t+30&&minutes(x.end)>t);
    if(!ses){cells+='<td style="'+style+';background:#fafafa;color:#cbd5e1">·</td>';index++;continue}
    let count=1;while(index+count<slots.length&&slots[index+count]===slots[index+count-1]+30&&minutes(ses.start)<slots[index+count]+30&&minutes(ses.end)>slots[index+count])count++;
