@@ -2413,7 +2413,7 @@ function sessionTypeOptions(v="official"){return [["official","رسمية"],["ex
 function onSessionTypeChange(){let b=$("#makeupBox");if(b)b.classList.toggle("hidden",$("#scType")?.value!=="makeup")}
 function editableScheduleOptions(selected=""){return `<option value="">— اختر الحصة الأصلية إن وجدت —</option>`+db.sch.filter(x=>x.active&&x.type!=="makeup").map(x=>{let g=by(db.g,x.gid);return `<option value="${x.id}" ${x.id===selected?"selected":""}>${esc(g?.n||"فوج")} — ${esc(x.day)} ${x.start}-${x.end}</option>`}).join("")}
 function emciaScheduleGrid(){
- const rooms=db.rooms.filter(r=>r.active!==false).sort((a,b)=>a.cap-b.cap||a.n.localeCompare(b.n,"ar"));
+ const rooms=db.rooms.filter(r=>r.active!==false).sort((a,b)=>{const an=Number((String(a.n).match(/[0-9٠-٩]+/)||[])[0]?.replace(/[٠-٩]/g,c=>String(c.charCodeAt(0)-1632))||999),bn=Number((String(b.n).match(/[0-9٠-٩]+/)||[])[0]?.replace(/[٠-٩]/g,c=>String(c.charCodeAt(0)-1632))||999);return an-bn||a.n.localeCompare(b.n,"ar")});
  const sessions=db.sch.filter(x=>x.active!==false);
  const minutes=t=>{const p=(t||"").split(":").map(Number);return p.length===2&&p.every(Number.isFinite)?p[0]*60+p[1]:0};
  const label=n=>String(Math.floor(n/60)).padStart(2,"0")+":"+String(n%60).padStart(2,"0");
