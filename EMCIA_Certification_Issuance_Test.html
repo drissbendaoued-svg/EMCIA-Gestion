@@ -2525,6 +2525,18 @@ function removeSchedule(id){if(!confirm("حذف هذه الحصة من استع�
 function addRoom(){let n=$("#roomN").value.trim(),cap=+$("#roomC").value;if(!n||cap<1)return alert("أدخل اسم القاعة وسعتها");db.rooms.push({id:uid(),n,cap,active:true});save();schedule()}
 
 function attKey(date,gid,sid){return date+"|"+gid+"|"+sid}
+function emciaSessionAttendancePreview(gid,month){
+ const enrollments=db.e.filter(e=>e.active&&e.gid===gid&&e.billingMode==="session");
+ if(!enrollments.length)return "";
+ const rows=enrollments.map(e=>{
+  const attendance=db.att.filter(a=>a.gid===gid&&a.sid===e.sid&&a.date&&a.date.slice(0,7)===month&&(!e.start||a.date>=e.start)&&["present","late","leftEarly"].includes(a.status));
+  const count=new Set(attendance.map(a=>a.date)).size;
+  const discount=activeDiscount(e,month)?.amount||0;
+  const price=Math.max(0,+e.sessionPrice||0),net=Math.max(0,price-discount);
+  return {e,count,price,discount,net,total:count*net};
+ });
+ return '<div class="card"><h3>معاينة حصص المتعلمين بالأداء بالحصة — '+esc(month)+'</h3><p class="muted">معاينة فقط، لا تنشئ أداءات أو ديوناً أو مستحقات للأساتذة. تحتسب حصة واحدة كحد أقصى لكل متعلم وفوج في اليوم وفق سجل الحضور (حاضر، متأخر، غادر مبكراً). الحصص المتعددة والتعويضية تحتاج تأكيداً منفصلاً قبل الاعتماد المالي.</p><table><tr><th>المتعلم</th><th>الأيام المسجلة</th><th>ثمن الحصة</th><th>تخفيض الحصة</th><th>الصافي للحصة</th><th>مجموع تقديري</th></tr>'+rows.map(r=>'<tr><td>'+esc(name(db.s,r.e.sid))+'</td><td>'+r.count+'</td><td>'+money(r.price)+'</td><td>'+money(r.discount)+'</td><td>'+money(r.net)+'</td><td>'+money(r.total)+'</td></tr>').join('')+'</table></div>';
+}
 function attendance(){
  let date=window.attDate||today(),gid=window.attGid||"",groups=db.g.filter(g=>g.active!==false);
  window.attGid=gid;
@@ -2535,6 +2547,7 @@ function attendance(){
  <div class="grid attendance-stats-grid"><div class="card"><div class="muted">عدد المسجلين</div><div class="kpi">${students.length}</div></div><div class="card"><div class="muted">الحاضرون</div><div class="kpi">${c.present}</div></div><div class="card"><div class="muted">الغائبون</div><div class="kpi">${c.absent}</div></div><div class="card"><div class="muted">المتأخرون</div><div class="kpi">${c.late}</div></div><div class="card"><div class="muted">غياب بعذر</div><div class="kpi">${c.excused}</div></div><div class="card"><div class="muted">غادر قبل النهاية</div><div class="kpi">${c.leftEarly??0}</div></div></div>
  <div class="card"><div class="row"><button onclick="markAllAttendance('present')">تحديد الجميع حاضرين</button><button onclick="clearAttendanceDay()">مسح تسجيلات الحصة</button></div></div>
  <div class="card"><h3>لائحة المتعلمين</h3>${students.length?`<table><tr><th>المتعلم</th><th>الحالة</th><th>ملاحظة</th></tr>${students.map(s=>{let a=records.find(x=>x.sid===s.id),st=a?a.status:"";return`<tr><td>${esc(objName(s))}</td><td><select onchange="saveAttendance('${date}','${gid}','${s.id}',this.value)"><option value="">— اختر —</option><option value="present" ${st==="present"?"selected":""}>حاضر</option><option value="absent" ${st==="absent"?"selected":""}>غائب</option><option value="late" ${st==="late"?"selected":""}>متأخر</option><option value="excused" ${st==="excused"?"selected":""}>غياب بعذر</option><option value="leftEarly" ${st==="leftEarly"?"selected":""}>غادر قبل نهاية الحصة</option></select></td><td><input value="${esc(a&&a.note||"")}" placeholder="ملاحظة اختيارية" onchange="saveAttendanceNote('${date}','${gid}','${s.id}',this.value)"></td></tr>`}).join("")}</table>`:"<p>لا يوجد متعلمون نشطون في هذا الفوج.</p>"}</div>
+ ${gid?emciaSessionAttendancePreview(gid,date.slice(0,7)):""}
  <div class="card"><h3>ملخص الشهر</h3>${attendanceMonthSummary(gid,date.slice(0,7))}</div>`;applyLang()
 }
 function saveAttendance(date,gid,sid,status){let i=db.att.findIndex(a=>attKey(a.date,a.gid,a.sid)===attKey(date,gid,sid));if(!status){if(i>=0)db.att.splice(i,1)}else if(i>=0)db.att[i].status=status;else db.att.push({id:uid(),date,gid,sid,status,note:""});save();attendance()}
