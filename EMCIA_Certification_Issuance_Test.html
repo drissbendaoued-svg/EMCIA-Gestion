@@ -500,7 +500,7 @@ const nowMonth=()=>new Date().toISOString().slice(0,7), today=()=>new Date().toI
 let raw={}; try{raw=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){}
 let db={
  subj:Array.isArray(raw.subj)?raw.subj:[], t:Array.isArray(raw.t)?raw.t:[], s:Array.isArray(raw.s)?raw.s:[], g:Array.isArray(raw.g)?raw.g:[],
- e:Array.isArray(raw.e)?raw.e:[], p:Array.isArray(raw.p)?raw.p:[], sp:Array.isArray(raw.sp)?raw.sp:[], tp:Array.isArray(raw.tp)?raw.tp:[], adj:Array.isArray(raw.adj)?raw.adj:[], cash:Array.isArray(raw.cash)?raw.cash:[], shifts:Array.isArray(raw.shifts)?raw.shifts:[], tatt:Array.isArray(raw.tatt)?raw.tatt:[], wait:Array.isArray(raw.wait)?raw.wait:[], wls:Array.isArray(raw.wls)?raw.wls:[],
+ e:Array.isArray(raw.e)?raw.e:[], p:Array.isArray(raw.p)?raw.p:[], sp:Array.isArray(raw.sp)?raw.sp:[], sc:Array.isArray(raw.sc)?raw.sc:[], tp:Array.isArray(raw.tp)?raw.tp:[], adj:Array.isArray(raw.adj)?raw.adj:[], cash:Array.isArray(raw.cash)?raw.cash:[], shifts:Array.isArray(raw.shifts)?raw.shifts:[], tatt:Array.isArray(raw.tatt)?raw.tatt:[], wait:Array.isArray(raw.wait)?raw.wait:[], wls:Array.isArray(raw.wls)?raw.wls:[],
  x:Array.isArray(raw.x)?raw.x:[], oi:Array.isArray(raw.oi)?raw.oi:[], sv:Array.isArray(raw.sv)?raw.sv:[], att:Array.isArray(raw.att)?raw.att:[], sch:Array.isArray(raw.sch)?raw.sch:[], rooms:Array.isArray(raw.rooms)?raw.rooms:[]
 };
 if(!db.rooms.length)db.rooms=[
@@ -1895,7 +1895,8 @@ function emciaSessionPaymentSelection(){
  const total=receipts.reduce((z,p)=>z+(+p.a||0),0);
  const days=new Set(db.att.filter(a=>a.gid===gid&&a.sid===sid&&["present","late","leftEarly"].includes(a.status)&&(!e.start||a.date>=e.start)).map(a=>a.date));
  const net=Math.max(0,(+e.sessionPrice||0)-(+activeDiscount(e,nowMonth())?.amount||0));
- const estimate=days.size*net;
+ const extra=db.sc.filter(x=>x.gid===gid&&x.sid===sid&&(!e.start||x.date>=e.start)).length;
+ const estimate=(days.size+extra)*net;
  $("#sessionPaymentSummary").innerHTML="المقبوض المسجل: "+money(total)+" | تقدير الحصص من الحضور: "+money(estimate)+" | "+(total>=estimate?"رصيد تقديري مسبق: "+money(total-estimate):"متبقٍ تقديري: "+money(estimate-total));
  $("#sessionPaymentHistory").innerHTML=receipts.slice().reverse().map(p=>'<div style="padding:6px;border-bottom:1px solid #ddd">'+esc(p.date)+' — '+money(p.a)+' — '+esc(p.receiptNo)+' ('+esc(p.paymentTiming)+')</div>').join("")||"لا توجد دفعات حصص مسجلة";
 }
@@ -2579,12 +2580,28 @@ function emciaSessionAttendancePreview(gid,month){
  const rows=enrollments.map(e=>{
   const attendance=db.att.filter(a=>a.gid===gid&&a.sid===e.sid&&a.date&&a.date.slice(0,7)===month&&(!e.start||a.date>=e.start)&&["present","late","leftEarly"].includes(a.status));
   const count=new Set(attendance.map(a=>a.date)).size;
+  const extra=db.sc.filter(x=>x.gid===gid&&x.sid===e.sid&&x.date.slice(0,7)===month).length;
   const discount=activeDiscount(e,month)?.amount||0;
   const price=Math.max(0,+e.sessionPrice||0),net=Math.max(0,price-discount);
-  return {e,count,price,discount,net,total:count*net};
+  return {e,count,extra,price,discount,net,total:(count+extra)*net};
  });
- return '<div class="card"><h3>معاينة حصص المتعلمين بالأداء بالحصة — '+esc(month)+'</h3><p class="muted">معاينة فقط، لا تنشئ أداءات أو ديوناً أو مستحقات للأساتذة. تحتسب حصة واحدة كحد أقصى لكل متعلم وفوج في اليوم وفق سجل الحضور (حاضر، متأخر، غادر مبكراً). الحصص المتعددة والتعويضية تحتاج تأكيداً منفصلاً قبل الاعتماد المالي.</p><table><tr><th>المتعلم</th><th>الأيام المسجلة</th><th>ثمن الحصة</th><th>تخفيض الحصة</th><th>الصافي للحصة</th><th>مجموع تقديري</th></tr>'+rows.map(r=>'<tr><td>'+esc(name(db.s,r.e.sid))+'</td><td>'+r.count+'</td><td>'+money(r.price)+'</td><td>'+money(r.discount)+'</td><td>'+money(r.net)+'</td><td>'+money(r.total)+'</td></tr>').join('')+'</table></div>';
+ return '<div class="card"><h3>معاينة حصص المتعلمين بالأداء بالحصة — '+esc(month)+'</h3><p class="muted">معاينة فقط، لا تنشئ أداءات أو ديوناً أو مستحقات للأساتذة. تحتسب حصة واحدة كحد أقصى لكل متعلم وفوج في اليوم وفق سجل الحضور (حاضر، متأخر، غادر مبكراً). الحصص المتعددة والتعويضية تحتاج تأكيداً منفصلاً قبل الاعتماد المالي.</p><table><tr><th>المتعلم</th><th>الأيام المسجلة</th><th>إضافية / تعويضية</th><th>ثمن الحصة</th><th>تخفيض الحصة</th><th>الصافي للحصة</th><th>مجموع تقديري</th></tr>'+rows.map(r=>'<tr><td>'+esc(name(db.s,r.e.sid))+'</td><td>'+r.count+'</td><td>'+r.extra+'</td><td>'+money(r.price)+'</td><td>'+money(r.discount)+'</td><td>'+money(r.net)+'</td><td>'+money(r.total)+'</td></tr>').join('')+'</table></div>';
 }
+
+function emciaSessionExtraPanel(gid,date){
+ const learners=db.e.filter(e=>e.gid===gid&&e.active&&e.billingMode==="session"&&(!e.start||e.start<=date));
+ if(!learners.length)return "";
+ const records=db.sc.filter(x=>x.gid===gid&&x.date.slice(0,7)===date.slice(0,7)).slice().reverse();
+ return '<div class="card"><h3>الحصص الإضافية والتعويضية المؤدى عنها</h3><p class="muted">كل حصة مسجلة هنا تحتسب حصة إضافية مؤدى عنها. الحصة العادية تسجل في جدول الحضور أعلاه.</p><div class="row"><div><label>المتعلم</label><select id="scStudent">'+learners.map(e=>'<option value="'+e.sid+'">'+esc(name(db.s,e.sid))+'</option>').join("")+'</select></div><div><label>نوع الحصة</label><select id="scType"><option value="extra">إضافية</option><option value="makeup">تعويضية مؤدى عنها</option></select></div><div><label>التاريخ</label><input id="scDate" type="date" value="'+date+'"></div><div><label>التوقيت</label><input id="scTime" type="time"></div><div><button onclick="emciaAddSessionCharge()">حفظ الحصة</button></div></div><table><tr><th>التاريخ</th><th>التوقيت</th><th>المتعلم</th><th>النوع</th><th>الإجراء</th></tr>'+records.map(x=>'<tr><td>'+esc(x.date)+'</td><td>'+esc(x.time)+'</td><td>'+esc(name(db.s,x.sid))+'</td><td>'+(x.type==="makeup"?"تعويضية":"إضافية")+'</td><td><button class="danger" onclick="emciaDeleteSessionCharge(&quot;'+x.id+'&quot;)">حذف</button></td></tr>').join("")+'</table></div>';
+}
+function emciaAddSessionCharge(){
+ const gid=window.attGid||"",sid=$("#scStudent")?.value,date=$("#scDate")?.value,type=$("#scType")?.value,time=$("#scTime")?.value;
+ if(!gid||!sid||!date||!time)return alert("حدد المتعلم والتاريخ والتوقيت");
+ if(!db.e.some(e=>e.gid===gid&&e.sid===sid&&e.active&&e.billingMode==="session"))return alert("التسجيل غير صالح");
+ if(db.sc.some(x=>x.gid===gid&&x.sid===sid&&x.date===date&&x.time===time))return alert("هذه الحصة مسجلة سابقاً");
+ db.sc.push({id:uid(),gid,sid,date,type,time,createdAt:new Date().toISOString()});save();attendance();
+}
+function emciaDeleteSessionCharge(id){if(!confirm("حذف الحصة المسجلة؟"))return;db.sc=db.sc.filter(x=>x.id!==id);save();attendance()}
 function attendance(){
  let date=window.attDate||today(),gid=window.attGid||"",groups=db.g.filter(g=>g.active!==false);
  window.attGid=gid;
@@ -2595,6 +2612,7 @@ function attendance(){
  <div class="grid attendance-stats-grid"><div class="card"><div class="muted">عدد المسجلين</div><div class="kpi">${students.length}</div></div><div class="card"><div class="muted">الحاضرون</div><div class="kpi">${c.present}</div></div><div class="card"><div class="muted">الغائبون</div><div class="kpi">${c.absent}</div></div><div class="card"><div class="muted">المتأخرون</div><div class="kpi">${c.late}</div></div><div class="card"><div class="muted">غياب بعذر</div><div class="kpi">${c.excused}</div></div><div class="card"><div class="muted">غادر قبل النهاية</div><div class="kpi">${c.leftEarly??0}</div></div></div>
  <div class="card"><div class="row"><button onclick="markAllAttendance('present')">تحديد الجميع حاضرين</button><button onclick="clearAttendanceDay()">مسح تسجيلات الحصة</button></div></div>
  <div class="card"><h3>لائحة المتعلمين</h3>${students.length?`<table><tr><th>المتعلم</th><th>الحالة</th><th>ملاحظة</th></tr>${students.map(s=>{let a=records.find(x=>x.sid===s.id),st=a?a.status:"";return`<tr><td>${esc(objName(s))}</td><td><select onchange="saveAttendance('${date}','${gid}','${s.id}',this.value)"><option value="">— اختر —</option><option value="present" ${st==="present"?"selected":""}>حاضر</option><option value="absent" ${st==="absent"?"selected":""}>غائب</option><option value="late" ${st==="late"?"selected":""}>متأخر</option><option value="excused" ${st==="excused"?"selected":""}>غياب بعذر</option><option value="leftEarly" ${st==="leftEarly"?"selected":""}>غادر قبل نهاية الحصة</option></select></td><td><input value="${esc(a&&a.note||"")}" placeholder="ملاحظة اختيارية" onchange="saveAttendanceNote('${date}','${gid}','${s.id}',this.value)"></td></tr>`}).join("")}</table>`:"<p>لا يوجد متعلمون نشطون في هذا الفوج.</p>"}</div>
+ ${gid?emciaSessionExtraPanel(gid,date):""}
  ${gid?emciaSessionAttendancePreview(gid,date.slice(0,7)):""}
  <div class="card"><h3>ملخص الشهر</h3>${attendanceMonthSummary(gid,date.slice(0,7))}</div>`;applyLang()
 }
@@ -3015,7 +3033,7 @@ window.addEventListener('beforeunload',event=>{
 });
 const operationalUrl=api+'/rest/v1/emcia_operational_state_v2';
 const financialUrl=api+'/rest/v1/emcia_financial_state_v2';
-const operationalKeys=['subj','t','s','g','e','p','sp','att','sch','rooms','tatt','wait','wls','cash','shifts'];
+const operationalKeys=['subj','t','s','g','e','p','sp','sc','att','sch','rooms','tatt','wait','wls','cash','shifts'];
 const financialKeys=['tp','adj','x','oi','sv'];
 const restrictedFields={g:[],e:['discountTeacher','discountEmcia'],p:['discountTeacher','discountEmcia']};
 const financialFieldPattern=/^(teacherShare|emciaShare|instituteShare|teacherDue|emciaDue|salary|profit|netProfit|commission)$/i;
