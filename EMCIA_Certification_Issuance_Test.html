@@ -2492,7 +2492,7 @@ function scheduleConflict(candidate,ignoreId=""){
  let same=db.sch.filter(s=>s.active!==false&&s.id!==ignoreId&&s.day===candidate.day&&overlap(s,candidate));
  let g=by(db.g,candidate.gid),tid=g?g.tid:"";
  let problems=[];
- same.forEach(s=>{let sg=by(db.g,s.gid),stid=sg?sg.tid:"";if(s.rid===candidate.rid)problems.push("القاعة محجوزة في هذا التوقيت");if(s.gid===candidate.gid)problems.push("الفوج لديه حصة أخرى في هذا التوقيت");if(tid&&stid===tid)problems.push("الأستاذ لديه حصة أخرى في هذا التوقيت")});
+ same.forEach(s=>{let sg=by(db.g,s.gid),stid=sg?sg.tid:"";if(s.rid===candidate.rid)problems.push("القاعة محجوزة في هذا التوقيت");if(s.gid===candidate.gid)problems.push("الفوج لديه حصة أخرى في هذا التوقيت");if(tid&&stid===tid)problems.push("الأستاذ لديه حصة أخرى في هذا التوقيت");const learners=new Set(db.e.filter(e=>e.active&&e.gid===candidate.gid).map(e=>e.sid));if(db.e.some(e=>e.active&&e.gid===s.gid&&learners.has(e.sid)))problems.push("متعلم مسجل في الفوجين لديه حصتان متداخلتان")});
  return [...new Set(problems)]
 }
 function sessionTypeLabel(v){return ({official:"رسمية",extra:"إضافية",makeup:"تعويضية",exceptional:"استثنائية"})[v]||"رسمية"}
@@ -2521,25 +2521,27 @@ function emciaScheduleGrid(){
  const sessions=db.sch.filter(x=>x.active!==false);
  const minutes=t=>{const p=(t||"").split(":").map(Number);return p.length===2&&p.every(Number.isFinite)?p[0]*60+p[1]:0};
  const label=n=>String(Math.floor(n/60)).padStart(2,"0")+":"+String(n%60).padStart(2,"0");
- const slots=[...Array.from({length:6},(_,i)=>9*60+i*30),...Array.from({length:15},(_,i)=>14*60+i*30)];
+ const starts=sessions.map(x=>minutes(x.start)).filter(x=>Number.isFinite(x)),ends=sessions.map(x=>minutes(x.end)).filter(x=>Number.isFinite(x));
+ const first=Math.floor(Math.min(9*60,...starts)/30)*30,last=Math.ceil(Math.max(21*60+30,...ends)/30)*30;
+ const slots=Array.from({length:Math.ceil((last-first)/30)},(_,i)=>first+i*30);
  const style='border:1px solid #cbd5e1;padding:5px;text-align:center;vertical-align:middle;font-size:12px';
  const breakCell='<td aria-label="استراحة من 12:00 إلى 14:00" style="background:#475569;border-left:3px solid #1e293b;border-right:3px solid #1e293b;min-width:9px;width:9px;padding:0"></td>';
- const head='<tr><th style="'+style+';position:sticky;right:0;background:#e8eef5">اليوم</th><th style="'+style+';background:#e8eef5">القاعة</th>'+slots.map(t=>(t===14*60?'<th title="استراحة 12:00–14:00" style="background:#475569;min-width:9px;width:9px;padding:0;border:3px solid #1e293b"></th>':'')+'<th style="'+style+';min-width:'+(t===11*60+30?'105':'62')+'px;background:'+(t===14*60?'#dbeafe':'#e8eef5')+';direction:ltr">'+(t===11*60+30?'11:30–12:00':label(t))+'</th>').join('')+'</tr>';
+ const head='<tr><th style="'+style+';position:sticky;right:0;background:#e8eef5">اليوم</th><th style="'+style+';background:#e8eef5">القاعة</th>'+slots.map(t=>(false?'':'')+'<th style="'+style+';min-width:'+(t===11*60+30?'105':'62')+'px;background:'+(t===14*60?'#dbeafe':'#e8eef5')+';direction:ltr">'+(t===11*60+30?'11:30–12:00':label(t))+'</th>').join('')+'</tr>';
  const body=DAYS.map(day=>rooms.map((r,ri)=>{
   const found=sessions.filter(x=>x.day===day&&x.rid===r.id).sort((a,b)=>a.start.localeCompare(b.start));
   let cells='',index=0;
   while(index<slots.length){
-   if(slots[index]===14*60)cells+=breakCell;
+   
    const t=slots[index],ses=found.find(x=>minutes(x.start)<t+30&&minutes(x.end)>t);
    if(!ses){cells+='<td style="'+style+';background:#fafafa;color:#cbd5e1">·</td>';index++;continue}
-   let count=1;while(index+count<slots.length&&slots[index+count]===slots[index+count-1]+30&&minutes(ses.start)<slots[index+count]+30&&minutes(ses.end)>slots[index+count])count++;
+   let count=1;while(index+count<slots.length&&minutes(ses.start)<slots[index+count]+30&&minutes(ses.end)>slots[index+count])count++;
    const g=by(db.g,ses.gid),teacher=by(db.t,g?.tid);
    cells+='<td colspan="'+count+'" style="'+style+';background:#e0f2fe;border:1px solid #7dd3fc;min-width:65px;cursor:pointer" onclick="emciaSchedulePopup(\''+ses.id+'\')" onmouseenter="emciaScheduleHover(\''+ses.id+'\')"><strong>'+esc(g?.linkCode||g?.n||"—")+'</strong></td>';
    index+=count;
   }
   return '<tr>'+(ri===0?'<th rowspan="'+rooms.length+'" style="'+style+';background:#e8eef5;font-weight:bold;min-width:75px">'+day+'</th>':'')+'<th style="'+style+';white-space:nowrap;background:#f1f5f9">'+esc((r.n.match(/[0-9٠-٩]+/)||[])[0]||r.n)+'</th>'+cells+'</tr>';
  }).join('')).join('');
- return '<div class="card"><h3>استعمال الزمن الأسبوعي حسب القاعات</h3><div id="emciaSchedulePopup" data-sid="" style="display:none;position:sticky;top:5px;z-index:5;background:#fff;border:1px solid #94a3b8;border-radius:8px;padding:10px;max-width:280px;box-shadow:0 3px 10px #0002"><button type="button" style="float:left" onclick="this.parentNode.style.display=\'none\'">✕</button></div><p class="muted">الأيام عمودياً والقاعات حسب أرقامها، والساعات أفقياً (09:00–12:00 و14:00–21:30). مرر الجدول أفقياً على الهاتف. مرر الفأرة أو اضغط على الفوج لعرض حضور اليوم، ثم اختر تعديل الحصة عند الحاجة.</p><div style="overflow-x:auto;max-width:100%;direction:rtl"><table style="border-collapse:collapse;width:max-content;min-width:100%;table-layout:fixed">'+head+body+'</table></div></div>';
+ return '<div class="card"><h3>استعمال الزمن الأسبوعي حسب القاعات</h3><div id="emciaSchedulePopup" data-sid="" style="display:none;position:sticky;top:5px;z-index:5;background:#fff;border:1px solid #94a3b8;border-radius:8px;padding:10px;max-width:280px;box-shadow:0 3px 10px #0002"><button type="button" style="float:left" onclick="this.parentNode.style.display=\'none\'">✕</button></div><p class="muted">الأيام عمودياً والقاعات حسب أرقامها، والساعات أفقياً مع توسيع المجال تلقائياً لإظهار الحصص المسجلة، بما فيها فترة منتصف النهار. مرر الجدول أفقياً على الهاتف. مرر الفأرة أو اضغط على الفوج لعرض حضور اليوم، ثم اختر تعديل الحصة عند الحاجة.</p><div style="overflow-x:auto;max-width:100%;direction:rtl"><table style="border-collapse:collapse;width:max-content;min-width:100%;table-layout:fixed">'+head+body+'</table></div></div>';
 }
 function schedule(){
  $("#schedule").innerHTML=`<div class="card"><p class="muted">يمكن الآن تحديد نوع الحصة وتعديل الحصص الموجودة دون حذفها.</p>
