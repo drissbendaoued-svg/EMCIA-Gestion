@@ -1630,6 +1630,7 @@ function enroll(){
  $("#enroll").innerHTML=`<div class="card"><h3>تسجيل متعلم في فوج — تحديد الاستحقاق</h3><p class="muted">تظهر افتراضياً أسماء المتعلمين الذين اختاروا مادة الفوج أثناء التسجيل. فعّل «إظهار جميع المتعلمين» لعرض بقية الأسماء، ويمكنك كتابة بداية الاسم أو الهاتف لتصفية القائمة.</p>
  <div class="row enroll-select-row"><select id="eg" onchange="onEnrollGroupChange()"><option value="">— اختر الفوج —</option>${db.g.filter(x=>x.active).map(x=>`<option value="${x.id}">${esc(groupCompactName(x))}</option>`).join("")}</select><select id="es"><option value="">— اختر المتعلم —</option></select><label class="show-all-learners"><input id="eshowall" type="checkbox" onchange="enrollStudentOptions()"> إظهار جميع المتعلمين</label><input id="esearch" placeholder="اكتب بداية الاسم (مثلاً: محـ) أو الهاتف" oninput="enrollStudentOptions()"></div><div id="enrollSuccess" class="enroll-success hidden">تم التسجيل بنجاح</div>
  <div id="einfo" class="muted" style="margin:8px 0"></div>
+ <div class="row"><div><label>نظام الأداء</label><select id="eBillingMode" onchange="emciaToggleEnrollmentBilling()"><option value="monthly">شهري</option><option value="session">بالحصة</option></select></div><div id="eSessionPriceBox" class="hidden"><label>ثمن الحصة (درهم)</label><input id="eSessionPrice" type="number" min="0.01" step="0.01" placeholder="ثمن الحصة الواحدة"></div></div><p id="eSessionBillingNote" class="muted hidden">الأداء بالحصة: لا تُنشأ واجبات شهرية لهذا التسجيل. تسجيل الحصص والأداءات سيُفعّل في مرحلة لاحقة.</p>
  <div class="row"><div><label>تاريخ بداية الدراسة في الفوج</label><input id="est" type="date" value="${today()}"></div><div><label>الواجب الشهري المعتمد من الفوج</label><input id="efd" value="اختر الفوج أولاً" disabled></div><select id="er" onchange="toggleSpecialFee()"><option value="">بدون استثناء</option><option>تخفيض</option><option>نصف شهر</option><option>التحاق متأخر</option><option>اتفاق خاص</option><option>آخر</option></select><div id="specialFeeBox" class="hidden"><label>استحقاق استثنائي للشهر الأول</label><input id="ef" type="number" placeholder="المبلغ المستحق لهذا الشهر فقط"></div><button onclick="addEnroll()">تسجيل في الفوج</button></div>
  <div class="card" style="margin-top:12px;background:#f8fbff"><h4>التخفيض (اختياري)</h4><div class="row">
  <div><label>قيمة التخفيض الشهري</label><input id="edisc" type="number" min="0" value="0"></div>
@@ -1639,13 +1640,21 @@ function enroll(){
  <div id="edendBox" class="hidden"><label>آخر شهر للتخفيض</label><input id="edend" type="month"></div>
  <div id="edcustomBox" class="hidden"><label>حصة الأستاذ من التخفيض</label><input id="edteacher" type="number" min="0" value="0"><label>حصة المؤسسة من التخفيض</label><input id="edemcia" type="number" min="0" value="0"></div>
  </div><p class="muted">التخفيض لا يغيّر ثمن الفوج. يطبّق على استحقاق المتعلم خلال مدة صلاحيته، ويُوزّع أثره المالي حسب الجهة التي تتحمله.</p></div></div>
- <div class="card"><h3>لائحة التسجيلات في الأفواج</h3><div class="row" dir="rtl"><select id="enrollListGroup" onchange="emciaFilterEnrollmentList()"><option value="">— جميع الأفواج —</option>${db.g.map(g=>`<option value="${g.id}">${esc(groupCompactName(g))}</option>`).join("")}</select><input id="enrollListQuery" placeholder="بحث باسم المتعلم أو الفوج" oninput="emciaFilterEnrollmentList()"></div><table id="enrollListTable"><tr><th>المتعلم</th><th>الفوج</th><th>بداية الدراسة</th><th>الاستحقاق</th><th>الاستثناء</th><th>التخفيض</th><th>الحالة</th><th></th></tr>${[...db.e].reverse().map(o=>{let g=by(db.g,o.gid);return `<tr data-enrollment-id="${o.id}"><td>${esc(name(db.s,o.sid))}</td><td>${esc(groupCompactName(by(db.g,o.gid)))}</td><td>${o.start||"—"}</td><td>${money(o.fee==null?g?.f:o.fee)}</td><td>${esc(o.reason)}</td><td>${discountSummary(o)}</td><td>${o.active?"نشط":"غير نشط"}</td><td class="actions"><button onclick="editEnroll('${o.id}')">✏️</button>${o.active?"":`<button class="ok" onclick="activateObj('e','${o.id}')">✓ تنشيط</button>`}<button class="danger" onclick="delEnroll('${o.id}')">🗑️</button></td></tr>`}).join("")}</table></div>`;
+ <div class="card"><h3>لائحة التسجيلات في الأفواج</h3><div class="row" dir="rtl"><select id="enrollListGroup" onchange="emciaFilterEnrollmentList()"><option value="">— جميع الأفواج —</option>${db.g.map(g=>`<option value="${g.id}">${esc(groupCompactName(g))}</option>`).join("")}</select><input id="enrollListQuery" placeholder="بحث باسم المتعلم أو الفوج" oninput="emciaFilterEnrollmentList()"></div><table id="enrollListTable"><tr><th>المتعلم</th><th>الفوج</th><th>بداية الدراسة</th><th>نظام الأداء</th><th>الاستحقاق</th><th>الاستثناء</th><th>التخفيض</th><th>الحالة</th><th></th></tr>${[...db.e].reverse().map(o=>{let g=by(db.g,o.gid);return `<tr data-enrollment-id="${o.id}"><td>${esc(name(db.s,o.sid))}</td><td>${esc(groupCompactName(by(db.g,o.gid)))}</td><td>${o.start||"—"}</td><td>${o.billingMode==="session"?"بالحصة":"شهري"}</td><td>${o.billingMode==="session"?money(o.sessionPrice)+" / حصة":money(o.fee==null?g?.f:o.fee)}</td><td>${esc(o.reason)}</td><td>${discountSummary(o)}</td><td>${o.active?"نشط":"غير نشط"}</td><td class="actions"><button onclick="editEnroll('${o.id}')">✏️</button>${o.active?"":`<button class="ok" onclick="activateObj('e','${o.id}')">✓ تنشيط</button>`}<button class="danger" onclick="delEnroll('${o.id}')">🗑️</button></td></tr>`}).join("")}</table></div>`;
  let ep=$("#enroll");
  if(ep)ep.addEventListener("pointerdown",e=>{
    if(e.target.closest("button,select,input,label") && !e.target.closest("#enrollSuccess")) hideEnrollSuccess()
  },{capture:true,once:false});
 }
 function emciaFilterEnrollmentList(){let q=($("#enrollListQuery")?.value||"").toLocaleLowerCase(),sub=$("#enrollListSubject")?.value||"",lev=($("#enrollListLevel")?.value||"").toLocaleLowerCase(),gid=$("#enrollListGroup")?.value||"",groupQuery=($("#enrollListGroupQuery")?.value||"").trim().toLocaleLowerCase();document.querySelectorAll("#enrollListTable tr[data-enrollment-id]").forEach(tr=>{let e=by(db.e,tr.dataset.enrollmentId),g=e?by(db.g,e.gid):null;tr.style.display=g&&(!sub||g.subject===sub)&&(!lev||(g.level||"").toLocaleLowerCase().includes(lev))&&(!gid||g.id===gid)&&(!groupQuery||groupCompactName(g).toLocaleLowerCase().includes(groupQuery))&&tr.textContent.toLocaleLowerCase().includes(q)?"":"none"})}
+function emciaToggleEnrollmentBilling(){
+ const isSession=$("#eBillingMode")?.value==="session";
+ $("#eSessionPriceBox")?.classList.toggle("hidden",!isSession);
+ $("#eSessionBillingNote")?.classList.toggle("hidden",!isSession);
+ const monthly=$("#efd");if(monthly)monthly.closest("div")?.classList.toggle("hidden",isSession);
+ const reason=$("#er");if(reason){reason.disabled=isSession;if(isSession){reason.value="";toggleSpecialFee()}}
+ const discount=$("#edisc");if(discount){discount.disabled=isSession;if(isSession)discount.value="0"}
+}
 function showEnrollFee(){let g=by(db.g,$("#eg")?.value);if($("#efd"))$("#efd").value=g?money(g.f):"اختر الفوج أولاً"}
 function toggleSpecialFee(){let b=$("#specialFeeBox");if(!b)return;b.classList.toggle("hidden",!$("#er").value);if(!$("#er").value&&$("#ef"))$("#ef").value=""}
 function toggleCustomDiscount(){let b=$("#edcustomBox");if(b)b.classList.toggle("hidden",$("#edbear")?.value!=="custom")}
@@ -1681,6 +1690,9 @@ function paymentSplit(sid,gid,amount,month){
 }
 function addEnroll(){
  let sid=$("#es").value,gid=$("#eg").value,reason=$("#er").value;
+ const billingMode=$("#eBillingMode")?.value==="session"?"session":"monthly";
+ const sessionPrice=billingMode==="session"?Number($("#eSessionPrice")?.value):null;
+ if(billingMode==="session"&&!(sessionPrice>0&&Number.isFinite(sessionPrice)))return alert("أدخل ثمن الحصة الصحيح");
  if(!sid||!gid)return alert("اختر الفوج والمتعلم");
  if(db.e.some(e=>e.sid===sid&&e.gid===gid&&e.active))return alert("المتعلم مسجل في هذا الفوج");
  let fee=null;if(reason){let v=$("#ef").value;if(v==="")return alert("أدخل الاستحقاق الاستثنائي للشهر الأول");fee=+v;if(!(fee>=0))return alert("أدخل مبلغاً صحيحاً")}
@@ -1692,11 +1704,16 @@ function addEnroll(){
   if(term==="date"&&de<ds)return alert("نهاية التخفيض يجب ألا تسبق بدايته");
   if(bear==="custom"){dt=+($("#edteacher")?.value||0);dm=+($("#edemcia")?.value||0);if(Math.abs((dt+dm)-da)>0.01)return alert("في التوزيع المخصص يجب أن يساوي مجموع حصة الأستاذ والمؤسسة قيمة التخفيض")}
  }
- db.e.push({id:uid(),sid,gid,start:$("#est").value||today(),fee,reason,active:true,discountAmount:da,discountBearer:da?bear:"none",discountStart:ds,discountTerm:term,discountEnd:term==="date"?de:"",discountTeacher:dt,discountEmcia:dm});
+ db.e.push({id:uid(),sid,gid,start:$("#est").value||today(),fee,reason,active:true,billingMode,sessionPrice,discountAmount:da,discountBearer:da?bear:"none",discountStart:ds,discountTerm:term,discountEnd:term==="date"?de:"",discountTeacher:dt,discountEmcia:dm});
  save();window._enrollJustSaved=true;enroll();setTimeout(()=>{let x=$("#enrollSuccess");if(x){x.classList.remove("hidden");window._enrollJustSaved=false}},0)
 }
 function editEnroll(id){
  let o=by(db.e,id);
+ if(o?.billingMode==="session"){
+  const value=prompt("ثمن الحصة (درهم)",o.sessionPrice||"");if(value===null)return;
+  const price=Number(value);if(!(price>0&&Number.isFinite(price)))return alert("ثمن الحصة غير صحيح");
+  o.sessionPrice=price;save();enroll();return;
+ }
  let f=prompt("الواجب الخاص. اتركه فارغاً لاعتماد ثمن الفوج",o.fee==null?"":o.fee);if(f===null)return;o.fee=f===""?null:+f;
  let r=prompt("سبب التعديل",o.reason||"");if(r!==null)o.reason=r;
  let d=prompt("قيمة التخفيض الشهري (0 = بدون تخفيض)",+o.discountAmount||0);if(d===null)return;d=+d;if(!(d>=0))return alert("قيمة التخفيض غير صحيحة");
@@ -2665,7 +2682,7 @@ function showDebt(eid){
 }
 
 function dueForEnrollmentMonth(e,m){
- if(!m||m<EMCIA_ACCOUNTING_START_MONTH||!e||!e.active||!e.start||e.start.slice(0,7)>m)return 0;
+ if(!m||m<EMCIA_ACCOUNTING_START_MONTH||!e||!e.active||e.billingMode==="session"||!e.start||e.start.slice(0,7)>m)return 0;
  const g=by(db.g,e.gid);if(!g)return 0;
  const base=(e.start.slice(0,7)===m&&e.fee!=null)?Math.max(0,+e.fee||0):Math.max(0,+g.f||0);
  const discount=activeDiscount(e,m);
