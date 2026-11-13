@@ -2430,12 +2430,12 @@ function emciaScheduleGrid(){
    if(!ses){cells+='<td style="'+style+';background:#fafafa;color:#cbd5e1">·</td>';index++;continue}
    let count=1;while(index+count<slots.length&&minutes(ses.start)<slots[index+count]+30&&minutes(ses.end)>slots[index+count])count++;
    const g=by(db.g,ses.gid),teacher=by(db.t,g?.tid);
-   cells+='<td colspan="'+count+'" style="'+style+';background:#e0f2fe;border:1px solid #7dd3fc;min-width:75px"><strong>'+esc(g?.linkCode||g?.n||"—")+'</strong><div style="font-size:11px">'+esc(ses.start)+'–'+esc(ses.end)+'</div><div style="font-size:11px">'+esc(objName(teacher)||"")+'</div><div style="font-size:10px">'+esc(sessionTypeLabel(ses.type))+'</div><button type="button" style="padding:3px 6px;font-size:11px" onclick="editSchedule(\''+ses.id+'\')">✏️</button></td>';
+   cells+='<td colspan="'+count+'" title="'+esc((g?.n||"—")+" | "+ses.start+"–"+ses.end+" | "+(objName(teacher)||"")+" | "+sessionTypeLabel(ses.type))+'" style="'+style+';background:#e0f2fe;border:1px solid #7dd3fc;min-width:65px;cursor:pointer" onclick="editSchedule(\''+ses.id+'\')"><strong>'+esc(g?.linkCode||g?.n||"—")+'</strong></td>';
    index+=count;
   }
-  return '<tr>'+(ri===0?'<th rowspan="'+rooms.length+'" style="'+style+';background:#e8eef5;font-weight:bold;min-width:75px">'+day+'</th>':'')+'<th style="'+style+';white-space:nowrap;background:#f1f5f9">'+esc(r.n)+'<small style="display:block">'+r.cap+' مقاعد</small></th>'+cells+'</tr>';
+  return '<tr>'+(ri===0?'<th rowspan="'+rooms.length+'" style="'+style+';background:#e8eef5;font-weight:bold;min-width:75px">'+day+'</th>':'')+'<th style="'+style+';white-space:nowrap;background:#f1f5f9">'+esc((r.n.match(/[0-9٠-٩]+/)||[])[0]||r.n)+'</th>'+cells+'</tr>';
  }).join('')).join('');
- return '<div class="card"><h3>استعمال الزمن الأسبوعي حسب القاعات</h3><p class="muted">الأيام عمودياً والقاعات من الأصغر إلى الأكبر، والساعات أفقياً. مرر الجدول أفقياً على الهاتف. اضغط ✏️ لتعديل الحصة.</p><div style="overflow-x:auto;max-width:100%;direction:rtl"><table style="border-collapse:collapse;width:max-content;min-width:100%;table-layout:fixed">'+head+body+'</table></div></div>';
+ return '<div class="card"><h3>استعمال الزمن الأسبوعي حسب القاعات</h3><p class="muted">الأيام عمودياً والقاعات من الأصغر إلى الأكبر، والساعات أفقياً. مرر الجدول أفقياً على الهاتف. اضغط على اسم الفوج لتعديل الحصة.</p><div style="overflow-x:auto;max-width:100%;direction:rtl"><table style="border-collapse:collapse;width:max-content;min-width:100%;table-layout:fixed">'+head+body+'</table></div></div>';
 }
 function schedule(){
  $("#schedule").innerHTML=`<div class="card"><p class="muted">يمكن الآن تحديد نوع الحصة وتعديل الحصص الموجودة دون حذفها.</p>
