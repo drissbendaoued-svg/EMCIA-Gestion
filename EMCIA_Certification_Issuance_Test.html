@@ -2046,7 +2046,7 @@ function addOther(){
  let sid=document.getElementById("oiStudent").value,gid=document.getElementById("oiGroup").value;
  if(gid&&!sid)return alert("اختر المتعلم");
  let date=document.getElementById("om").value,month=date.slice(0,7),receiptNo=document.getElementById("oiReceipt").value.trim(),note=document.getElementById("on").value,batchId=uid();
- if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date))return alert("حدد تاريخ الأداء باليوم والشهر والسنة");
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return alert("حدد تاريخ الأداء باليوم والشهر والسنة");
  if(!confirm("حفظ المداخيل الإضافية بمجموع "+money(emciaExtraDraft.reduce((z,x)=>z+x.a,0))+"؟"))return;
  emciaExtraDraft.forEach(x=>db.oi.push({id:uid(),batchId,sid:sid||null,gid:gid||null,cat:x.cat,a:x.a,date,month,receiptNo,note}));
  emciaExtraDraft=[];save();expenses();
