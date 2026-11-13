@@ -1633,13 +1633,13 @@ function enroll(){
  <div class="row"><div><label>نظام الأداء</label><select id="eBillingMode" onchange="emciaToggleEnrollmentBilling()"><option value="monthly">شهري</option><option value="session">بالحصة</option></select></div><div id="eSessionPriceBox" class="hidden"><label>ثمن الحصة (درهم)</label><input id="eSessionPrice" type="number" min="0.01" step="0.01" placeholder="ثمن الحصة الواحدة"></div></div><p id="eSessionBillingNote" class="muted hidden">الأداء بالحصة: لا تُنشأ واجبات شهرية لهذا التسجيل. تسجيل الحصص والأداءات سيُفعّل في مرحلة لاحقة.</p>
  <div class="row"><div><label>تاريخ بداية الدراسة في الفوج</label><input id="est" type="date" value="${today()}"></div><div><label>الواجب الشهري المعتمد من الفوج</label><input id="efd" value="اختر الفوج أولاً" disabled></div><select id="er" onchange="toggleSpecialFee()"><option value="">بدون استثناء</option><option>تخفيض</option><option>نصف شهر</option><option>التحاق متأخر</option><option>اتفاق خاص</option><option>آخر</option></select><div id="specialFeeBox" class="hidden"><label>استحقاق استثنائي للشهر الأول</label><input id="ef" type="number" placeholder="المبلغ المستحق لهذا الشهر فقط"></div><button onclick="addEnroll()">تسجيل في الفوج</button></div>
  <div class="card" style="margin-top:12px;background:#f8fbff"><h4>التخفيض (اختياري)</h4><div class="row">
- <div><label>قيمة التخفيض الشهري</label><input id="edisc" type="number" min="0" value="0"></div>
+ <div><label id="ediscLabel">قيمة التخفيض الشهري</label><input id="edisc" type="number" min="0" value="0"></div>
  <div><label>من يتحمل التخفيض؟</label><select id="edbear" onchange="toggleCustomDiscount()"><option value="none">—</option><option value="teacher">الأستاذ</option><option value="emcia">المؤسسة</option><option value="half">50% الأستاذ / 50% المؤسسة</option><option value="custom">توزيع مخصص</option></select></div>
  <div><label>بداية التخفيض</label><input id="edstart" type="month" value="${nowMonth()}"></div>
  <div><label>مدة التخفيض</label><select id="edterm" onchange="toggleDiscountEnd()"><option value="until_stop">حتى إيقافه أو توقف المتعلم</option><option value="season">إلى نهاية الموسم الدراسي</option><option value="month">شهر واحد</option><option value="date">إلى شهر محدد</option></select></div>
  <div id="edendBox" class="hidden"><label>آخر شهر للتخفيض</label><input id="edend" type="month"></div>
  <div id="edcustomBox" class="hidden"><label>حصة الأستاذ من التخفيض</label><input id="edteacher" type="number" min="0" value="0"><label>حصة المؤسسة من التخفيض</label><input id="edemcia" type="number" min="0" value="0"></div>
- </div><p class="muted">التخفيض لا يغيّر ثمن الفوج. يطبّق على استحقاق المتعلم خلال مدة صلاحيته، ويُوزّع أثره المالي حسب الجهة التي تتحمله.</p></div></div>
+ </div><p class="muted">التخفيض لا يغيّر ثمن الفوج. في النظام الشهري يُطبّق شهرياً، وفي نظام الحصص يُحدد لكل حصة. يُوزّع أثره حسب الجهة التي تتحمله، ويبدأ احتسابه المالي مع تفعيل سجل الحصص في المرحلة المقبلة.</p></div></div>
  <div class="card"><h3>لائحة التسجيلات في الأفواج</h3><div class="row" dir="rtl"><select id="enrollListGroup" onchange="emciaFilterEnrollmentList()"><option value="">— جميع الأفواج —</option>${db.g.map(g=>`<option value="${g.id}">${esc(groupCompactName(g))}</option>`).join("")}</select><input id="enrollListQuery" placeholder="بحث باسم المتعلم أو الفوج" oninput="emciaFilterEnrollmentList()"></div><table id="enrollListTable"><tr><th>المتعلم</th><th>الفوج</th><th>بداية الدراسة</th><th>نظام الأداء</th><th>الاستحقاق</th><th>الاستثناء</th><th>التخفيض</th><th>الحالة</th><th></th></tr>${[...db.e].reverse().map(o=>{let g=by(db.g,o.gid);return `<tr data-enrollment-id="${o.id}"><td>${esc(name(db.s,o.sid))}</td><td>${esc(groupCompactName(by(db.g,o.gid)))}</td><td>${o.start||"—"}</td><td>${o.billingMode==="session"?"بالحصة":"شهري"}</td><td>${o.billingMode==="session"?money(o.sessionPrice)+" / حصة":money(o.fee==null?g?.f:o.fee)}</td><td>${esc(o.reason)}</td><td>${discountSummary(o)}</td><td>${o.active?"نشط":"غير نشط"}</td><td class="actions"><button onclick="editEnroll('${o.id}')">✏️</button>${o.active?"":`<button class="ok" onclick="activateObj('e','${o.id}')">✓ تنشيط</button>`}<button class="danger" onclick="delEnroll('${o.id}')">🗑️</button></td></tr>`}).join("")}</table></div>`;
  let ep=$("#enroll");
  if(ep)ep.addEventListener("pointerdown",e=>{
@@ -1653,14 +1653,15 @@ function emciaToggleEnrollmentBilling(){
  $("#eSessionBillingNote")?.classList.toggle("hidden",!isSession);
  const monthly=$("#efd");if(monthly)monthly.closest("div")?.classList.toggle("hidden",isSession);
  const reason=$("#er");if(reason){reason.disabled=isSession;if(isSession){reason.value="";toggleSpecialFee()}}
- const discount=$("#edisc");if(discount){discount.disabled=isSession;if(isSession)discount.value="0"}
+ const discount=$("#edisc");if(discount)discount.disabled=false;
+ const discountLabel=$("#ediscLabel");if(discountLabel)discountLabel.textContent=isSession?"قيمة التخفيض لكل حصة":"قيمة التخفيض الشهري";
 }
 function showEnrollFee(){let g=by(db.g,$("#eg")?.value);if($("#efd"))$("#efd").value=g?money(g.f):"اختر الفوج أولاً"}
 function toggleSpecialFee(){let b=$("#specialFeeBox");if(!b)return;b.classList.toggle("hidden",!$("#er").value);if(!$("#er").value&&$("#ef"))$("#ef").value=""}
 function toggleCustomDiscount(){let b=$("#edcustomBox");if(b)b.classList.toggle("hidden",$("#edbear")?.value!=="custom")}
 function toggleDiscountEnd(){let b=$("#edendBox");if(b)b.classList.toggle("hidden",$("#edterm")?.value!=="date")}
 function seasonEndForMonth(m){if(!m)return "";let y=+m.slice(0,4),mo=+m.slice(5,7);return (mo>=9?y+1:y)+"-06"}
-function discountSummary(e){let d=+e.discountAmount||0;if(!d)return "—";let bear={teacher:"الأستاذ",emcia:"المؤسسة",half:"50/50",custom:"مخصص"}[e.discountBearer]||"—";let term=e.discountTerm==="month"?"شهر واحد":e.discountTerm==="season"?"إلى نهاية الموسم":e.discountTerm==="date"?("إلى "+(e.discountEnd||"—")):"حتى الإيقاف";return `${money(d)} — ${bear}<br><span class="muted">${e.discountStart||"—"} · ${term}</span>`}
+function discountSummary(e){let d=+e.discountAmount||0;if(!d)return "—";let bear={teacher:"الأستاذ",emcia:"المؤسسة",half:"50/50",custom:"مخصص"}[e.discountBearer]||"—";let term=e.discountTerm==="month"?"شهر واحد":e.discountTerm==="season"?"إلى نهاية الموسم":e.discountTerm==="date"?("إلى "+(e.discountEnd||"—")):"حتى الإيقاف";return `${money(d)} ${e.billingMode==="session"?"لكل حصة":"شهرياً"} — ${bear}<br><span class="muted">${e.discountStart||"—"} · ${term}</span>`}
 function activeDiscount(e,month){
  let d=+e?.discountAmount||0;if(!d||!month)return null;
  let st=e.discountStart||((e.start||"").slice(0,7));if(st&&month<st)return null;
@@ -1698,6 +1699,8 @@ function addEnroll(){
  let fee=null;if(reason){let v=$("#ef").value;if(v==="")return alert("أدخل الاستحقاق الاستثنائي للشهر الأول");fee=+v;if(!(fee>=0))return alert("أدخل مبلغاً صحيحاً")}
  let da=+($("#edisc")?.value||0),bear=$("#edbear")?.value||"none",ds=$("#edstart")?.value||nowMonth(),term=$("#edterm")?.value||"until_stop",de=$("#edend")?.value||"";
  let dt=0,dm=0;
+ if(!(da>=0&&Number.isFinite(da)))return alert("قيمة التخفيض غير صحيحة");
+ if(billingMode==="session"&&da>=sessionPrice)return alert("يجب أن يكون التخفيض أقل من ثمن الحصة");
  if(da>0){
   if(bear==="none")return alert("حدد من يتحمل التخفيض");
   if(term==="date"&&!de)return alert("حدد آخر شهر للتخفيض");
@@ -1712,7 +1715,16 @@ function editEnroll(id){
  if(o?.billingMode==="session"){
   const value=prompt("ثمن الحصة (درهم)",o.sessionPrice||"");if(value===null)return;
   const price=Number(value);if(!(price>0&&Number.isFinite(price)))return alert("ثمن الحصة غير صحيح");
-  o.sessionPrice=price;save();enroll();return;
+  const reduction=prompt("التخفيض لكل حصة (درهم، 0 = بدون تخفيض)",o.discountAmount||0);if(reduction===null)return;
+  const amount=Number(reduction);if(!(amount>=0&&amount<price&&Number.isFinite(amount)))return alert("التخفيض يجب أن يكون أقل من ثمن الحصة");
+  let bearer=o.discountBearer||"none";
+  if(amount>0){bearer=prompt("من يتحمل التخفيض؟ teacher / emcia / half / custom",bearer==="none"?"emcia":bearer);if(bearer===null)return;if(!["teacher","emcia","half","custom"].includes(bearer))return alert("جهة التخفيض غير صحيحة");}
+  let td=0,ed=0;if(amount>0&&bearer==="custom"){
+   const tv=prompt("حصة الأستاذ من التخفيض",o.discountTeacher||0);if(tv===null)return;
+   const ev=prompt("حصة المؤسسة من التخفيض",o.discountEmcia||0);if(ev===null)return;
+   td=Number(tv);ed=Number(ev);if(!(td>=0&&ed>=0&&Math.abs(td+ed-amount)<0.01))return alert("مجموع الحصتين يجب أن يساوي التخفيض");
+  }
+  o.sessionPrice=price;o.discountAmount=amount;o.discountBearer=amount?bearer:"none";o.discountTeacher=td;o.discountEmcia=ed;save();enroll();return;
  }
  let f=prompt("الواجب الخاص. اتركه فارغاً لاعتماد ثمن الفوج",o.fee==null?"":o.fee);if(f===null)return;o.fee=f===""?null:+f;
  let r=prompt("سبب التعديل",o.reason||"");if(r!==null)o.reason=r;
