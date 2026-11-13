@@ -2585,21 +2585,22 @@ function emciaSessionAttendancePreview(gid,month){
   const price=Math.max(0,+e.sessionPrice||0),net=Math.max(0,price-discount);
   return {e,count,extra,price,discount,net,total:(count+extra)*net};
  });
- return '<div class="card"><h3>معاينة حصص المتعلمين بالأداء بالحصة — '+esc(month)+'</h3><p class="muted">معاينة فقط، لا تنشئ أداءات أو ديوناً أو مستحقات للأساتذة. تحتسب حصة واحدة كحد أقصى لكل متعلم وفوج في اليوم وفق سجل الحضور (حاضر، متأخر، غادر مبكراً). الحصص المتعددة والتعويضية تحتاج تأكيداً منفصلاً قبل الاعتماد المالي.</p><table><tr><th>المتعلم</th><th>الأيام المسجلة</th><th>إضافية / تعويضية</th><th>ثمن الحصة</th><th>تخفيض الحصة</th><th>الصافي للحصة</th><th>مجموع تقديري</th></tr>'+rows.map(r=>'<tr><td>'+esc(name(db.s,r.e.sid))+'</td><td>'+r.count+'</td><td>'+r.extra+'</td><td>'+money(r.price)+'</td><td>'+money(r.discount)+'</td><td>'+money(r.net)+'</td><td>'+money(r.total)+'</td></tr>').join('')+'</table></div>';
+ return '<div class="card"><h3>معاينة حصص المتعلمين بالأداء بالحصة — '+esc(month)+'</h3><p class="muted">معاينة فقط، لا تنشئ أداءات أو ديوناً أو مستحقات للأساتذة. تحتسب حصة واحدة كحد أقصى لكل متعلم وفوج في اليوم وفق سجل الحضور (حاضر، متأخر، غادر مبكراً). الحصص المتعددة والتعويضية تحتاج تأكيداً منفصلاً قبل الاعتماد المالي.</p><table><tr><th>المتعلم</th><th>الأيام المسجلة</th><th>حصص مرنة منجزة</th><th>ثمن الحصة</th><th>تخفيض الحصة</th><th>الصافي للحصة</th><th>مجموع تقديري</th></tr>'+rows.map(r=>'<tr><td>'+esc(name(db.s,r.e.sid))+'</td><td>'+r.count+'</td><td>'+r.extra+'</td><td>'+money(r.price)+'</td><td>'+money(r.discount)+'</td><td>'+money(r.net)+'</td><td>'+money(r.total)+'</td></tr>').join('')+'</table></div>';
 }
 
 function emciaSessionExtraPanel(gid,date){
  const learners=db.e.filter(e=>e.gid===gid&&e.active&&e.billingMode==="session"&&(!e.start||e.start<=date));
  if(!learners.length)return "";
  const records=db.sc.filter(x=>x.gid===gid&&x.date.slice(0,7)===date.slice(0,7)).slice().reverse();
- return '<div class="card"><h3>الحصص الإضافية والتعويضية المؤدى عنها</h3><p class="muted">كل حصة مسجلة هنا تحتسب حصة إضافية مؤدى عنها. الحصة العادية تسجل في جدول الحضور أعلاه.</p><div class="row"><div><label>المتعلم</label><select id="scStudent">'+learners.map(e=>'<option value="'+e.sid+'">'+esc(name(db.s,e.sid))+'</option>').join("")+'</select></div><div><label>نوع الحصة</label><select id="scType"><option value="extra">إضافية</option><option value="makeup">تعويضية مؤدى عنها</option></select></div><div><label>التاريخ</label><input id="scDate" type="date" value="'+date+'"></div><div><label>التوقيت</label><input id="scTime" type="time"></div><div><button onclick="emciaAddSessionCharge()">حفظ الحصة</button></div></div><table><tr><th>التاريخ</th><th>التوقيت</th><th>المتعلم</th><th>النوع</th><th>الإجراء</th></tr>'+records.map(x=>'<tr><td>'+esc(x.date)+'</td><td>'+esc(x.time)+'</td><td>'+esc(name(db.s,x.sid))+'</td><td>'+(x.type==="makeup"?"تعويضية":"إضافية")+'</td><td><button class="danger" onclick="emciaDeleteSessionCharge(&quot;'+x.id+'&quot;)">حذف</button></td></tr>').join("")+'</table></div>';
+ return '<div class="card"><h3>سجل حصص التدريس المرن</h3><p class="muted">كل متعلم له حساب فردي ولو حضر مع متعلمين آخرين في التوقيت نفسه. تسجل الحصص المنجزة فقط؛ الحصة المؤجلة لا تحتسب حتى تنجز. لا تسجل الحصة نفسها في سجل الحضور العادي وهذا السجل معاً.</p><div class="row"><div><label>المتعلم</label><select id="scStudent">'+learners.map(e=>'<option value="'+e.sid+'">'+esc(name(db.s,e.sid))+'</option>').join("")+'</select></div><div><label>تاريخ الحصة المنجزة</label><input id="scDate" type="date" value="'+date+'"></div><div><label>توقيت الحصة</label><input id="scTime" type="time"></div><div><button onclick="emciaAddSessionCharge()">حفظ حصة منجزة</button></div></div><div style="overflow-x:auto"><table><tr><th>التاريخ</th><th>التوقيت</th><th>المتعلم</th><th>الحالة</th><th>الإجراء</th></tr>'+records.map(x=>'<tr><td>'+esc(x.date)+'</td><td>'+esc(x.time||"—")+'</td><td>'+esc(name(db.s,x.sid))+'</td><td>منجزة</td><td><button class="danger" onclick="emciaDeleteSessionCharge(&quot;'+x.id+'&quot;)">حذف</button></td></tr>').join("")+'</table></div></div>';
 }
 function emciaAddSessionCharge(){
- const gid=window.attGid||"",sid=$("#scStudent")?.value,date=$("#scDate")?.value,type=$("#scType")?.value,time=$("#scTime")?.value;
+ const gid=window.attGid||"",sid=$("#scStudent")?.value,date=$("#scDate")?.value,time=$("#scTime")?.value;
  if(!gid||!sid||!date||!time)return alert("حدد المتعلم والتاريخ والتوقيت");
- if(!db.e.some(e=>e.gid===gid&&e.sid===sid&&e.active&&e.billingMode==="session"))return alert("التسجيل غير صالح");
+ if(!db.e.some(e=>e.gid===gid&&e.sid===sid&&e.active&&e.billingMode==="session"&&(!e.start||e.start<=date)))return alert("التسجيل غير صالح");
  if(db.sc.some(x=>x.gid===gid&&x.sid===sid&&x.date===date&&x.time===time))return alert("هذه الحصة مسجلة سابقاً");
- db.sc.push({id:uid(),gid,sid,date,type,time,createdAt:new Date().toISOString()});save();attendance();
+ if(db.att.some(x=>x.gid===gid&&x.sid===sid&&x.date===date&&["present","late","leftEarly"].includes(x.status))&&!confirm("يوجد حضور عادي مسجل لهذا المتعلم في اليوم نفسه. هل تؤكد أنها حصة أخرى مستقلة؟"))return;
+ db.sc.push({id:uid(),gid,sid,date,time,type:"flexible",createdAt:new Date().toISOString()});save();attendance();
 }
 function emciaDeleteSessionCharge(id){if(!confirm("حذف الحصة المسجلة؟"))return;db.sc=db.sc.filter(x=>x.id!==id);save();attendance()}
 function attendance(){
