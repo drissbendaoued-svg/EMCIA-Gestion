@@ -3015,7 +3015,7 @@ window.addEventListener('beforeunload',event=>{
 });
 const operationalUrl=api+'/rest/v1/emcia_operational_state_v2';
 const financialUrl=api+'/rest/v1/emcia_financial_state_v2';
-const operationalKeys=['subj','t','s','g','e','p','att','sch','rooms','tatt','wait','wls','cash','shifts'];
+const operationalKeys=['subj','t','s','g','e','p','sp','att','sch','rooms','tatt','wait','wls','cash','shifts'];
 const financialKeys=['tp','adj','x','oi','sv'];
 const restrictedFields={g:[],e:['discountTeacher','discountEmcia'],p:['discountTeacher','discountEmcia']};
 const financialFieldPattern=/^(teacherShare|emciaShare|instituteShare|teacherDue|emciaDue|salary|profit|netProfit|commission)$/i;
