@@ -12,7 +12,7 @@ let role='director',writes=0,errors=[],alerts=[],failAtomic=false,reminders=[];
 for(const alias of ['index.html','EMCIA_Integrated_Release_Candidate.html','EMCIA_V5_15_16_Cloud_Test.html','EMCIA_V5_15_16_Supabase_Director_Test.html','EMCIA_Certification_Integration_Test.html','EMCIA_Certification_Issuance_Test.html']){
  const redirect=fs.readFileSync(path.join(__dirname,'..',alias),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
  let target;vm.runInNewContext(redirect,{URL,location:{href:'https://emcia.invalid/'+alias+'?v=103&request=example#access_token=test&type=recovery',search:'?v=103&request=example',hash:'#access_token=test&type=recovery',replace(value){target=new URL(value)}}});
- assert.equal(target.pathname,'/emcia.html');assert.equal(target.searchParams.get('v'),'2026.11.14.3');assert.equal(target.searchParams.get('request'),'example');assert.equal(target.hash,'#access_token=test&type=recovery');
+ assert.equal(target.pathname,'/emcia.html');assert.equal(target.searchParams.get('v'),'2026.11.14.4');assert.equal(target.searchParams.get('request'),'example');assert.equal(target.hash,'#access_token=test&type=recovery');
 }
 
 function createDOM(){
@@ -48,7 +48,7 @@ async function saved(w){for(let i=0;i<120&&!w.document.querySelector('#emcia-clo
 (async()=>{
  let dom=createDOM(),w=await login(dom),d=w.document;
  try{
-  assert.equal(d.querySelector('#emcia-release').textContent,'2026.11.14.3');
+  assert.equal(d.querySelector('#emcia-release').textContent,'2026.11.14.4');
   w.eval("window.attDate='2026-11-14';window.attGid='';show('attendance')");
   const timed=()=>d.querySelectorAll('#attendance select[onchange^="emciaSaveTimedAttendance"]');
   assert.equal(timed().length,3);
@@ -111,12 +111,15 @@ assert.ok(w.eval("scheduleConflict({...db.sch[0],start:'15:00',end:'16:00'},'m1'
   assert.equal(w.emciaDailyPaymentRows('2026-11-14',{status:'partial'})[0].remaining,150);assert.equal(w.emciaDailyPaymentRows('2026-11-14',{status:'unpaid'})[0].remaining,100);assert.equal(w.emciaDailyPaymentRows('2026-11-14',{group:'g2'}).length,0);assert.equal(w.emciaDailyPaymentRows('2026-11-14',{status:'previous'}).length,0);
   assert.equal(w.emciaDailyPaymentRows('2026-12-12',{status:'previous'})[0].remaining,250);
   w.eval("window.dailyDate='2026-11-14';show('daily')");await wait(20);assert.match(d.querySelector('#daily-payment-alerts-content').textContent,/250.00/);
+  assert.equal(d.querySelector('#daily-payment-count-value').textContent,'1');assert.equal(d.querySelectorAll('#daily .daily-stats-grid>.card').length,6);
+  d.querySelector('#dailyPaymentGroup').value='g3';d.querySelector('#dailyPaymentGroup').dispatchEvent(new w.Event('change'));assert.match(d.querySelector('#daily-payment-alerts-content').textContent,/100.00/);d.querySelector('#dailyPaymentStatus').value='previous';d.querySelector('#dailyPaymentStatus').dispatchEvent(new w.Event('change'));assert.match(d.querySelector('#daily-payment-alerts-content').textContent,/عدد المتعلمين: 0/);assert.equal(d.querySelector('#daily-payment-count-value').textContent,'1');
+  d.querySelector('#daily-payment-count-card').click();assert.equal(d.querySelector('#dailyPaymentGroup').value,'');assert.match(d.querySelector('#daily-payment-alerts-content').textContent,/250.00/);
   d.querySelector('#dailyPaymentPresent').value='present';d.querySelector('#dailyPaymentPresent').dispatchEvent(new w.Event('change'));assert.match(d.querySelector('#daily-payment-alerts-content').textContent,/250.00/);
   await w.emciaMarkDailyReminder('s1');assert.equal(reminders.length,1);assert.match(d.querySelector('#daily-payment-alerts-content').textContent,/director/);
   role='secretary_evening';await w.emciaMarkDailyReminder('s1');assert.equal(reminders.length,1);assert.equal(reminders[0].actor_name,'director');role='director';
   // Payment shortcut preselects both the monthly group and learner.
   d.querySelector('#daily-pay-s1').value='g1';d.querySelector('button[onclick^="emciaDailyPay"]').click();assert.equal(d.querySelector('#ps').value,'s1');assert.equal(w.eval('window.pg'),'g1');
-  w.eval("db.p.push({id:'settle1',sid:'s1',gid:'g1',a:150,date:'2026-11-14',allocMonth:'2026-11'},{id:'settle2',sid:'s1',gid:'g3',a:100,date:'2026-11-14',allocMonth:'2026-11'});save()");assert.equal(w.emciaDailyPaymentRows('2026-11-14').length,0);await saved(w);
+  w.eval("db.p.push({id:'settle1',sid:'s1',gid:'g1',a:150,date:'2026-11-14',allocMonth:'2026-11'},{id:'settle2',sid:'s1',gid:'g3',a:100,date:'2026-11-14',allocMonth:'2026-11'});save()");assert.equal(w.emciaDailyPaymentRows('2026-11-14').length,0);assert.equal(d.querySelector('#daily-payment-count-value').textContent,'0');await saved(w);
   // A cloud conflict must preserve both remote payloads; there is no sequential-write fallback.
   failAtomic=true;const beforeOp=JSON.stringify(op),beforeFin=JSON.stringify(fin);let rejected=false;try{await w.EMCIA_CLOUD_SYNC.restore(fixtures())}catch{rejected=true}assert.equal(rejected,true);assert.equal(JSON.stringify(op),beforeOp);assert.equal(JSON.stringify(fin),beforeFin);failAtomic=false;
   // Legacy financial fields must keep their target when another account deletes an earlier record.
