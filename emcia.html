@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>EMCIA Gestion</title>
-<meta name="emcia-release" content="2026.11.14.5">
+<meta name="emcia-release" content="2026.11.14.6">
 <meta name="application-name" content="EMCIA Gestion">
 <meta name="apple-mobile-web-app-title" content="EMCIA Gestion">
 <style>
@@ -376,6 +376,8 @@ body.reception-mode #langMenu{display:block}
   line-height:1 !important;
 }
 /* Explicit daily KPI layout: three title/value cards per row on every viewport. */
+#schedule .schedule-add-panel>summary{cursor:pointer;font-weight:700;min-height:32px;line-height:32px}
+#schedule .schedule-add-content{padding-top:12px}
 #daily .daily-payment-count{background:#f1f5f9;color:#475569;border:2px solid #cbd5e1;cursor:pointer;font:inherit}
 #daily #daily-payment-count-card[data-payment-alert="due"]{background:#fee2e2;color:#991b1b;border-color:#dc2626;box-shadow:0 0 0 2px #fecaca,0 3px 10px #991b1b20}
 #daily #daily-payment-count-card[data-payment-alert="due"] .kpi{color:#b91c1c;font-weight:800}
@@ -461,7 +463,7 @@ try{
 }catch(e){}
 </script></head>
 <body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>تسجيل دخول المدير والموظفين المفعّلين</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label for="authPassword">كلمة المرور</label><div class="emcia-password-field"><div class="emcia-eye-wrap"><input id="authPassword" type="password" required autocomplete="current-password"><input id="authPasswordVisible" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" style="display:none" oninput="document.getElementById('authPassword').value=this.value"><button class="emcia-eye-button" id="authPasswordEye" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false" onclick="emciaLoginEyeClick()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات محفوظة بأمان في النظام السحابي للمؤسسة.</small></div></div>
-<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.14.5</small></header>
+<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.14.6</small></header>
 <div id="langMenu" class="lang-menu">
 <button id="langMenuBtn" type="button" onclick="toggleLangMenu()" aria-label="اختيار اللغة">🌐</button>
 <div id="langChoices" class="lang-choices">
@@ -536,6 +538,7 @@ db.t.forEach(o=>{if(!o.nAr)o.nAr=o.n||"";if(o.nFr==null)o.nFr=""});
 db.s.forEach(o=>{if(!o.nAr)o.nAr=o.n||"";if(o.nFr==null)o.nFr=""});
 
 const I18N={
+"إضافة حصة":"Ajouter une séance",
 "تنبيهات أداء اليوم":"Alertes de paiement du jour",
 "عرض متعلمي حصص اليوم الذين لديهم مستحقات شهرية":"Afficher les apprenants prévus ce jour ayant des cotisations mensuelles à régler",
 "متابعة أداء متعلمي اليوم":"Suivi des paiements des apprenants du jour",
@@ -2770,9 +2773,9 @@ function emciaScheduleGrid(){
  return '<div class="card"><h3>استعمال الزمن الأسبوعي حسب القاعات</h3><div id="emciaSchedulePopup" data-sid="" style="display:none;position:sticky;top:5px;z-index:5;background:#fff;border:1px solid #94a3b8;border-radius:8px;padding:10px;max-width:280px;box-shadow:0 3px 10px #0002"><button type="button" style="float:left" onclick="this.parentNode.style.display=\'none\'">✕</button></div><p class="muted">الأيام عمودياً والقاعات حسب أرقامها، والساعات أفقياً مع توسيع المجال تلقائياً لإظهار الحصص المسجلة، بما فيها فترة منتصف النهار. مرر الجدول أفقياً على الهاتف. مرر الفأرة أو اضغط على الفوج لعرض حضور اليوم، ثم اختر تعديل الحصة عند الحاجة.</p><div style="overflow-x:auto;max-width:100%;direction:rtl"><table style="border-collapse:collapse;width:max-content;min-width:100%;table-layout:fixed">'+head+body+'</table></div></div>';
 }
 function schedule(){
- $("#schedule").innerHTML=`<div class="card"><p class="muted">يمكن الآن تحديد نوع الحصة وتعديل الحصص الموجودة دون حذفها.</p>
+ $("#schedule").innerHTML=`<details class="card schedule-add-panel" id="schedule-add-panel"><summary>${tr("إضافة حصة")}</summary><div class="schedule-add-content"><p class="muted">يمكن الآن تحديد نوع الحصة وتعديل الحصص الموجودة دون حذفها.</p>
  <div class="row"><div><label>الفوج</label><select id="scG"><option value="">— اختر الفوج —</option>${db.g.filter(x=>x.active).map(x=>`<option value="${x.id}">${esc(x.linkCode||x.n)}</option>`).join("")}</select></div><div><label>اليوم</label><select id="scD">${["الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت","الأحد"].map(x=>`<option>${x}</option>`).join("")}</select></div><div><label>بداية الحصة</label><input id="scS" type="time"></div><div><label>نهاية الحصة</label><input id="scE" type="time"></div><div><label>رقم القاعة</label><select id="scR"><option value="">— اختر القاعة —</option>${db.rooms.filter(x=>x.active).map(x=>`<option value="${x.id}">${esc(x.n)}</option>`).join("")}</select></div><div><label>نوع الحصة</label><select id="scType" onchange="onSessionTypeChange()">${sessionTypeOptions()}</select></div><button onclick="addSchedule()">إضافة الحصة</button></div>
- <div id="makeupBox" class="hidden" style="margin-top:10px"><label>الحصة التي تعوضها هذه الحصة (اختياري)</label><select id="scMakeup">${editableScheduleOptions()}</select></div></div>
+ <div id="makeupBox" class="hidden" style="margin-top:10px"><label>الحصة التي تعوضها هذه الحصة (اختياري)</label><select id="scMakeup">${editableScheduleOptions()}</select></div></div></details>
  ${emciaScheduleGrid()}\n <div class="card"><h3>قائمة الحصص والتعديل</h3><table><tr><th>اليوم</th><th>الوقت</th><th>الفوج</th><th>الأستاذ</th><th>القاعة</th><th>نوع الحصة</th><th></th></tr>${db.sch.filter(x=>x.active).sort((a,b)=>a.day.localeCompare(b.day,"ar")||a.start.localeCompare(b.start)).map(x=>{let g=by(db.g,x.gid),tt=by(db.t,g?.tid),r=by(db.rooms,x.rid);return `<tr><td>${esc(x.day)}</td><td>${esc(x.start)}–${esc(x.end)}</td><td>${esc(g?.n||"—")}</td><td>${esc(objName(tt)||"—")}</td><td>${esc(r?.n||"—")}</td><td>${sessionTypeLabel(x.type)}</td><td class="actions"><button onclick="editSchedule('${x.id}')">✏️ تعديل</button><button class="danger" onclick="removeSchedule('${x.id}')">🗑️</button></td></tr>`}).join("")}</table></div>`;
 }
 function roomLoadText(r){let max=0;db.sch.filter(s=>s.active!==false&&s.rid===r.id).forEach(s=>{max=Math.max(max,db.e.filter(e=>e.active&&e.gid===s.gid).length)});return max>r.cap?`⚠️ تجاوز السعة (${max}/${r.cap})`:"سليمة"}
