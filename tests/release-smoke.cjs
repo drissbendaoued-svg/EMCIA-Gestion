@@ -12,7 +12,7 @@ let role='director',writes=0,errors=[],alerts=[],failAtomic=false,reminders=[];
 for(const alias of ['index.html','EMCIA_Integrated_Release_Candidate.html','EMCIA_V5_15_16_Cloud_Test.html','EMCIA_V5_15_16_Supabase_Director_Test.html','EMCIA_Certification_Integration_Test.html','EMCIA_Certification_Issuance_Test.html']){
  const redirect=fs.readFileSync(path.join(__dirname,'..',alias),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
  let target;vm.runInNewContext(redirect,{URL,location:{href:'https://emcia.invalid/'+alias+'?v=103&request=example#access_token=test&type=recovery',search:'?v=103&request=example',hash:'#access_token=test&type=recovery',replace(value){target=new URL(value)}}});
- assert.equal(target.pathname,'/emcia.html');assert.equal(target.searchParams.get('v'),'2026.11.14.8');assert.equal(target.searchParams.get('request'),'example');assert.equal(target.hash,'#access_token=test&type=recovery');
+ assert.equal(target.pathname,'/emcia.html');assert.equal(target.searchParams.get('v'),'2026.11.14.9');assert.equal(target.searchParams.get('request'),'example');assert.equal(target.hash,'#access_token=test&type=recovery');
 }
 
 function createDOM(){
@@ -48,12 +48,16 @@ async function saved(w){for(let i=0;i<120&&!w.document.querySelector('#emcia-clo
 (async()=>{
  let dom=createDOM(),w=await login(dom),d=w.document;
  try{
-  assert.equal(d.querySelector('#emcia-release').textContent,'2026.11.14.8');
+  assert.equal(d.querySelector('#emcia-release').textContent,'2026.11.14.9');
   w.eval("window.attDate='2026-11-14';window.attGid='';show('attendance')");
   const timed=()=>d.querySelectorAll('#attendance select[onchange^="emciaSaveTimedAttendance"]');
   assert.equal(timed().length,3);
   function select(index,status){const input=timed()[index];input.value=status;input.dispatchEvent(new w.Event('change',{bubbles:true}))}
-  select(0,'absent');select(1,'present');select(2,'present');
+  assert.equal(d.querySelectorAll('#attendance details[open]').length,0);
+  const firstLesson=()=>d.querySelector('.emcia-att-session[data-session-ref="m:m1"]');
+  firstLesson().open=true;select(0,'absent');assert.equal(firstLesson().open,true);assert.equal(d.querySelector('.emcia-att-session[data-session-ref="m:m2"]').open,false);
+  d.querySelector('.emcia-att-session[data-session-ref="m:m2"]').open=true;select(1,'present');select(2,'present');
+  assert.equal(firstLesson().open,true);assert.equal(d.querySelector('.emcia-att-session[data-session-ref="m:m2"]').open,true);
   assert.equal(w.eval('db.at2.length'),3);assert.equal(w.eval('emciaAttendanceRecords().length'),3);
   assert.equal(w.eval("db.at2.find(x=>x.ref==='m:m1').status"),'absent');
   assert.equal(w.eval("db.at2.find(x=>x.ref==='m:m2').status"),'present');
@@ -61,6 +65,14 @@ async function saved(w){for(let i=0;i<120&&!w.document.querySelector('#emcia-clo
   assert.equal(w.eval("sessionAttendanceStatus(db.sch[1],'2026-11-14').marked"),1);
   assert.equal(w.eval("emciaCompletedFlexibleLessons(db.e[1],'2026-11').length"),1);
   select(2,'absent');assert.equal(w.eval("emciaCompletedFlexibleLessons(db.e[1],'2026-11').length"),0);
+  // Changing date retains the filter panel but does not open the previous date's lessons.
+  let dateField=d.querySelector('#attendance input[type="date"]');dateField.closest('details').open=true;dateField.value='2026-11-21';dateField.dispatchEvent(new w.Event('change'));
+  assert.equal(d.querySelector('#attendance input[type="date"]').closest('details').open,true);assert.equal(d.querySelectorAll('.emcia-att-session[open]').length,0);
+  // A day shortcut opens only its specific lesson, with the correct group selected.
+  d.querySelector('button[onclick^="emciaOpenAttendanceSession"]').click();assert.equal(d.querySelector('.emcia-att-session[data-session-ref="m:m1"]').open,true);assert.equal(d.querySelectorAll('.emcia-att-session[open]').length,1);
+  w.eval("window.attDate='2026-11-14';window.attGid='';attendance()");
+  // Leaving and returning resets disclosures rather than reopening all learner lists.
+  firstLesson().open=true;w.eval("show('payments');show('attendance')");assert.equal(d.querySelectorAll('#attendance details[open]').length,0);
   // Current estimates must not charge an explicitly absent flexible lesson.
   w.eval("window.emciaPaymentMode='session';window.pg='g2';show('payments')");d.querySelector('#ps').value='s1';w.emciaSessionPaymentSelection();
   assert.match(d.querySelector('#sessionPaymentSummary').textContent,/مستحق الحصص المنجزة: 0.00/);

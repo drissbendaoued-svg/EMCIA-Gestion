@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>EMCIA Gestion</title>
-<meta name="emcia-release" content="2026.11.14.8">
+<meta name="emcia-release" content="2026.11.14.9">
 <meta name="application-name" content="EMCIA Gestion">
 <meta name="apple-mobile-web-app-title" content="EMCIA Gestion">
 <style>
@@ -380,6 +380,10 @@ body.reception-mode #langMenu{display:block}
 #schedule .emcia-week-grid .emcia-day-column{position:sticky;right:0;z-index:3;box-sizing:border-box;width:var(--emcia-day-width);min-width:var(--emcia-day-width);max-width:var(--emcia-day-width);background:#e8eef5}
 #schedule .emcia-week-grid .emcia-room-column{position:sticky;right:var(--emcia-day-width);z-index:2;box-sizing:border-box;width:var(--emcia-room-width);min-width:var(--emcia-room-width);max-width:var(--emcia-room-width);background:#f1f5f9;box-shadow:-2px 0 0 #94a3b8}
 #schedule .emcia-week-grid tr:first-child .emcia-day-column,#schedule .emcia-week-grid tr:first-child .emcia-room-column{z-index:4}
+#attendance .attendance-fold>summary,#attendance .emcia-att-session>summary{cursor:pointer;font-weight:700;min-height:40px;line-height:1.6;padding:6px 0}
+#attendance .attendance-fold[open]>summary{margin-bottom:12px}
+#attendance .emcia-att-session{border:1px solid #d9e2ec;border-radius:10px;padding:4px 10px;margin:8px 0}
+#attendance .attendance-session-count{display:inline-block;padding:0 7px;margin-inline-start:7px;background:#e8eef5;color:#175d8d;border-radius:999px;font-size:13px}
 #schedule .schedule-day-panel{border:1px solid #d9e2ec;border-radius:10px;padding:4px 10px;margin:8px 0}
 #schedule .schedule-day-panel>summary{cursor:pointer;font-weight:700;min-height:40px;line-height:40px}
 #schedule .schedule-day-count{float:inline-end;min-width:28px;padding:0 8px;margin:7px 0;line-height:26px;text-align:center;background:#e8eef5;color:#175d8d;border-radius:999px;font-size:13px}
@@ -470,7 +474,7 @@ try{
 }catch(e){}
 </script></head>
 <body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>تسجيل دخول المدير والموظفين المفعّلين</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label for="authPassword">كلمة المرور</label><div class="emcia-password-field"><div class="emcia-eye-wrap"><input id="authPassword" type="password" required autocomplete="current-password"><input id="authPasswordVisible" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" style="display:none" oninput="document.getElementById('authPassword').value=this.value"><button class="emcia-eye-button" id="authPasswordEye" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false" onclick="emciaLoginEyeClick()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات محفوظة بأمان في النظام السحابي للمؤسسة.</small></div></div>
-<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.14.8</small></header>
+<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.14.9</small></header>
 <div id="langMenu" class="lang-menu">
 <button id="langMenuBtn" type="button" onclick="toggleLangMenu()" aria-label="اختيار اللغة">🌐</button>
 <div id="langChoices" class="lang-choices">
@@ -545,6 +549,8 @@ db.t.forEach(o=>{if(!o.nAr)o.nAr=o.n||"";if(o.nFr==null)o.nFr=""});
 db.s.forEach(o=>{if(!o.nAr)o.nAr=o.n||"";if(o.nFr==null)o.nFr=""});
 
 const I18N={
+"ملخص الحضور":"Résumé des présences",
+"السجل اليومي القديم":"Historique journalier",
 "عدد الحصص":"Nombre de séances",
 "لا توجد حصص مبرمجة في هذا اليوم.":"Aucune séance programmée ce jour.",
 "الإجراءات":"Actions",
@@ -739,6 +745,7 @@ function enterApp(){
 function show(id){
  if(!emciaCanOpenPage(id)){alert("هذه الصفحة مخصصة للمدير والمحاسب.");return}
  if(id==="home"){enterApp();return}
+ if(id==='attendance'&&!document.getElementById('attendance')?.classList.contains('active'))document.querySelectorAll('#attendance details[data-att-disclosure]').forEach(panel=>panel.open=false);
  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
  $("#"+id).classList.add("active");render(id);nav();
  if(id!=="home")autoCollapseMobileNav()
@@ -2721,10 +2728,10 @@ function daily(){
  db.e.filter(e=>e.active&&e.start&&e.start.slice(0,7)<=m).forEach(e=>{let debt=monthRange(e.start,m).reduce((z,mm)=>{let due=dueForEnrollmentMonth(e,mm),paid=db.p.filter(p=>p.sid===e.sid&&p.gid===e.gid&&p.allocMonth===mm).reduce((a,p)=>a+(+(p.netAfterRefund??p.a)||0),0);return z+Math.max(0,due-paid)},0);if(debt>0){debtors++;debtTotal+=debt}});
  $("#daily").innerHTML=`<div class="card"><div class="row"><div><label>التاريخ</label><input type="date" value="${date}" onchange="window.dailyDate=this.value;daily()"></div><div><b>${day}</b></div></div></div>
  <div class="grid daily-stats-grid"><div class="card"><div class="muted">حصص اليوم</div><div class="kpi">${sessions.length}</div></div><div class="card"><div class="muted">حضور غير مكتمل</div><div class="kpi">${unfinished.length}</div></div><div class="card"><div class="muted">تنبيهات السعة</div><div class="kpi">${capacity.length}</div></div><div class="card"><div class="muted">غياب متكرر هذا الشهر</div><div class="kpi">${abs.length}</div></div><div class="card"><div class="muted">حالات متأخرة في الأداء</div><div class="kpi">${debtors}</div><div class="muted">${money(debtTotal)}</div></div><button type="button" class="card daily-payment-count" id="daily-payment-count-card" onclick="emciaOpenDailyPayments()" aria-controls="daily-payment-panel" title="${tr('عرض متعلمي حصص اليوم الذين لديهم مستحقات شهرية')}"><div class="muted">${tr('تنبيهات أداء اليوم')}</div><div class="kpi" id="daily-payment-count-value" aria-live="polite">${emciaDailyPaymentRows(date).length}</div><div class="muted" id="daily-payment-count-total">${money(emciaDailyPaymentRows(date).reduce((sum,row)=>sum+row.remaining,0))}</div></button></div>
- <div class="card"><h3>برنامج اليوم</h3>${sessions.length?`<table><tr><th>الوقت</th><th>الفوج</th><th>الأستاذ</th><th>القاعة</th><th>المسجلون</th><th>الحضور</th><th></th></tr>${sessions.map(s=>{let g=by(db.g,s.gid),r=by(db.rooms,s.rid),st=sessionAttendanceStatus(s,date);return`<tr><td>${s.start}–${s.end}</td><td>${esc(g?g.n:"—")}</td><td>${esc(g?objName(by(db.t,g.tid)):"—")}</td><td>${esc(r?r.n:"—")}</td><td>${st.n}${r?` / ${r.cap}`:""}</td><td><b>${st.label}</b></td><td><button onclick="goAttendance('${date}','${s.gid}')">تسجيل الحضور</button></td></tr>`}).join("")}</table>`:"<p class='muted'>لا توجد حصص مبرمجة لهذا اليوم.</p>"}</div>
+ <div class="card"><h3>برنامج اليوم</h3>${sessions.length?`<table><tr><th>الوقت</th><th>الفوج</th><th>الأستاذ</th><th>القاعة</th><th>المسجلون</th><th>الحضور</th><th></th></tr>${sessions.map(s=>{let g=by(db.g,s.gid),r=by(db.rooms,s.rid),st=sessionAttendanceStatus(s,date);return`<tr><td>${s.start}–${s.end}</td><td>${esc(g?g.n:"—")}</td><td>${esc(g?objName(by(db.t,g.tid)):"—")}</td><td>${esc(r?r.n:"—")}</td><td>${st.n}${r?` / ${r.cap}`:""}</td><td><b>${st.label}</b></td><td><button onclick="goAttendance('${date}','${s.gid}','m:${s.id}')">تسجيل الحضور</button></td></tr>`}).join("")}</table>`:"<p class='muted'>لا توجد حصص مبرمجة لهذا اليوم.</p>"}</div>
  ${emciaDailyPaymentPanel(date)}<div class="card"><h3>التنبيهات التشغيلية</h3>${unfinished.length?`<p><b>الحضور:</b> ${unfinished.length} حصة لم يكتمل تسجيل حضورها.</p>`:"<p>✓ تسجيل الحضور مكتمل للحصص المسجلة اليوم.</p>"}${capacity.length?`<p><b>السعة:</b> ${capacity.map(x=>`${esc(x.g.n)} (${x.n}/${x.r.cap} في ${esc(x.r.n)})`).join("، ")}</p>`:"<p>✓ لا يوجد تجاوز لسعة القاعات في حصص اليوم.</p>"}${abs.length?`<p><b>الغياب المتكرر:</b></p><table><tr><th>المتعلم</th><th>الفوج</th><th>مرات الغياب هذا الشهر</th></tr>${abs.map(x=>`<tr><td>${esc(objName(x.s))}</td><td>${esc(x.g.n)}</td><td>${x.n}</td></tr>`).join("")}</table>`:"<p>✓ لا توجد حالياً حالات غياب غير مبرر متكرر (3 مرات فأكثر) هذا الشهر.</p>"}<p><b>المتابعة المالية:</b> ${debtors} تسجيل/حالة بها مبالغ متبقية إلى غاية ${m} بإجمالي ${money(debtTotal)}. <button onclick="show('arrears')">فتح المتأخرات</button></p></div>`;emciaRenderDailyPayments();emciaLoadDailyReminders(date);applyLang()
 }
-function goAttendance(date,gid){window.attDate=date;window.attGid=gid;show("attendance")}
+function goAttendance(date,gid,ref=""){window.attDate=date;window.attGid=gid;window.emciaAttendanceFocusRef=ref;show("attendance")}
 
 const DAYS=["الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت","الأحد"];
 function overlap(a,b){return a.start<b.end&&b.start<a.end}
@@ -2858,14 +2865,15 @@ function emciaTimedAttendancePanel(date,gid){
  const day=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"][new Date(date+"T12:00:00").getDay()];
  const sessions=db.sch.filter(x=>x.active!==false&&x.day===day&&(!gid||x.gid===gid)).sort((a,b)=>a.start.localeCompare(b.start));
  const flexible=db.sc.filter(x=>x.date===date&&(!gid||x.gid===gid));
- const rows=sessions.map(x=>({id:"m:"+x.id,gid:x.gid,start:x.start,end:x.end,mode:"monthly",sid:""})).concat(flexible.map(x=>({id:"f:"+x.id,gid:x.gid,start:x.time,end:x.end||"",mode:"session",sid:x.sid})));
- return '<div class="card"><h3>الحضور حسب الحصة والتوقيت — '+esc(date)+'</h3><p class="muted">كل موعد مستقل. يمكن للمتعلم أن يحضر حصة ويتغيب عن أخرى في اليوم نفسه. السجلات القديمة محفوظة دون تغيير. لا يؤثر هذا السجل بعد على الحسابات المالية.</p>'+(!rows.length?'<p class="muted">لا توجد حصص لهذا اليوم والفوج المحدد.</p>':rows.map(x=>{
+ const rows=sessions.map(x=>({id:"m:"+x.id,gid:x.gid,start:x.start,end:x.end,mode:"monthly",sid:"",rid:x.rid})).concat(flexible.map(x=>({id:"f:"+x.id,gid:x.gid,start:x.time,end:x.end||"",mode:"session",sid:x.sid})));
+ return '<div class="card emcia-timed-attendance"><h3>الحضور حسب الحصة والتوقيت — '+esc(date)+'</h3>'+(!rows.length?'<p class="muted">لا توجد حصص لهذا اليوم والفوج المحدد.</p>':rows.map(x=>{
  const en=db.e.filter(e=>e.active&&e.gid===x.gid&&(!e.start||e.start<=date)&&(x.mode==="session"?e.sid===x.sid:e.billingMode!=="session"));
  const g=by(db.g,x.gid);
- return '<div style="margin:12px 0;padding:10px;border:1px solid #cbd5e1;border-radius:8px"><strong>'+esc(g?.n||"فوج")+' — '+esc(x.start)+'–'+esc(x.end||"—")+' ('+(x.mode==="monthly"?"شهري":"بالحصة")+')</strong><table><tr><th>المتعلم</th><th>الحالة</th></tr>'+en.map(e=>{
+ const room=x.rid?by(db.rooms,x.rid):null;
+ return '<details class="emcia-att-session" data-session-ref="'+esc(x.id)+'" data-att-disclosure="'+esc('lesson:'+date+':'+x.id)+'"><summary>'+esc(g?.n||"فوج")+' — <bdi dir="ltr">'+esc(x.start)+'–'+esc(x.end||"—")+'</bdi>'+(room?' · '+esc(room.n):'')+(x.mode==='session'?' · '+esc(name(db.s,x.sid)):'')+' ('+tr(x.mode==="monthly"?"شهري":"بالحصة")+')<span class="attendance-session-count" aria-label="'+tr('عدد المتعلمين')+'">'+en.length+'</span></summary><div style="overflow-x:auto"><table><tr><th>المتعلم</th><th>الحالة</th></tr>'+en.map(e=>{
  const rec=db.at2.find(z=>z.date===date&&z.ref===x.id&&z.sid===e.sid);
  return '<tr><td>'+esc(name(db.s,e.sid))+'</td><td><select onchange="emciaSaveTimedAttendance('+esc(JSON.stringify(date))+','+esc(JSON.stringify(x.id))+','+esc(JSON.stringify(x.gid))+','+esc(JSON.stringify(e.sid))+',this.value)"><option value="">غير مسجل</option>'+[["present","حاضر"],["absent","غائب"],["late","متأخر"],["excused","غياب بعذر"],["leftEarly","غادر مبكراً"]].map(v=>'<option value="'+v[0]+'" '+(rec?.status===v[0]?"selected":"")+'>'+v[1]+'</option>').join("")+'</select></td></tr>';
- }).join("")+'</table></div>';
+ }).join("")+'</table></div></details>';
  }).join(""))+'</div>';
 }
 function emciaSaveTimedAttendance(date,ref,gid,sid,status){
@@ -2875,22 +2883,42 @@ function emciaSaveTimedAttendance(date,ref,gid,sid,status){
  else db.at2.push({id:uid(),date,ref,gid,sid,status,createdAt:new Date().toISOString()});
  save();attendance();
 }
+function emciaFoldAttendanceSections(root,previousOpen){
+ for(const card of Array.from(root.querySelectorAll('.card'))){
+  if(card.tagName==='DETAILS'||card.classList.contains('emcia-timed-attendance'))continue;
+  const heading=Array.from(card.children).find(node=>node.tagName==='H3');if(!heading)continue;
+  const details=document.createElement('details'),summary=document.createElement('summary');
+  for(const attribute of card.attributes)details.setAttribute(attribute.name,attribute.value);
+  details.classList.add('attendance-fold');details.dataset.attDisclosure='section:'+heading.textContent.split(' — ')[0];
+  summary.textContent=heading.textContent;details.appendChild(summary);
+  for(const node of Array.from(card.childNodes))if(node!==heading)details.appendChild(node);
+  card.replaceWith(details);
+ }
+ for(const panel of root.querySelectorAll('details[data-att-disclosure]'))panel.open=previousOpen.has(panel.dataset.attDisclosure);
+ const ref=window.emciaAttendanceFocusRef;window.emciaAttendanceFocusRef='';
+ if(ref){const panel=Array.from(root.querySelectorAll('.emcia-att-session')).find(panel=>panel.dataset.sessionRef===ref);if(panel){panel.open=true;panel.scrollIntoView?.({behavior:'smooth',block:'start'})}}
+}
+function emciaOpenAttendanceSession(date,ref,gid){
+ window.attDate=date;window.attGid=gid;window.emciaAttendanceFocusRef=ref;
+ if(document.getElementById('attendance')?.classList.contains('active'))attendance();else show('attendance');
+}
 function attendance(){
+ const previousOpen=new Set(Array.from(document.querySelectorAll('#attendance details[data-att-disclosure][open]')).map(panel=>panel.dataset.attDisclosure));
  let date=window.attDate||today(),gid=window.attGid||"",groups=db.g.filter(g=>g.active!==false);
  window.attGid=gid;
  let ens=db.e.filter(e=>e.active&&e.gid===gid&&(!e.start||e.start<=date)),students=ens.map(e=>by(db.s,e.sid)).filter(Boolean),records=emciaAttendanceRecords().filter(a=>a.date===date&&a.gid===gid),c={present:0,absent:0,late:0,excused:0};
  records.forEach(a=>{if(c[a.status]!=null)c[a.status]++});
- let jsDay=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"][new Date(date+"T12:00:00").getDay()],todaySessions=db.sch.filter(s=>s.active!==false&&s.day===jsDay);
- $("#attendance").innerHTML=`<div class="card"><h3>حصص هذا اليوم</h3>${todaySessions.length?`<div class="row">${todaySessions.map(s=>{let g=by(db.g,s.gid),r=by(db.rooms,s.rid);return`<button onclick="window.attGid='${s.gid}';attendance()">${s.start}–${s.end} | ${esc(g?g.n:"")} | ${esc(r?r.n:"")}</button>`}).join("")}</div>`:"<p class='muted'>لا توجد حصص مبرمجة في استعمال الزمن لهذا اليوم.</p>"}</div><div class="card"><h3>الحضور والغياب</h3><div class="row"><div><label>تاريخ الحصة</label><input type="date" value="${date}" onchange="window.attDate=this.value;attendance()"></div><div><label>الفوج</label><select onchange="window.attGid=this.value;attendance()"><option value="">— اختر مادة —</option>${groups.map(g=>`<option value="${g.id}" ${g.id===gid?"selected":""}>${esc(g.subject||"مادة")} — ${esc(g.level||"")} — ${esc(groupCompactName(g))}</option>`).join("")}</select></div></div></div>
- <div class="grid attendance-stats-grid"><div class="card"><div class="muted">عدد المسجلين</div><div class="kpi">${students.length}</div></div><div class="card"><div class="muted">الحاضرون</div><div class="kpi">${c.present}</div></div><div class="card"><div class="muted">الغائبون</div><div class="kpi">${c.absent}</div></div><div class="card"><div class="muted">المتأخرون</div><div class="kpi">${c.late}</div></div><div class="card"><div class="muted">غياب بعذر</div><div class="kpi">${c.excused}</div></div><div class="card"><div class="muted">غادر قبل النهاية</div><div class="kpi">${c.leftEarly??0}</div></div></div>
- <div class="emcia-legacy-attendance"><p class="muted">السجل اليومي القديم — للبيانات السابقة والحصص غير المبرمجة.</p><div class="card"><div class="row"><button onclick="markAllAttendance('present')">تحديد الجميع حاضرين</button><button onclick="clearAttendanceDay()">مسح تسجيلات الحصة</button></div></div>
+ let jsDay=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"][new Date(date+"T12:00:00").getDay()],todaySessions=db.sch.filter(s=>s.active!==false&&s.day===jsDay).sort((a,b)=>a.start.localeCompare(b.start));
+ $("#attendance").innerHTML=`<div class="card"><h3>حصص هذا اليوم</h3>${todaySessions.length?`<div class="row">${todaySessions.map(s=>{let g=by(db.g,s.gid),r=by(db.rooms,s.rid);return`<button onclick="emciaOpenAttendanceSession(${esc(JSON.stringify(date))},${esc(JSON.stringify('m:'+s.id))},${esc(JSON.stringify(s.gid))})">${s.start}–${s.end} | ${esc(g?g.n:"")} | ${esc(r?r.n:"")}</button>`}).join("")}</div>`:"<p class='muted'>لا توجد حصص مبرمجة في استعمال الزمن لهذا اليوم.</p>"}</div><div class="card"><h3>الحضور والغياب</h3><div class="row"><div><label>تاريخ الحصة</label><input type="date" value="${date}" onchange="window.attDate=this.value;attendance()"></div><div><label>الفوج</label><select onchange="window.attGid=this.value;attendance()"><option value="">— اختر مادة —</option>${groups.map(g=>`<option value="${g.id}" ${g.id===gid?"selected":""}>${esc(g.subject||"مادة")} — ${esc(g.level||"")} — ${esc(groupCompactName(g))}</option>`).join("")}</select></div></div></div>
+ <details class="card attendance-fold" data-att-disclosure="section:stats"><summary>${tr("ملخص الحضور")}</summary><div class="grid attendance-stats-grid"><div class="card"><div class="muted">عدد المسجلين</div><div class="kpi">${students.length}</div></div><div class="card"><div class="muted">الحاضرون</div><div class="kpi">${c.present}</div></div><div class="card"><div class="muted">الغائبون</div><div class="kpi">${c.absent}</div></div><div class="card"><div class="muted">المتأخرون</div><div class="kpi">${c.late}</div></div><div class="card"><div class="muted">غياب بعذر</div><div class="kpi">${c.excused}</div></div><div class="card"><div class="muted">غادر قبل النهاية</div><div class="kpi">${c.leftEarly??0}</div></div></div>
+ </details><details class="card attendance-fold emcia-legacy-attendance" data-att-disclosure="section:legacy"><summary>${tr("السجل اليومي القديم")}</summary><div class="card"><div class="row"><button onclick="markAllAttendance('present')">تحديد الجميع حاضرين</button><button onclick="clearAttendanceDay()">مسح تسجيلات الحصة</button></div></div>
  <div class="card"><h3>لائحة المتعلمين</h3>${students.length?`<table><tr><th>المتعلم</th><th>الحالة</th><th>ملاحظة</th></tr>${students.map(s=>{let a=records.find(x=>x.sid===s.id),st=a?a.status:"";return`<tr><td>${esc(objName(s))}</td><td><select onchange="saveAttendance('${date}','${gid}','${s.id}',this.value)"><option value="">— اختر —</option><option value="present" ${st==="present"?"selected":""}>حاضر</option><option value="absent" ${st==="absent"?"selected":""}>غائب</option><option value="late" ${st==="late"?"selected":""}>متأخر</option><option value="excused" ${st==="excused"?"selected":""}>غياب بعذر</option><option value="leftEarly" ${st==="leftEarly"?"selected":""}>غادر قبل نهاية الحصة</option></select></td><td><input value="${esc(a&&a.note||"")}" placeholder="ملاحظة اختيارية" onchange="saveAttendanceNote('${date}','${gid}','${s.id}',this.value)"></td></tr>`}).join("")}</table>`:"<p>لا يوجد متعلمون نشطون في هذا الفوج.</p>"}</div>
- </div>
+ </details>
  ${emciaTimedAttendancePanel(date,gid)}
  ${gid?emciaSessionExtraPanel(gid,date):""}
  ${gid?emciaSessionAttendancePreview(gid,date.slice(0,7)):""}
  <div class="card"><h3>ملخص الشهر</h3>${attendanceMonthSummary(gid,date.slice(0,7))}</div>`;
- const legacy=document.querySelector(".emcia-legacy-attendance");if(legacy&&db.sch.some(x=>x.active!==false&&x.gid===gid&&x.day===jsDay))legacy.hidden=true;applyLang()
+ const legacy=document.querySelector(".emcia-legacy-attendance");if(legacy&&db.sch.some(x=>x.active!==false&&x.gid===gid&&x.day===jsDay))legacy.hidden=true;emciaFoldAttendanceSections(document.getElementById('attendance'),previousOpen);applyLang()
 }
 function saveAttendance(date,gid,sid,status){let i=db.att.findIndex(a=>attKey(a.date,a.gid,a.sid)===attKey(date,gid,sid));if(!status){if(i>=0)db.att.splice(i,1)}else if(i>=0)db.att[i].status=status;else db.att.push({id:uid(),date,gid,sid,status,note:""});save();attendance()}
 function saveAttendanceNote(date,gid,sid,note){let i=db.att.findIndex(a=>attKey(a.date,a.gid,a.sid)===attKey(date,gid,sid));if(i>=0)db.att[i].note=note;else if(note.trim())db.att.push({id:uid(),date,gid,sid,status:"",note});save()}
