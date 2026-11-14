@@ -12,7 +12,7 @@ let role='director',writes=0,errors=[],alerts=[],failAtomic=false,reminders=[];
 for(const alias of ['index.html','EMCIA_Integrated_Release_Candidate.html','EMCIA_V5_15_16_Cloud_Test.html','EMCIA_V5_15_16_Supabase_Director_Test.html','EMCIA_Certification_Integration_Test.html','EMCIA_Certification_Issuance_Test.html']){
  const redirect=fs.readFileSync(path.join(__dirname,'..',alias),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
  let target;vm.runInNewContext(redirect,{URL,location:{href:'https://emcia.invalid/'+alias+'?v=103&request=example#access_token=test&type=recovery',search:'?v=103&request=example',hash:'#access_token=test&type=recovery',replace(value){target=new URL(value)}}});
- assert.equal(target.pathname,'/emcia.html');assert.equal(target.searchParams.get('v'),'2026.11.14.11');assert.equal(target.searchParams.get('request'),'example');assert.equal(target.hash,'#access_token=test&type=recovery');
+ assert.equal(target.pathname,'/emcia.html');assert.equal(target.searchParams.get('v'),'2026.11.14.12');assert.equal(target.searchParams.get('request'),'example');assert.equal(target.hash,'#access_token=test&type=recovery');
 }
 
 function createDOM(){
@@ -48,7 +48,7 @@ async function saved(w){for(let i=0;i<120&&!w.document.querySelector('#emcia-clo
 (async()=>{
  let dom=createDOM(),w=await login(dom),d=w.document;
  try{
-  assert.equal(d.querySelector('#emcia-release').textContent,'2026.11.14.11');
+  assert.equal(d.querySelector('#emcia-release').textContent,'2026.11.14.12');
   w.eval("window.attDate='2026-11-14';window.attGid='';show('attendance')");
   const timed=()=>d.querySelectorAll('#attendance select[onchange^="emciaSaveTimedAttendance"]');
   assert.equal(timed().length,3);
@@ -143,12 +143,53 @@ assert.ok(w.eval("scheduleConflict({...db.sch[0],start:'15:00',end:'16:00'},'m1'
   w.eval("window.bm='2026-11';budget()");assert.equal(d.querySelectorAll('#budget .emcia-metric-card').length,8);assert.equal(w.dashboardStats('2026-11').gross,200);
   w.applyLang();w.applyLang();assert.equal(d.querySelectorAll('#teacherpay .emcia-metric-head svg').length,3);
   w.setLang('fr');assert.deepEqual([...d.querySelectorAll('#teacherpay .emcia-metric-label')].map(x=>x.textContent),['Dû','Reçu','Reste']);w.setLang('ar');
+  // Lesson-based monthly agreement is separate from actual cash, limited to its month.
+  data=make();data.e[0].start='2026-11-10';seed(data);
+  w.eval("window.pg='g1';window.emciaPaymentMode='monthly';payments()");d.querySelector('#ps').value='s1';d.querySelector('#pty').value='settlement';w.toggleCompositePayment();
+  assert.equal(d.querySelector('#pSettlement').hidden,false);assert.equal(d.querySelector('#settleFrom').value,'2026-11-10');
+  assert.equal(d.querySelector('#settleCount').value,'6');assert.equal(d.querySelector('#settleUnit').value,'25');
+  w.emciaUseSettlementAmount();assert.equal(d.querySelector('#pa').value,'150.00');
+  d.querySelector('#pa').value='50';d.querySelector('#preceipt').value='period-1';w.addPayment();
+  assert.equal(w.eval("db.p[0].type"),'settlement');assert.equal(w.eval("dueForEnrollmentMonth(db.e[0],'2026-11')"),150);assert.equal(w.eval("dueForEnrollmentMonth(db.e[0],'2026-12')"),200);
+  assert.equal(w.eval('db.p[0].d'),25);assert.equal(w.eval('db.p[0].e'),25);assert.equal(w.eval('db.p[0].a'),50);
+  // Saving revised terms alone never records cash. Existing payments leave only the real balance.
+  d.querySelector('#ps').value='s1';d.querySelector('#pty').value='settlement';w.toggleCompositePayment();d.querySelector('#settleCount').value='4';w.emciaSaveBillingAgreement();
+  assert.equal(w.eval('db.p.length'),1);assert.equal(w.eval("dueForEnrollmentMonth(db.e[0],'2026-11')"),100);assert.equal(w.eval("dueForEnrollmentMonth(db.e[0],'2026-12')"),200);
+  // Different start days count lessons in the covered interval, rather than calendar-day prorating.
+  assert.equal(w.emciaScheduledCount('g1','2026-11-15','2026-11-30'),4);assert.equal(w.emciaScheduledCount('g1','2026-11-20','2026-11-30'),4);assert.equal(w.emciaScheduledCount('g1','2026-11-25','2026-11-30'),2);
+  // Invalid dates/counts and already-paid teacher periods cannot mutate the billing agreement.
+  d.querySelector('#settleTo').value='2026-12-01';const termsBefore=w.eval('JSON.stringify(db.e[0].monthlySettlements)');w.emciaSaveBillingAgreement();assert.equal(w.eval('JSON.stringify(db.e[0].monthlySettlements)'),termsBefore);
+  w.emciaSettlementPanel();w.eval("db.tp.push({id:'paid-teacher',tid:'t1',month:'2026-11',amount:25})");d.querySelector('#settleCount').value='2';w.emciaSaveBillingAgreement();assert.equal(w.eval('JSON.stringify(db.e[0].monthlySettlements)'),termsBefore);w.eval('db.tp=[]');
+  // Discount follows its bearer and is prorated using the lesson agreement; the next month is regular.
+  w.eval("Object.assign(db.e[0],{discountAmount:20,discountBearer:'teacher',discountStart:'2026-11',discountTerm:'until_stop'});save()");
+  assert.equal(w.eval("dueForEnrollmentMonth(db.e[0],'2026-11')"),90);assert.equal(w.eval("dueForEnrollmentMonth(db.e[0],'2026-12')"),180);
+  assert.equal(w.eval("Math.round(paymentSplit('s1','g1',90,'2026-11').teacher*100)/100"),40);
+  // Stop is available directly in learner editing; it ends all enrollments but preserves historical debt and cash.
+  data=make();data.sc=[];data.p=[{id:'nov',sid:'s1',gid:'g1',a:50,date:'2026-11-14',allocMonth:'2026-11',receiptMonth:'2026-11'},{id:'future',sid:'s1',gid:'g1',a:200,date:'2026-11-14',allocMonth:'2026-12',receiptMonth:'2026-11'}];seed(data);
+  w.students();w.editStudentRegistration('s1');d.querySelector('#studyStatus').value='stopped';d.querySelector('#studyEnd').value='2026-11-20';w.emciaSaveStudy('s1');
+  assert.equal(w.eval("db.s[0].studyStatus"),'stopped');assert.equal(w.eval('db.e.every(e=>e.end==="2026-11-20"&&!e.active)'),true);
+  assert.equal(w.eval("dueForEnrollmentMonth(db.e[0],'2026-11')"),200);assert.equal(w.eval("dueForEnrollmentMonth(db.e[0],'2026-12')"),0);assert.equal(w.eval("activeEnrollmentsForMonth('2026-12').length"),0);
+  assert.equal(w.eval("db.p.find(p=>p.id==='future').d"),0);assert.equal(w.eval("db.p.find(p=>p.id==='future').e"),0);assert.equal(w.eval("db.p.find(p=>p.id==='future').creditAmount"),200);assert.equal(w.eval('db.p.reduce((n,p)=>n+p.a,0)'),250);
+  assert.equal(w.teacherCalculatedDue('t1','2026-12'),0);assert.equal(w.emciaEnrollmentDate(w.eval('db.e[0]'),'2026-11-14'),true);assert.equal(w.emciaEnrollmentDate(w.eval('db.e[0]'),'2026-11-21'),false);
+  w.eval("window.arm='2027-01';arrears()");assert.match(d.querySelector('#arrears').textContent,/150/);assert.doesNotMatch(d.querySelector('#arrears').textContent,/2026-12،/);
+  w.eval("window.sfSid='s1';studentfile()");assert.match(d.querySelector('#studentfile').textContent,/متوقف عن الدراسة/);assert.match(d.querySelector('#studentfile').textContent,/رصيد يحتاج مراجعة/);
+  // Last partial month can be settled after stopping; no future receipt can be booked.
+  w.eval("window.pg='g1';payments()");d.querySelector('#ps').value='s1';d.querySelector('#pty').value='settlement';w.toggleCompositePayment();assert.equal(d.querySelector('#settleTo').value,'2026-11-20');assert.equal(d.querySelector('#settleCount').value,'4');w.emciaSaveBillingAgreement();
+  assert.equal(w.eval("dueForEnrollmentMonth(db.e[0],'2026-11')"),100);assert.equal(w.eval("db.p.find(p=>p.id==='nov').d"),25);
+  d.querySelector('#pam').value='2026-12';d.querySelector('#pa').value='100';d.querySelector('#preceipt').value='blocked-future';d.querySelector('#pty').value='payment';w.addPayment();assert.equal(w.eval('db.p.length'),2);
+  // Reload recomputes exactly the same agreement, historical teacher share, future credit and stop dates.
+  w.eval('save()');await saved(w);dom.window.close();dom=createDOM();w=await login(dom);d=w.document;
+  assert.equal(w.eval("dueForEnrollmentMonth(db.e[0],'2026-11')"),100);assert.equal(w.eval("dueForEnrollmentMonth(db.e[0],'2026-12')"),0);assert.equal(w.eval("db.p.find(p=>p.id==='nov').d"),25);assert.equal(w.eval("db.p.find(p=>p.id==='future').creditAmount"),200);assert.equal(w.eval("db.s[0].stoppedOn"),'2026-11-20');
+  // A later re-enrollment uses its own period; the stopped gap remains uncharged.
+  w.eval("db.e.push({id:'return',sid:'s1',gid:'g1',active:true,billingMode:'monthly',start:'2027-02-01'});save()");
+  assert.equal(w.eval("dueForEnrollmentMonth(db.e[0],'2027-01')"),0);assert.equal(w.eval("enrollmentFor('s1','g1','2026-11').id"),'e1');assert.equal(w.eval("enrollmentFor('s1','g1','2027-02').id"),'return');assert.equal(w.eval("dueForEnrollmentMonth(db.e.find(e=>e.id==='return'),'2027-02')"),200);
+  assert.equal(w.eval("db.p.find(p=>p.id==='future').d"),0);assert.equal(w.eval("db.p.find(p=>p.id==='future').creditAmount"),200);
   // A cloud conflict must preserve both remote payloads; there is no sequential-write fallback.
   failAtomic=true;const beforeOp=JSON.stringify(op),beforeFin=JSON.stringify(fin);let rejected=false;try{await w.EMCIA_CLOUD_SYNC.restore(fixtures())}catch{rejected=true}assert.equal(rejected,true);assert.equal(JSON.stringify(op),beforeOp);assert.equal(JSON.stringify(fin),beforeFin);failAtomic=false;
   // Legacy financial fields must keep their target when another account deletes an earlier record.
   dom.window.close();op={id:'main',payload:fixtures(),revision:1};fin={id:'main',payload:{e:[{_index:1,discountTeacher:20}]},revision:1};role='secretary_morning';dom=createDOM();w=await login(dom);w.eval("db.e=db.e.filter(x=>x.id!=='e1');save()");await saved(w);assert.deepEqual(op.payload._legacyFinancialIds.e,['e1','e2']);
   dom.window.close();role='director';dom=createDOM();w=await login(dom);assert.equal(w.eval("db.e.find(x=>x.id==='e2').discountTeacher"),20);assert.equal(w.eval("db.e.find(x=>x.id==='e1')"),undefined);
   assert.deepEqual(errors,[]);
-  console.log('PASS: actual DOM attendance handlers, independent sessions, lesson completion, receipt add/edit, cloud reload, strict dates, duplicate receipts, cash, schedule conflicts, stable IDs, legacy compatibility, atomic conflict rollback, advances, late/partial payments, discount bearers, individual balances, reports, teacher privacy and daily payment reminders/filtering/deduplication. Mock writes:',writes);
+  console.log('PASS: actual DOM attendance handlers, independent sessions, lesson completion, receipt add/edit, cloud reload, strict dates, duplicate receipts, cash, schedule conflicts, stable IDs, legacy compatibility, atomic conflict rollback, advances, late/partial payments, discount bearers, individual balances, reports, teacher privacy, daily payment reminders/filtering/deduplication, lesson-based monthly settlements, dated study stops, preserved historical arrears, future credits and re-enrollment gaps. Mock writes:',writes);
  }finally{dom.window.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});
