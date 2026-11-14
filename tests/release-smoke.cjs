@@ -12,7 +12,7 @@ let role='director',writes=0,errors=[],alerts=[],failAtomic=false,reminders=[];
 for(const alias of ['index.html','EMCIA_Integrated_Release_Candidate.html','EMCIA_V5_15_16_Cloud_Test.html','EMCIA_V5_15_16_Supabase_Director_Test.html','EMCIA_Certification_Integration_Test.html','EMCIA_Certification_Issuance_Test.html']){
  const redirect=fs.readFileSync(path.join(__dirname,'..',alias),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
  let target;vm.runInNewContext(redirect,{URL,location:{href:'https://emcia.invalid/'+alias+'?v=103&request=example#access_token=test&type=recovery',search:'?v=103&request=example',hash:'#access_token=test&type=recovery',replace(value){target=new URL(value)}}});
- assert.equal(target.pathname,'/emcia.html');assert.equal(target.searchParams.get('v'),'2026.11.14.10');assert.equal(target.searchParams.get('request'),'example');assert.equal(target.hash,'#access_token=test&type=recovery');
+ assert.equal(target.pathname,'/emcia.html');assert.equal(target.searchParams.get('v'),'2026.11.14.11');assert.equal(target.searchParams.get('request'),'example');assert.equal(target.hash,'#access_token=test&type=recovery');
 }
 
 function createDOM(){
@@ -48,7 +48,7 @@ async function saved(w){for(let i=0;i<120&&!w.document.querySelector('#emcia-clo
 (async()=>{
  let dom=createDOM(),w=await login(dom),d=w.document;
  try{
-  assert.equal(d.querySelector('#emcia-release').textContent,'2026.11.14.10');
+  assert.equal(d.querySelector('#emcia-release').textContent,'2026.11.14.11');
   w.eval("window.attDate='2026-11-14';window.attGid='';show('attendance')");
   const timed=()=>d.querySelectorAll('#attendance select[onchange^="emciaSaveTimedAttendance"]');
   assert.equal(timed().length,3);
@@ -132,6 +132,17 @@ assert.ok(w.eval("scheduleConflict({...db.sch[0],start:'15:00',end:'16:00'},'m1'
   // Payment shortcut preselects both the monthly group and learner.
   d.querySelector('#daily-pay-s1').value='g1';d.querySelector('button[onclick^="emciaDailyPay"]').click();assert.equal(d.querySelector('#ps').value,'s1');assert.equal(w.eval('window.pg'),'g1');
   w.eval("db.p.push({id:'settle1',sid:'s1',gid:'g1',a:150,date:'2026-11-14',allocMonth:'2026-11'},{id:'settle2',sid:'s1',gid:'g3',a:100,date:'2026-11-14',allocMonth:'2026-11'});save()");assert.equal(w.emciaDailyPaymentRows('2026-11-14').length,0);assert.equal(d.querySelector('#daily-payment-count-value').textContent,'0');await saved(w);
+  // Common metric presentation preserves calculations, form controls and live cash targets.
+  data=make();data.p=[{id:'layout-payment',sid:'s1',gid:'g1',a:200,d:100,e:100,date:'2026-11-14',receiptMonth:'2026-11',allocMonth:'2026-11',method:'cash'}];seed(data);
+  w.eval("window.tpTid='t1';window.tpMonth='2026-11';teacherpay()");
+  assert.equal(d.querySelectorAll('#teacherpay .emcia-metric-card').length,3);assert.equal(d.querySelectorAll('#teacherpay .emcia-metric-head svg').length,3);
+  assert.deepEqual([...d.querySelectorAll('#teacherpay .emcia-metric-label')].map(x=>x.textContent),['المستحق','المستلم','المتبقي']);
+  assert.equal(d.querySelector('#tpDue').value,'100.00');assert.match(d.querySelector('#teacherpay .metric-status-bar').textContent,/لم يؤد بعد/);
+  w.tpConfirmCalculated();assert.equal(d.querySelector('#tpDue').value,'100.00');
+  w.cashbox();const cashTarget=d.querySelector('#cbcashin');w.cashboxRefresh();assert.equal(d.querySelector('#cbcashin'),cashTarget);assert.equal(cashTarget.textContent,'200.00 DH');assert.equal(d.querySelectorAll('#cashbox .emcia-metric-card').length,6);
+  w.eval("window.bm='2026-11';budget()");assert.equal(d.querySelectorAll('#budget .emcia-metric-card').length,8);assert.equal(w.dashboardStats('2026-11').gross,200);
+  w.applyLang();w.applyLang();assert.equal(d.querySelectorAll('#teacherpay .emcia-metric-head svg').length,3);
+  w.setLang('fr');assert.deepEqual([...d.querySelectorAll('#teacherpay .emcia-metric-label')].map(x=>x.textContent),['Dû','Reçu','Reste']);w.setLang('ar');
   // A cloud conflict must preserve both remote payloads; there is no sequential-write fallback.
   failAtomic=true;const beforeOp=JSON.stringify(op),beforeFin=JSON.stringify(fin);let rejected=false;try{await w.EMCIA_CLOUD_SYNC.restore(fixtures())}catch{rejected=true}assert.equal(rejected,true);assert.equal(JSON.stringify(op),beforeOp);assert.equal(JSON.stringify(fin),beforeFin);failAtomic=false;
   // Legacy financial fields must keep their target when another account deletes an earlier record.
