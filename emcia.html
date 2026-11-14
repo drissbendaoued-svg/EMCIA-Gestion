@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>EMCIA Gestion</title>
-<meta name="emcia-release" content="2026.11.14.9">
+<meta name="emcia-release" content="2026.11.14.10">
 <meta name="application-name" content="EMCIA Gestion">
 <meta name="apple-mobile-web-app-title" content="EMCIA Gestion">
 <style>
@@ -380,6 +380,12 @@ body.reception-mode #langMenu{display:block}
 #schedule .emcia-week-grid .emcia-day-column{position:sticky;right:0;z-index:3;box-sizing:border-box;width:var(--emcia-day-width);min-width:var(--emcia-day-width);max-width:var(--emcia-day-width);background:#e8eef5}
 #schedule .emcia-week-grid .emcia-room-column{position:sticky;right:var(--emcia-day-width);z-index:2;box-sizing:border-box;width:var(--emcia-room-width);min-width:var(--emcia-room-width);max-width:var(--emcia-room-width);background:#f1f5f9;box-shadow:-2px 0 0 #94a3b8}
 #schedule .emcia-week-grid tr:first-child .emcia-day-column,#schedule .emcia-week-grid tr:first-child .emcia-room-column{z-index:4}
+#advances .advance-metrics{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px;width:100%;max-width:660px;margin:0 auto 14px}
+#advances .advance-stat{aspect-ratio:1/1;min-width:0;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:clamp(5px,1.6vw,10px);border:1px solid #d9e2ec;border-radius:12px;background:#f3f7fb;text-align:center}
+#advances .advance-icon{display:flex;color:#175d8d}
+#advances .advance-icon svg{width:clamp(18px,5vw,24px);height:clamp(18px,5vw,24px)}
+#advances .advance-label{font-size:clamp(11px,2.7vw,14px);line-height:1.3;color:#52667a}
+#advances .advance-value{font-size:clamp(13px,3.5vw,22px);line-height:1.3;font-weight:800;max-width:100%;overflow-wrap:anywhere;color:#102a43}
 #attendance .attendance-fold>summary,#attendance .emcia-att-session>summary{cursor:pointer;font-weight:700;min-height:40px;line-height:1.6;padding:6px 0}
 #attendance .attendance-fold[open]>summary{margin-bottom:12px}
 #attendance .emcia-att-session{border:1px solid #d9e2ec;border-radius:10px;padding:4px 10px;margin:8px 0}
@@ -474,7 +480,7 @@ try{
 }catch(e){}
 </script></head>
 <body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>تسجيل دخول المدير والموظفين المفعّلين</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label for="authPassword">كلمة المرور</label><div class="emcia-password-field"><div class="emcia-eye-wrap"><input id="authPassword" type="password" required autocomplete="current-password"><input id="authPasswordVisible" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" style="display:none" oninput="document.getElementById('authPassword').value=this.value"><button class="emcia-eye-button" id="authPasswordEye" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false" onclick="emciaLoginEyeClick()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات محفوظة بأمان في النظام السحابي للمؤسسة.</small></div></div>
-<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.14.9</small></header>
+<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.14.10</small></header>
 <div id="langMenu" class="lang-menu">
 <button id="langMenuBtn" type="button" onclick="toggleLangMenu()" aria-label="اختيار اللغة">🌐</button>
 <div id="langChoices" class="lang-choices">
@@ -549,6 +555,7 @@ db.t.forEach(o=>{if(!o.nAr)o.nAr=o.n||"";if(o.nFr==null)o.nFr=""});
 db.s.forEach(o=>{if(!o.nAr)o.nAr=o.n||"";if(o.nFr==null)o.nFr=""});
 
 const I18N={
+"الشهر":"Mois","المتعلمون":"Apprenants","الإجمالي":"Total",
 "ملخص الحضور":"Résumé des présences",
 "السجل اليومي القديم":"Historique journalier",
 "عدد الحصص":"Nombre de séances",
@@ -1885,7 +1892,11 @@ function advancesRefresh(){
  });
  let groups=Object.values(learners).sort((a,b)=>(a.name||"").localeCompare(b.name||"","ar"));
  $("#advstatement").innerHTML=`<div class="card">
- <div class="row"><div><b>شهر الاستحقاق</b><br>${esc(m)}</div><div><b>عدد المتعلمين ذوي التسبيقات</b><br>${groups.length}</div><div><b>إجمالي التسبيقات المحفوظة</b><br>${money(total)}</div></div>
+ <div class="advance-metrics">
+ <div class="advance-stat" role="group" aria-label="${tr('شهر الاستحقاق')}"><span class="advance-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg></span><span class="advance-label">${tr('الشهر')}</span><bdi class="advance-value" dir="ltr">${esc(m)}</bdi></div>
+ <div class="advance-stat" role="group" aria-label="${tr('عدد المتعلمين ذوي التسبيقات')}"><span class="advance-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 21v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6M21 21v-2a6 6 0 0 0-4-5.65"/></svg></span><span class="advance-label">${tr('المتعلمون')}</span><bdi class="advance-value" dir="ltr">${groups.length}</bdi></div>
+ <div class="advance-stat" role="group" aria-label="${tr('إجمالي التسبيقات المحفوظة')}"><span class="advance-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2M3 8h18v8h-6a4 4 0 0 1 0-8h6Z"/><circle cx="16" cy="12" r="1"/></svg></span><span class="advance-label">${tr('الإجمالي')}</span><bdi class="advance-value" dir="ltr">${money(total)}</bdi></div>
+ </div>
  ${groups.length?groups.map(g=>`<div class="card" style="margin-top:12px"><h3>${esc(g.name)}</h3>
  <div class="muted">إجمالي التسبيقات المحفوظة لهذا المتعلم: <b>${money(g.total)}</b></div>
  <div class="tablewrap"><table><thead><tr><th>الفوج</th><th>رقم التوصيل</th><th>تاريخ القبض</th><th>طريقة الأداء</th><th>شهر الاستحقاق</th><th>المبلغ</th></tr></thead><tbody>
