@@ -8,11 +8,11 @@ const vm=require('node:vm');
 const html=fs.readFileSync(path.join(__dirname,'../emcia.html'),'utf8');
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 let op={id:'main',payload:fixtures(),revision:1},fin={id:'main',payload:{e:[{_index:1,discountTeacher:20,discountEmcia:0}]},revision:1};
-let role='director',writes=0,errors=[],alerts=[];
+let role='director',writes=0,errors=[],alerts=[],failAtomic=false;
 for(const alias of ['index.html','EMCIA_Integrated_Release_Candidate.html','EMCIA_V5_15_16_Cloud_Test.html','EMCIA_V5_15_16_Supabase_Director_Test.html','EMCIA_Certification_Integration_Test.html','EMCIA_Certification_Issuance_Test.html']){
  const redirect=fs.readFileSync(path.join(__dirname,'..',alias),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
  let target;vm.runInNewContext(redirect,{URL,location:{href:'https://emcia.invalid/'+alias+'?v=103&request=example#access_token=test&type=recovery',search:'?v=103&request=example',hash:'#access_token=test&type=recovery',replace(value){target=new URL(value)}}});
- assert.equal(target.pathname,'/emcia.html');assert.equal(target.searchParams.get('v'),'2026.11.14.1');assert.equal(target.searchParams.get('request'),'example');assert.equal(target.hash,'#access_token=test&type=recovery');
+ assert.equal(target.pathname,'/emcia.html');assert.equal(target.searchParams.get('v'),'2026.11.14.2');assert.equal(target.searchParams.get('request'),'example');assert.equal(target.hash,'#access_token=test&type=recovery');
 }
 
 function createDOM(){
@@ -23,6 +23,15 @@ function createDOM(){
    const u=new URL(url);assert.equal(u.hostname,'gfhmkijxiinoqkxhicza.supabase.co');
    let out=[];
    if(u.pathname==='/auth/v1/token')out={access_token:'test-only',refresh_token:'test-refresh',expires_in:3600,user:{id:'test-user'}};
+   else if(u.pathname.endsWith('/rpc/emcia_load_state_v2'))out={operational:op,financial:['director','accountant'].includes(role)?fin:null};
+   else if(u.pathname.endsWith('/rpc/emcia_save_state_v2')){
+    const body=JSON.parse(options.body);
+    if(failAtomic||body.p_operational_revision!==op.revision||body.p_financial&&body.p_financial_revision!==fin.revision)return {ok:false,status:409,json:async()=>({message:'Revision conflict'})};
+    if(body.p_financial&&!['director','accountant'].includes(role))return {ok:false,status:403,json:async()=>({message:'Forbidden'})};
+    op={...op,payload:body.p_operational,revision:op.revision+1};
+    if(body.p_financial)fin={...fin,payload:body.p_financial,revision:fin.revision+1};
+    writes++;out={operational_revision:op.revision,financial_revision:body.p_financial?fin.revision:null};
+   }
    else if(u.pathname.endsWith('/profiles'))out=[{role,active:true,display_name:'حساب اختبار'}];
    else if(u.pathname.includes('emcia_operational_state_v2')||u.pathname.includes('emcia_financial_state_v2')){
     const row=u.pathname.includes('operational')?op:fin;
@@ -37,7 +46,7 @@ async function saved(w){for(let i=0;i<120&&!w.document.querySelector('#emcia-clo
 (async()=>{
  let dom=createDOM(),w=await login(dom),d=w.document;
  try{
-  assert.equal(d.querySelector('#emcia-release').textContent,'2026.11.14.1');
+  assert.equal(d.querySelector('#emcia-release').textContent,'2026.11.14.2');
   w.eval("window.attDate='2026-11-14';window.attGid='';show('attendance')");
   const timed=()=>d.querySelectorAll('#attendance select[onchange^="emciaSaveTimedAttendance"]');
   assert.equal(timed().length,3);
@@ -52,7 +61,7 @@ async function saved(w){for(let i=0;i<120&&!w.document.querySelector('#emcia-clo
   select(2,'absent');assert.equal(w.eval("emciaCompletedFlexibleLessons(db.e[1],'2026-11').length"),0);
   // Current estimates must not charge an explicitly absent flexible lesson.
   w.eval("window.emciaPaymentMode='session';window.pg='g2';show('payments')");d.querySelector('#ps').value='s1';w.emciaSessionPaymentSelection();
-  assert.match(d.querySelector('#sessionPaymentSummary').textContent,/تقدير الحصص من الحضور: 0.00/);
+  assert.match(d.querySelector('#sessionPaymentSummary').textContent,/مستحق الحصص المنجزة: 0.00/);
   for(const [id,value]of Object.entries({spa:'100',spd:'2026-11-14',spr:'TEST-SESSION-1'}))d.getElementById(id).value=value;
   w.emciaAddSessionPayment();assert.equal(w.eval('db.sp.length'),1);
   const answers=['125','2026-11-14','TEST-SESSION-1','cash','advance','تم التعديل'];w.prompt=()=>answers.shift();w.eval('emciaEditSessionPayment(db.sp[0].id)');
@@ -67,10 +76,37 @@ assert.ok(w.eval("scheduleConflict({...db.sch[0],start:'15:00',end:'16:00'},'m1'
   await saved(w);assert.equal(op.payload.sp[0].a,125);assert.ok(fin.payload.e.every(x=>x._id));
   dom.window.close();dom=createDOM();w=await login(dom);d=w.document;assert.equal(w.eval('db.sp[0].a'),125);assert.equal(w.eval('db.at2.length'),3);
   w.eval("removeSchedule('m1')");assert.equal(w.eval("db.sch.find(x=>x.id==='m1').active"),false);assert.equal(w.eval("db.at2.filter(x=>x.ref==='m:m1').length"),1);await saved(w);
+  // Session accounting: cash, earnings and individual advances remain distinct.
+  const seed=(data)=>w.eval('db='+JSON.stringify(data));
+  const ledger=()=>JSON.parse(w.eval('JSON.stringify(emciaSessionLedger("2026-11-14"))'));
+  const make=(bearer='none',discount=0)=>{const data=fixtures();data.att=[];data.at2=[];data.e[1].discountAmount=discount;data.e[1].discountBearer=bearer;data.e[1].discountStart='2026-11';data.e[1].discountTeacher=3;data.e[1].discountEmcia=7;return data;};
+  for(const [bearer,expected]of [['none',25],['teacher',15],['emcia',25],['half',20],['custom',22]]){
+   const data=make(bearer,bearer==='none'?0:10),net=50-(bearer==='none'?0:10);data.sp=[{id:'r1',sid:'s1',gid:'g2',a:15,date:'2026-11-14'},{id:'r2',sid:'s1',gid:'g2',a:net-15,date:'2026-11-14'}];seed(data);const result=ledger();
+   assert.equal(result.allocations.reduce((s,x)=>s+x.teacher,0),expected,bearer);assert.equal(result.allocations.reduce((s,x)=>s+x.teacher+x.emcia,0),net);assert.equal(result.credits.length,0);
+   assert.equal(w.teacherCalculatedDue('t1','2026-11'),expected);
+   assert.equal(w.adminExportData('2026-11').reduce((s,x)=>s+x.paid,0),net);
+   const teacher=w.teacherReportHTML('t1','2026-11');assert.doesNotMatch(teacher,/حصة EMCIA|حصة المؤسسة/);assert.match(teacher,new RegExp(expected.toFixed(2)));
+  }
+  // Advance received in October becomes earnings only after a November lesson.
+  let data=make();data.sp=[{id:'advance',sid:'s1',gid:'g2',a:100,date:'2026-10-20'}];seed(data);
+  assert.equal(w.emciaSessionBalance('s1','g2','2026-10-31').credit,100);
+  assert.equal(w.dashboardStats('2026-10').gross,100);assert.equal(w.dashboardStats('2026-10').prof,0);assert.equal(w.dashboardStats('2026-10').em,0);
+  assert.equal(w.dashboardStats('2026-11').gross,0);assert.equal(w.dashboardStats('2026-11').prof,25);assert.equal(w.dashboardStats('2026-11').em,25);assert.equal(w.emciaSessionBalance('s1','g2','2026-11-14').credit,50);
+  w.eval("window.bm='2026-11';budget()");assert.match(d.querySelector('#budget').textContent,/الرصيد المسبق/);
+  w.eval("show('reportcenter')");d.querySelector('#rcType').value='financial';d.querySelector('#rcMonth').value='2026-11';w.rcBuildReport();assert.match(d.querySelector('#rcPreview').textContent,/حسابات الأداء بالحصة/);
+  // Late and partial payment leaves an individual debt and recognizes only what was collected.
+  data=make();data.e[1].start='2026-10-01';data.sc[0].date='2026-10-20';data.sp=[{id:'late',sid:'s1',gid:'g2',a:30,date:'2026-11-10'}];seed(data);
+  assert.equal(w.emciaSessionBalance('s1','g2','2026-10-31').debt,50);assert.equal(w.emciaSessionBalance('s1','g2','2026-11-14').debt,20);assert.equal(w.teacherCalculatedDue('t1','2026-11'),15);assert.equal(w.teacherCalculatedDue('t1','2026-10'),0);
+  // Two completed sessions in one day count twice. Other learners never fund this learner's lessons.
+  data=make();data.sc.push({...data.sc[0],id:'f2',time:'14:00',end:'15:00'});data.sp=[{id:'other',sid:'s2',gid:'g2',a:200,date:'2026-11-14'}];seed(data);assert.equal(w.emciaSessionBalance('s1','g2','2026-11-14').due,100);assert.equal(w.emciaSessionBalance('s1','g2','2026-11-14').paid,0);
+  // Deleting a receipt changes the derived balance without leaving duplicate financial records.
+  data=make();data.sp=[{id:'partial',sid:'s1',gid:'g2',a:30,date:'2026-11-14'}];seed(data);assert.equal(w.teacherCalculatedDue('t1','2026-11'),15);w.eval('db.sp=[]');assert.equal(w.teacherCalculatedDue('t1','2026-11'),0);
+  // A cloud conflict must preserve both remote payloads; there is no sequential-write fallback.
+  failAtomic=true;const beforeOp=JSON.stringify(op),beforeFin=JSON.stringify(fin);let rejected=false;try{await w.EMCIA_CLOUD_SYNC.restore(fixtures())}catch{rejected=true}assert.equal(rejected,true);assert.equal(JSON.stringify(op),beforeOp);assert.equal(JSON.stringify(fin),beforeFin);failAtomic=false;
   // Legacy financial fields must keep their target when another account deletes an earlier record.
   dom.window.close();op={id:'main',payload:fixtures(),revision:1};fin={id:'main',payload:{e:[{_index:1,discountTeacher:20}]},revision:1};role='secretary_morning';dom=createDOM();w=await login(dom);w.eval("db.e=db.e.filter(x=>x.id!=='e1');save()");await saved(w);assert.deepEqual(op.payload._legacyFinancialIds.e,['e1','e2']);
   dom.window.close();role='director';dom=createDOM();w=await login(dom);assert.equal(w.eval("db.e.find(x=>x.id==='e2').discountTeacher"),20);assert.equal(w.eval("db.e.find(x=>x.id==='e1')"),undefined);
   assert.deepEqual(errors,[]);
-  console.log('PASS: actual DOM attendance handlers, independent sessions, lesson completion, receipt add/edit, cloud reload, strict dates, duplicate receipts, cash, schedule conflicts, stable IDs and legacy compatibility. Mock writes:',writes);
+  console.log('PASS: actual DOM attendance handlers, independent sessions, lesson completion, receipt add/edit, cloud reload, strict dates, duplicate receipts, cash, schedule conflicts, stable IDs, legacy compatibility, atomic conflict rollback, advances, late/partial payments, discount bearers, individual balances, reports and teacher privacy. Mock writes:',writes);
  }finally{dom.window.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});
