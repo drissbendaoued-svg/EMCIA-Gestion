@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>EMCIA Gestion</title>
-<meta name="emcia-release" content="2026.11.14.6">
+<meta name="emcia-release" content="2026.11.14.7">
 <meta name="application-name" content="EMCIA Gestion">
 <meta name="apple-mobile-web-app-title" content="EMCIA Gestion">
 <style>
@@ -376,6 +376,10 @@ body.reception-mode #langMenu{display:block}
   line-height:1 !important;
 }
 /* Explicit daily KPI layout: three title/value cards per row on every viewport. */
+#schedule .emcia-week-grid{border-collapse:separate!important;border-spacing:0;--emcia-day-width:80px;--emcia-room-width:52px}
+#schedule .emcia-week-grid .emcia-day-column{position:sticky;right:0;z-index:3;box-sizing:border-box;width:var(--emcia-day-width);min-width:var(--emcia-day-width);max-width:var(--emcia-day-width);background:#e8eef5}
+#schedule .emcia-week-grid .emcia-room-column{position:sticky;right:var(--emcia-day-width);z-index:2;box-sizing:border-box;width:var(--emcia-room-width);min-width:var(--emcia-room-width);max-width:var(--emcia-room-width);background:#f1f5f9;box-shadow:-2px 0 0 #94a3b8}
+#schedule .emcia-week-grid tr:first-child .emcia-day-column,#schedule .emcia-week-grid tr:first-child .emcia-room-column{z-index:4}
 #schedule .schedule-add-panel>summary{cursor:pointer;font-weight:700;min-height:32px;line-height:32px}
 #schedule .schedule-add-content{padding-top:12px}
 #daily .daily-payment-count{background:#f1f5f9;color:#475569;border:2px solid #cbd5e1;cursor:pointer;font:inherit}
@@ -463,7 +467,7 @@ try{
 }catch(e){}
 </script></head>
 <body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>تسجيل دخول المدير والموظفين المفعّلين</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label for="authPassword">كلمة المرور</label><div class="emcia-password-field"><div class="emcia-eye-wrap"><input id="authPassword" type="password" required autocomplete="current-password"><input id="authPasswordVisible" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" style="display:none" oninput="document.getElementById('authPassword').value=this.value"><button class="emcia-eye-button" id="authPasswordEye" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false" onclick="emciaLoginEyeClick()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات محفوظة بأمان في النظام السحابي للمؤسسة.</small></div></div>
-<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.14.6</small></header>
+<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.14.7</small></header>
 <div id="langMenu" class="lang-menu">
 <button id="langMenuBtn" type="button" onclick="toggleLangMenu()" aria-label="اختيار اللغة">🌐</button>
 <div id="langChoices" class="lang-choices">
@@ -2755,7 +2759,7 @@ function emciaScheduleGrid(){
  const slots=Array.from({length:Math.ceil((last-first)/30)},(_,i)=>first+i*30);
  const style='border:1px solid #cbd5e1;padding:5px;text-align:center;vertical-align:middle;font-size:12px';
  const breakCell='<td aria-label="استراحة من 12:00 إلى 14:00" style="background:#475569;border-left:3px solid #1e293b;border-right:3px solid #1e293b;min-width:9px;width:9px;padding:0"></td>';
- const head='<tr><th style="'+style+';position:sticky;right:0;background:#e8eef5">اليوم</th><th style="'+style+';background:#e8eef5">القاعة</th>'+slots.map(t=>(false?'':'')+'<th style="'+style+';min-width:'+(t===11*60+30?'105':'62')+'px;background:'+(t===14*60?'#dbeafe':'#e8eef5')+';direction:ltr">'+(t===11*60+30?'11:30–12:00':label(t))+'</th>').join('')+'</tr>';
+ const head='<tr><th scope="col" class="emcia-day-column" style="'+style+';background:#e8eef5">اليوم</th><th scope="col" class="emcia-room-column" style="'+style+';background:#e8eef5">القاعة</th>'+slots.map(t=>(false?'':'')+'<th style="'+style+';min-width:'+(t===11*60+30?'105':'62')+'px;background:'+(t===14*60?'#dbeafe':'#e8eef5')+';direction:ltr">'+(t===11*60+30?'11:30–12:00':label(t))+'</th>').join('')+'</tr>';
  const body=DAYS.map(day=>rooms.map((r,ri)=>{
   const found=sessions.filter(x=>x.day===day&&x.rid===r.id).sort((a,b)=>a.start.localeCompare(b.start));
   let cells='',index=0;
@@ -2768,9 +2772,9 @@ function emciaScheduleGrid(){
    cells+='<td colspan="'+count+'" style="'+style+';background:#e0f2fe;border:1px solid #7dd3fc;min-width:65px;cursor:pointer" onclick="emciaSchedulePopup(\''+ses.id+'\')" onmouseenter="emciaScheduleHover(\''+ses.id+'\')"><strong>'+esc(g?.linkCode||g?.n||"—")+'</strong></td>';
    index+=count;
   }
-  return '<tr>'+(ri===0?'<th rowspan="'+rooms.length+'" style="'+style+';background:#e8eef5;font-weight:bold;min-width:75px">'+day+'</th>':'')+'<th style="'+style+';white-space:nowrap;background:#f1f5f9">'+esc((r.n.match(/[0-9٠-٩]+/)||[])[0]||r.n)+'</th>'+cells+'</tr>';
+  return '<tr>'+(ri===0?'<th scope="rowgroup" class="emcia-day-column" rowspan="'+rooms.length+'" style="'+style+';background:#e8eef5;font-weight:bold">'+day+'</th>':'')+'<th scope="row" class="emcia-room-column" style="'+style+';white-space:nowrap;background:#f1f5f9">'+esc((r.n.match(/[0-9٠-٩]+/)||[])[0]||r.n)+'</th>'+cells+'</tr>';
  }).join('')).join('');
- return '<div class="card"><h3>استعمال الزمن الأسبوعي حسب القاعات</h3><div id="emciaSchedulePopup" data-sid="" style="display:none;position:sticky;top:5px;z-index:5;background:#fff;border:1px solid #94a3b8;border-radius:8px;padding:10px;max-width:280px;box-shadow:0 3px 10px #0002"><button type="button" style="float:left" onclick="this.parentNode.style.display=\'none\'">✕</button></div><p class="muted">الأيام عمودياً والقاعات حسب أرقامها، والساعات أفقياً مع توسيع المجال تلقائياً لإظهار الحصص المسجلة، بما فيها فترة منتصف النهار. مرر الجدول أفقياً على الهاتف. مرر الفأرة أو اضغط على الفوج لعرض حضور اليوم، ثم اختر تعديل الحصة عند الحاجة.</p><div style="overflow-x:auto;max-width:100%;direction:rtl"><table style="border-collapse:collapse;width:max-content;min-width:100%;table-layout:fixed">'+head+body+'</table></div></div>';
+ return '<div class="card"><h3>استعمال الزمن الأسبوعي حسب القاعات</h3><div id="emciaSchedulePopup" data-sid="" style="display:none;position:sticky;top:5px;z-index:5;background:#fff;border:1px solid #94a3b8;border-radius:8px;padding:10px;max-width:280px;box-shadow:0 3px 10px #0002"><button type="button" style="float:left" onclick="this.parentNode.style.display=\'none\'">✕</button></div><div style="overflow-x:auto;max-width:100%;direction:rtl"><table class="emcia-week-grid" style="width:max-content;min-width:100%;table-layout:fixed"><colgroup><col style="width:80px"><col style="width:52px"></colgroup>'+head+body+'</table></div></div>';
 }
 function schedule(){
  $("#schedule").innerHTML=`<details class="card schedule-add-panel" id="schedule-add-panel"><summary>${tr("إضافة حصة")}</summary><div class="schedule-add-content"><p class="muted">يمكن الآن تحديد نوع الحصة وتعديل الحصص الموجودة دون حذفها.</p>
