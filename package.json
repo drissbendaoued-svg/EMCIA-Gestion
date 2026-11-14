@@ -1,7 +1,7 @@
 {
   "name": "emcia-gestion",
   "private": true,
-  "version": "2026.11.14-4",
+  "version": "2026.11.14-5",
   "scripts": { "test": "node tests/release-smoke.cjs" },
   "devDependencies": { "jsdom": "26.1.0" }
 }

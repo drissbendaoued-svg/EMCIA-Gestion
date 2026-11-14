@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>EMCIA Gestion</title>
-<meta name="emcia-release" content="2026.11.14.4">
+<meta name="emcia-release" content="2026.11.14.5">
 <meta name="application-name" content="EMCIA Gestion">
 <meta name="apple-mobile-web-app-title" content="EMCIA Gestion">
 <style>
@@ -376,9 +376,12 @@ body.reception-mode #langMenu{display:block}
   line-height:1 !important;
 }
 /* Explicit daily KPI layout: three title/value cards per row on every viewport. */
-#daily .daily-payment-count{background:#fff7ed;color:#9a3412;border:1px solid #fdba74;cursor:pointer;font:inherit}
+#daily .daily-payment-count{background:#f1f5f9;color:#475569;border:2px solid #cbd5e1;cursor:pointer;font:inherit}
+#daily #daily-payment-count-card[data-payment-alert="due"]{background:#fee2e2;color:#991b1b;border-color:#dc2626;box-shadow:0 0 0 2px #fecaca,0 3px 10px #991b1b20}
+#daily #daily-payment-count-card[data-payment-alert="due"] .kpi{color:#b91c1c;font-weight:800}
+#daily #daily-payment-count-card[data-payment-alert="due"]>.muted:first-child::before{content:"⚠ ";color:#b91c1c}
 #daily .daily-payment-count:focus-visible{outline:3px solid #2563eb;outline-offset:2px}
-#daily .daily-payment-count .muted{color:#9a3412}
+#daily .daily-payment-count .muted{color:inherit}
 #daily .daily-stats-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important;width:100%}
 #daily .daily-stats-grid>.card{min-width:0!important;width:auto!important;margin:0!important;padding:10px 5px!important;text-align:center!important;overflow-wrap:anywhere}
 #daily .daily-stats-grid>.card>.muted{font-size:clamp(10px,2.8vw,13px)!important;line-height:1.4}
@@ -458,7 +461,7 @@ try{
 }catch(e){}
 </script></head>
 <body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>تسجيل دخول المدير والموظفين المفعّلين</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label for="authPassword">كلمة المرور</label><div class="emcia-password-field"><div class="emcia-eye-wrap"><input id="authPassword" type="password" required autocomplete="current-password"><input id="authPasswordVisible" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" style="display:none" oninput="document.getElementById('authPassword').value=this.value"><button class="emcia-eye-button" id="authPasswordEye" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false" onclick="emciaLoginEyeClick()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات محفوظة بأمان في النظام السحابي للمؤسسة.</small></div></div>
-<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.14.4</small></header>
+<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.14.5</small></header>
 <div id="langMenu" class="lang-menu">
 <button id="langMenuBtn" type="button" onclick="toggleLangMenu()" aria-label="اختيار اللغة">🌐</button>
 <div id="langChoices" class="lang-choices">
@@ -2680,6 +2683,7 @@ function emciaOpenDailyPayments(){
 function emciaRenderDailyPayments(){
  const box=document.getElementById('daily-payment-alerts-content');if(!box)return;
  const date=window.dailyDate||emciaLocalDay(),allRows=emciaDailyPaymentRows(date),rows=emciaDailyPaymentRows(date,{group:emciaDailyPaymentFilters.group||'',status:emciaDailyPaymentFilters.status||'',present:!!emciaDailyPaymentFilters.present});
+ const alertCard=document.getElementById('daily-payment-count-card');if(alertCard)alertCard.dataset.paymentAlert=allRows.length?'due':'clear';
  const counter=document.getElementById('daily-payment-count-value');if(counter)counter.textContent=String(allRows.length);
  const total=document.getElementById('daily-payment-count-total');if(total)total.textContent=money(allRows.reduce((sum,row)=>sum+row.remaining,0));
  const cache=emciaDailyReminderCache,ready=cache.date===date&&cache.loaded;
