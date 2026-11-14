@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>EMCIA Gestion</title>
-<meta name="emcia-release" content="2026.11.14.2">
+<meta name="emcia-release" content="2026.11.14.3">
 <meta name="application-name" content="EMCIA Gestion">
 <meta name="apple-mobile-web-app-title" content="EMCIA Gestion">
 <style>
@@ -455,7 +455,7 @@ try{
 }catch(e){}
 </script></head>
 <body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>تسجيل دخول المدير والموظفين المفعّلين</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label for="authPassword">كلمة المرور</label><div class="emcia-password-field"><div class="emcia-eye-wrap"><input id="authPassword" type="password" required autocomplete="current-password"><input id="authPasswordVisible" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" style="display:none" oninput="document.getElementById('authPassword').value=this.value"><button class="emcia-eye-button" id="authPasswordEye" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false" onclick="emciaLoginEyeClick()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات محفوظة بأمان في النظام السحابي للمؤسسة.</small></div></div>
-<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.14.2</small></header>
+<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.14.3</small></header>
 <div id="langMenu" class="lang-menu">
 <button id="langMenuBtn" type="button" onclick="toggleLangMenu()" aria-label="اختيار اللغة">🌐</button>
 <div id="langChoices" class="lang-choices">
@@ -521,7 +521,7 @@ db.p=db.p.map(o=>({...o,date:o.date||today(),receiptMonth:o.receiptMonth||o.m||n
 db.tp=db.tp.map(o=>({...o,month:o.month||nowMonth(),amount:+o.amount||0,date:o.date||today(),method:o.method||"cash",note:o.note||""}));
 db.p=db.p.map(o=>({...o,receiptNo:o.receiptNo||"",method:o.method||"cash",paymentRef:o.paymentRef||""}));
 db.adj=db.adj.map(o=>({...o,month:o.month||nowMonth(),countedDays:+o.countedDays||0,originalPaid:+o.originalPaid||0,approvedDue:+o.approvedDue||0,refund:+o.refund||0,date:o.date||today()}));
-function save(){localStorage.setItem(KEY,JSON.stringify(db));window.EMCIA_CLOUD_SYNC?.save(db);window.emciaUpdateAlertCounter?.();setTimeout(applyLang,0)}
+function save(){localStorage.setItem(KEY,JSON.stringify(db));window.EMCIA_CLOUD_SYNC?.save(db);window.emciaUpdateAlertCounter?.();if(document.getElementById("daily-payment-alerts-content"))emciaRenderDailyPayments();setTimeout(applyLang,0)}
 function teacherDueOf(p){return +(p?.d??p?.t??0)||0}
 const by=(a,id)=>a.find(x=>x.id===id);
 function objName(o,mode="ui"){if(!o)return "—";let ar=o.nAr||o.n||"",fr=o.nFr||"";if(mode==="both")return [ar,fr].filter(Boolean).join(" / ")||"—";if(mode==="fr")return fr||ar||"—";if(mode==="ar")return ar||fr||"—";return LANG==="fr"?(fr||ar||"—"):(ar||fr||"—")}
@@ -530,6 +530,26 @@ db.t.forEach(o=>{if(!o.nAr)o.nAr=o.n||"";if(o.nFr==null)o.nFr=""});
 db.s.forEach(o=>{if(!o.nAr)o.nAr=o.n||"";if(o.nFr==null)o.nFr=""});
 
 const I18N={
+"متابعة أداء متعلمي اليوم":"Suivi des paiements des apprenants du jour",
+"واجبات الأفواج المبرمجة لهذا اليوم، بعد حلول تاريخ الاستحقاق. التذكير يوثّق مرة واحدة لكل متعلم في اليوم ولا يغيّر المبلغ المتبقي.":"Cotisations des groupes programmés ce jour, arrivées à échéance. Le rappel est enregistré une seule fois par apprenant et par jour, sans modifier le solde.",
+"جميع الحالات":"Toutes les situations",
+"متأخرات سابقة":"Arriérés antérieurs",
+"جميع المبرمجين":"Tous les apprenants prévus",
+"الحاضرون فقط":"Présents uniquement",
+"تحديث سجل التذكير":"Actualiser les rappels",
+"إجمالي المتبقي":"Total restant",
+"أول حصة":"Première séance",
+"الأفواج والتوقيت":"Groupes et horaires",
+"تفاصيل المستحقات":"Détail des cotisations",
+"التذكير والمتابعة":"Rappel et suivi",
+"فوج الأداء":"Groupe du paiement",
+"تم التذكير":"Rappel effectué",
+"جار الحفظ…":"Enregistrement…",
+"جار التحقق…":"Vérification…",
+"لا توجد مستحقات شهرية مطابقة للاختيارات لدى متعلمي اليوم.":"Aucune cotisation mensuelle à régler pour les apprenants du jour selon ces filtres.",
+"تعذر التحقق من سجل التذكير. أعد المحاولة.":"Impossible de vérifier les rappels. Réessayez.",
+"تعذر حفظ التذكير. أعد المحاولة.":"Impossible d’enregistrer le rappel. Réessayez.",
+"انتهت جلسة الدخول؛ أعد الدخول إلى الحساب.":"Session expirée. Reconnectez-vous.",
 "Français":"العربية",
 "الرئيسية":"Accueil","الأساتذة":"Enseignants","المتعلمون":"Apprenants","الأفواج":"Groupes","التسجيل":"Inscriptions","الأداءات":"Paiements","المداخيل والمصاريف":"Recettes et dépenses","الميزانية":"Budget","التقارير":"Rapports","التصدير والطباعة":"Exportation et impression","النسخ الاحتياطي":"Sauvegarde",
 "لوحة القيادة المالية والإحصائية":"Tableau de bord financier et statistique","شهر التحليل":"Mois d’analyse","المتعلمون الفعليون كأشخاص":"Apprenants uniques","التسجيلات حسب الأفواج/المواد":"Inscriptions par groupe/matière","المؤدون فعلياً هذا الشهر":"Apprenants ayant payé ce mois","إجمالي المقبوضات الدراسية":"Total des encaissements pédagogiques","مستحقات الأساتذة":"Rémunérations des enseignants","حصة EMCIA":"Part EMCIA","المصاريف":"Dépenses","الرصيد المتاح بعد الادخار":"Solde disponible après épargne","مؤشرات الأساتذة":"Indicateurs des enseignants","الترتيب":"Classement","الأستاذ":"Enseignant","عدد المتعلمين":"Nombre d’apprenants","التسجيلات":"Inscriptions","المقبوضات":"Encaissements","مستحق الأستاذ":"Rémunération de l’enseignant","مساهمة أفواجه في حصة EMCIA":"Contribution des groupes à la part EMCIA","قراءة سريعة":"Synthèse rapide",
@@ -2575,8 +2595,92 @@ function repeatedAbsences(date){
  emciaAttendanceRecords().filter(a=>a.status==="absent"&&a.date.slice(0,7)===cutoff).forEach(a=>{let k=a.sid+"|"+a.gid;map[k]=(map[k]||0)+1});
  return Object.entries(map).filter(([k,n])=>n>=3).map(([k,n])=>{let [sid,gid]=k.split("|");return{s:by(db.s,sid),g:by(db.g,gid),n}}).filter(x=>x.s&&x.g).sort((a,b)=>b.n-a.n)
 }
+const emciaDailyPaymentFilters={group:'',status:'',present:false};
+function emciaLocalDay(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Casablanca',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())}
+function emciaDailyPaymentRows(date,filters={}){
+ const month=date.slice(0,7),sessions=db.sch.filter(s=>s.active!==false&&s.day===dayAr(date)&&by(db.g,s.gid)?.active!==false).sort((a,b)=>a.start.localeCompare(b.start));
+ const scheduled=new Set(sessions.map(s=>s.gid)),rows=new Map(),seen=new Set();
+ for(const e of db.e){
+  if(!e.active||e.billingMode==='session'||!e.start||e.start>date||!scheduled.has(e.gid))continue;
+  const student=by(db.s,e.sid),group=by(db.g,e.gid);if(!student||student.active===false||!group||group.active===false)continue;
+  const key=e.sid+'|'+e.gid;if(seen.has(key))continue;seen.add(key);
+  if(filters.group&&filters.group!==e.gid)continue;
+  const details=[];
+  for(const mm of monthRange(e.start,month)){
+   const dueDate=mm===e.start.slice(0,7)?e.start:mm+'-01';if(dueDate>date)continue;
+   const due=Math.round(dueForEnrollmentMonth(e,mm)*100);
+   const paid=db.p.filter(p=>p.sid===e.sid&&p.gid===e.gid&&(p.date||'')<=date).reduce((sum,p)=>{
+    const ratio=p.netAfterRefund!=null&&+p.a>0?Math.max(0,+p.netAfterRefund)/(+p.a):1;
+    return sum+Math.round(allocatedAmountForMonth(p,mm)*ratio*100);
+   },0);
+   const remaining=Math.max(0,due-paid);if(remaining<=0)continue;
+   if(filters.status==='unpaid'&&paid>0||filters.status==='partial'&&paid<=0||filters.status==='previous'&&mm>=month)continue;
+   details.push({gid:e.gid,month:mm,due:due/100,paid:paid/100,remaining:remaining/100,previous:mm<month});
+  }
+  if(!details.length)continue;
+  let row=rows.get(e.sid);if(!row){row={student,sid:e.sid,details:[],sessions:[]};rows.set(e.sid,row)}row.details.push(...details);
+ }
+ for(const row of rows.values()){
+  row.sessions=sessions.filter(s=>(!filters.group||s.gid===filters.group)&&db.e.some(e=>e.sid===row.sid&&e.gid===s.gid&&e.active&&e.billingMode!=='session'&&e.start&&e.start<=date));row.first=row.sessions[0]?.start||'';
+  row.present=row.sessions.some(s=>emciaRecordsForSchedule(s,date).some(a=>a.sid===row.sid&&['present','late','leftEarly'].includes(a.status)));
+  row.remaining=row.details.reduce((sum,x)=>sum+x.remaining,0);
+ }
+ return [...rows.values()].filter(row=>!filters.present||row.present).sort((a,b)=>a.first.localeCompare(b.first)||objName(a.student).localeCompare(objName(b.student),'ar'));
+}
+let emciaDailyReminderCache={date:'',rows:[],loaded:false,loading:false,error:''};
+const emciaDailyReminderBusy=new Set();
+async function emciaDailyReminderRequest(path,body){
+ let session;try{session=JSON.parse(sessionStorage.getItem('emcia_auth_session_v2')||'null')}catch{}
+ if(!session?.access_token)throw Error(tr('انتهت جلسة الدخول؛ أعد الدخول إلى الحساب.'));
+ const response=await fetch('https://gfhmkijxiinoqkxhicza.supabase.co/rest/v1/'+path,{method:body?'POST':'GET',headers:{apikey:'sb_publishable_AZWNmDjlNPpADgPFYwH3oA_71o4ABTM',Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
+ const data=await response.json().catch(()=>({}));if(!response.ok)throw Error(data.message||('HTTP '+response.status));return data;
+}
+async function emciaLoadDailyReminders(date,force=false){
+ if(emciaDailyReminderCache.date!==date)emciaDailyReminderCache={date,rows:[],loaded:false,loading:false,error:''};
+ const cache=emciaDailyReminderCache;if(cache.loading||cache.loaded&&!force)return;
+ cache.loading=true;cache.error='';
+ try{cache.rows=await emciaDailyReminderRequest('emcia_daily_payment_reminders?reminder_date=eq.'+encodeURIComponent(date)+'&select=student_id,actor_name,created_at');cache.loaded=true;}
+ catch(e){cache.loaded=false;cache.error=tr('تعذر التحقق من سجل التذكير. أعد المحاولة.')}
+ finally{cache.loading=false;if(emciaDailyReminderCache===cache)emciaRenderDailyPayments();}
+}
+async function emciaMarkDailyReminder(sid){
+ const date=window.dailyDate||emciaLocalDay();if(date!==emciaLocalDay()||emciaDailyReminderBusy.has(sid))return;
+ if(!emciaDailyPaymentRows(date).some(row=>row.sid===sid))return;
+ emciaDailyReminderBusy.add(sid);emciaDailyReminderCache.error='';emciaRenderDailyPayments();
+ try{
+  const response=await emciaDailyReminderRequest('rpc/emcia_mark_daily_payment_reminder',{p_student_id:sid,p_date:date});
+  const result=Array.isArray(response)?response[0]:response;
+  if(!result?.student_id)throw Error('Invalid reminder response');
+  if(emciaDailyReminderCache.date===date){emciaDailyReminderCache.rows=emciaDailyReminderCache.rows.filter(x=>x.student_id!==sid).concat(result);emciaDailyReminderCache.loaded=true;}
+ }catch(e){if(emciaDailyReminderCache.date===date)emciaDailyReminderCache.error=tr('تعذر حفظ التذكير. أعد المحاولة.')}
+ finally{emciaDailyReminderBusy.delete(sid);emciaRenderDailyPayments();}
+}
+function emciaDailyPay(sid,gid){
+ window.emciaPaymentMode='monthly';window.pg=gid;show('payments');
+ const student=document.getElementById('ps');if(student)student.value=sid;
+}
+function emciaDailyPaymentPanel(date){
+ const groups=[...new Set(db.sch.filter(s=>s.active!==false&&s.day===dayAr(date)).map(s=>s.gid))].map(gid=>by(db.g,gid)).filter(g=>g&&g.active!==false);
+ if(emciaDailyPaymentFilters.group&&!groups.some(g=>g.id===emciaDailyPaymentFilters.group))emciaDailyPaymentFilters.group='';
+ return '<div class="card" id="daily-payment-panel"><h3>'+tr('متابعة أداء متعلمي اليوم')+'</h3><p class="muted">'+tr('واجبات الأفواج المبرمجة لهذا اليوم، بعد حلول تاريخ الاستحقاق. التذكير يوثّق مرة واحدة لكل متعلم في اليوم ولا يغيّر المبلغ المتبقي.')+'</p><div class="row"><div><label>'+tr('الفوج')+'</label><select id="dailyPaymentGroup" onchange="emciaDailyPaymentFilters.group=this.value;emciaRenderDailyPayments()"><option value="">'+tr('جميع الأفواج')+'</option>'+groups.map(g=>'<option value="'+esc(g.id)+'" '+(emciaDailyPaymentFilters.group===g.id?'selected':'')+'>'+esc(g.n)+'</option>').join('')+'</select></div><div><label>'+tr('حالة الأداء')+'</label><select id="dailyPaymentStatus" onchange="emciaDailyPaymentFilters.status=this.value;emciaRenderDailyPayments()">'+[['','جميع الحالات'],['unpaid','غير مؤدى'],['partial','أداء جزئي'],['previous','متأخرات سابقة']].map(([value,label])=>'<option value="'+value+'" '+((emciaDailyPaymentFilters.status||'')===value?'selected':'')+'>'+tr(label)+'</option>').join('')+'</select></div><div><label>'+tr('الحضور')+'</label><select id="dailyPaymentPresent" onchange="emciaDailyPaymentFilters.present=this.value===\'present\';emciaRenderDailyPayments()"><option value="all">'+tr('جميع المبرمجين')+'</option><option value="present" '+(emciaDailyPaymentFilters.present?'selected':'')+'>'+tr('الحاضرون فقط')+'</option></select></div><button type="button" onclick="emciaLoadDailyReminders(window.dailyDate||emciaLocalDay(),true)">'+tr('تحديث سجل التذكير')+'</button></div><div id="daily-payment-alerts-content" aria-live="polite"></div></div>';
+}
+function emciaRenderDailyPayments(){
+ const box=document.getElementById('daily-payment-alerts-content');if(!box)return;
+ const date=window.dailyDate||emciaLocalDay(),rows=emciaDailyPaymentRows(date,{group:emciaDailyPaymentFilters.group||'',status:emciaDailyPaymentFilters.status||'',present:!!emciaDailyPaymentFilters.present});
+ const cache=emciaDailyReminderCache,ready=cache.date===date&&cache.loaded;
+ const time=value=>new Date(value).toLocaleTimeString(LANG==='fr'?'fr-MA':'ar-MA',{timeZone:'Africa/Casablanca',hour:'2-digit',minute:'2-digit'});
+ box.innerHTML=(cache.error?'<p class="warn">'+esc(cache.error)+'</p>':'')+'<p><b>'+tr('عدد المتعلمين')+': '+rows.length+'</b> · '+tr('إجمالي المتبقي')+': '+money(rows.reduce((s,x)=>s+x.remaining,0))+'</p>'+(rows.length?'<div style="overflow-x:auto"><table><tr><th>'+tr('أول حصة')+'</th><th>'+tr('المتعلم')+'</th><th>'+tr('الأفواج والتوقيت')+'</th><th>'+tr('تفاصيل المستحقات')+'</th><th>'+tr('المتبقي')+'</th><th>'+tr('التذكير والمتابعة')+'</th></tr>'+rows.map(row=>{
+  const reminder=ready?cache.rows.find(x=>x.student_id===row.sid):null,gids=[...new Set(row.details.map(x=>x.gid))];
+  const sid=esc(JSON.stringify(row.sid));
+  const payment=gids.length>1?'<select id="daily-pay-'+esc(row.sid)+'" aria-label="'+tr('فوج الأداء')+'">'+gids.map(gid=>'<option value="'+esc(gid)+'">'+esc(by(db.g,gid)?.n||gid)+'</option>').join('')+'</select>':'';
+  const payArg=gids.length>1?'document.getElementById('+esc(JSON.stringify('daily-pay-'+row.sid))+').value':esc(JSON.stringify(gids[0]));
+  return '<tr><td>'+esc(row.first)+'</td><td>'+esc(objName(row.student))+(row.present?'<br><small>'+tr('حاضر')+'</small>':'')+'</td><td>'+row.sessions.map(s=>esc(by(db.g,s.gid)?.n||'')+' — '+esc(s.start)+'–'+esc(s.end)).join('<br>')+'</td><td>'+row.details.map(x=>esc(by(db.g,x.gid)?.n||'')+' · '+esc(x.month)+' · '+tr(x.previous?'متأخرات سابقة':x.paid>0?'أداء جزئي':'غير مؤدى')+'<br>'+tr('المستحق')+': '+money(x.due)+' / '+tr('المؤدى')+': '+money(x.paid)+' / '+tr('المتبقي')+': '+money(x.remaining)).join('<hr>')+'</td><td><b>'+money(row.remaining)+'</b></td><td>'+payment+'<div class="actions"><button onclick="emciaDailyPay('+sid+','+payArg+')">'+tr('تسجيل الأداء')+'</button><button '+(reminder||!ready||date!==emciaLocalDay()||emciaDailyReminderBusy.has(row.sid)?'disabled':'')+' onclick="emciaMarkDailyReminder('+sid+')">'+tr(reminder?'تم التذكير':emciaDailyReminderBusy.has(row.sid)?'جار الحفظ…':!ready?'جار التحقق…':'تم التذكير')+'</button></div>'+(reminder?'<small>'+esc(reminder.actor_name)+' · '+esc(time(reminder.created_at))+'</small>':'')+'</td></tr>';
+ }).join('')+'</table></div>':'<p class="muted">'+tr('لا توجد مستحقات شهرية مطابقة للاختيارات لدى متعلمي اليوم.')+'</p>');
+}
+setInterval(()=>{if(document.querySelector('#daily.page.active'))emciaLoadDailyReminders(window.dailyDate||emciaLocalDay(),true)},15000);
+
 function daily(){
- let date=window.dailyDate||today(),day=dayAr(date),sessions=db.sch.filter(s=>s.active!==false&&s.day===day).sort((a,b)=>a.start.localeCompare(b.start));
+ let date=window.dailyDate||emciaLocalDay(),day=dayAr(date),sessions=db.sch.filter(s=>s.active!==false&&s.day===day).sort((a,b)=>a.start.localeCompare(b.start));
  let unfinished=sessions.filter(s=>!sessionAttendanceStatus(s,date).done);
  let capacity=sessions.map(s=>{let g=by(db.g,s.gid),r=by(db.rooms,s.rid),n=db.e.filter(e=>e.active&&e.gid===s.gid&&(!e.start||e.start<=date)).length;return{s,g,r,n}}).filter(x=>x.r&&x.n>x.r.cap);
  let abs=repeatedAbsences(date);
@@ -2585,7 +2689,7 @@ function daily(){
  $("#daily").innerHTML=`<div class="card"><div class="row"><div><label>التاريخ</label><input type="date" value="${date}" onchange="window.dailyDate=this.value;daily()"></div><div><b>${day}</b></div></div></div>
  <div class="grid daily-stats-grid"><div class="card"><div class="muted">حصص اليوم</div><div class="kpi">${sessions.length}</div></div><div class="card"><div class="muted">حضور غير مكتمل</div><div class="kpi">${unfinished.length}</div></div><div class="card"><div class="muted">تنبيهات السعة</div><div class="kpi">${capacity.length}</div></div><div class="card"><div class="muted">غياب متكرر هذا الشهر</div><div class="kpi">${abs.length}</div></div><div class="card"><div class="muted">حالات متأخرة في الأداء</div><div class="kpi">${debtors}</div><div class="muted">${money(debtTotal)}</div></div></div>
  <div class="card"><h3>برنامج اليوم</h3>${sessions.length?`<table><tr><th>الوقت</th><th>الفوج</th><th>الأستاذ</th><th>القاعة</th><th>المسجلون</th><th>الحضور</th><th></th></tr>${sessions.map(s=>{let g=by(db.g,s.gid),r=by(db.rooms,s.rid),st=sessionAttendanceStatus(s,date);return`<tr><td>${s.start}–${s.end}</td><td>${esc(g?g.n:"—")}</td><td>${esc(g?objName(by(db.t,g.tid)):"—")}</td><td>${esc(r?r.n:"—")}</td><td>${st.n}${r?` / ${r.cap}`:""}</td><td><b>${st.label}</b></td><td><button onclick="goAttendance('${date}','${s.gid}')">تسجيل الحضور</button></td></tr>`}).join("")}</table>`:"<p class='muted'>لا توجد حصص مبرمجة لهذا اليوم.</p>"}</div>
- <div class="card"><h3>التنبيهات التشغيلية</h3>${unfinished.length?`<p><b>الحضور:</b> ${unfinished.length} حصة لم يكتمل تسجيل حضورها.</p>`:"<p>✓ تسجيل الحضور مكتمل للحصص المسجلة اليوم.</p>"}${capacity.length?`<p><b>السعة:</b> ${capacity.map(x=>`${esc(x.g.n)} (${x.n}/${x.r.cap} في ${esc(x.r.n)})`).join("، ")}</p>`:"<p>✓ لا يوجد تجاوز لسعة القاعات في حصص اليوم.</p>"}${abs.length?`<p><b>الغياب المتكرر:</b></p><table><tr><th>المتعلم</th><th>الفوج</th><th>مرات الغياب هذا الشهر</th></tr>${abs.map(x=>`<tr><td>${esc(objName(x.s))}</td><td>${esc(x.g.n)}</td><td>${x.n}</td></tr>`).join("")}</table>`:"<p>✓ لا توجد حالياً حالات غياب غير مبرر متكرر (3 مرات فأكثر) هذا الشهر.</p>"}<p><b>المتابعة المالية:</b> ${debtors} تسجيل/حالة بها مبالغ متبقية إلى غاية ${m} بإجمالي ${money(debtTotal)}. <button onclick="show('arrears')">فتح المتأخرات</button></p></div>`;applyLang()
+ ${emciaDailyPaymentPanel(date)}<div class="card"><h3>التنبيهات التشغيلية</h3>${unfinished.length?`<p><b>الحضور:</b> ${unfinished.length} حصة لم يكتمل تسجيل حضورها.</p>`:"<p>✓ تسجيل الحضور مكتمل للحصص المسجلة اليوم.</p>"}${capacity.length?`<p><b>السعة:</b> ${capacity.map(x=>`${esc(x.g.n)} (${x.n}/${x.r.cap} في ${esc(x.r.n)})`).join("، ")}</p>`:"<p>✓ لا يوجد تجاوز لسعة القاعات في حصص اليوم.</p>"}${abs.length?`<p><b>الغياب المتكرر:</b></p><table><tr><th>المتعلم</th><th>الفوج</th><th>مرات الغياب هذا الشهر</th></tr>${abs.map(x=>`<tr><td>${esc(objName(x.s))}</td><td>${esc(x.g.n)}</td><td>${x.n}</td></tr>`).join("")}</table>`:"<p>✓ لا توجد حالياً حالات غياب غير مبرر متكرر (3 مرات فأكثر) هذا الشهر.</p>"}<p><b>المتابعة المالية:</b> ${debtors} تسجيل/حالة بها مبالغ متبقية إلى غاية ${m} بإجمالي ${money(debtTotal)}. <button onclick="show('arrears')">فتح المتأخرات</button></p></div>`;emciaRenderDailyPayments();emciaLoadDailyReminders(date);applyLang()
 }
 function goAttendance(date,gid){window.attDate=date;window.attGid=gid;show("attendance")}
 

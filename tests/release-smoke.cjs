@@ -8,11 +8,11 @@ const vm=require('node:vm');
 const html=fs.readFileSync(path.join(__dirname,'../emcia.html'),'utf8');
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 let op={id:'main',payload:fixtures(),revision:1},fin={id:'main',payload:{e:[{_index:1,discountTeacher:20,discountEmcia:0}]},revision:1};
-let role='director',writes=0,errors=[],alerts=[],failAtomic=false;
+let role='director',writes=0,errors=[],alerts=[],failAtomic=false,reminders=[];
 for(const alias of ['index.html','EMCIA_Integrated_Release_Candidate.html','EMCIA_V5_15_16_Cloud_Test.html','EMCIA_V5_15_16_Supabase_Director_Test.html','EMCIA_Certification_Integration_Test.html','EMCIA_Certification_Issuance_Test.html']){
  const redirect=fs.readFileSync(path.join(__dirname,'..',alias),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
  let target;vm.runInNewContext(redirect,{URL,location:{href:'https://emcia.invalid/'+alias+'?v=103&request=example#access_token=test&type=recovery',search:'?v=103&request=example',hash:'#access_token=test&type=recovery',replace(value){target=new URL(value)}}});
- assert.equal(target.pathname,'/emcia.html');assert.equal(target.searchParams.get('v'),'2026.11.14.2');assert.equal(target.searchParams.get('request'),'example');assert.equal(target.hash,'#access_token=test&type=recovery');
+ assert.equal(target.pathname,'/emcia.html');assert.equal(target.searchParams.get('v'),'2026.11.14.3');assert.equal(target.searchParams.get('request'),'example');assert.equal(target.hash,'#access_token=test&type=recovery');
 }
 
 function createDOM(){
@@ -23,6 +23,8 @@ function createDOM(){
    const u=new URL(url);assert.equal(u.hostname,'gfhmkijxiinoqkxhicza.supabase.co');
    let out=[];
    if(u.pathname==='/auth/v1/token')out={access_token:'test-only',refresh_token:'test-refresh',expires_in:3600,user:{id:'test-user'}};
+   else if(u.pathname.endsWith('/emcia_daily_payment_reminders'))out=reminders.filter(x=>u.searchParams.get('reminder_date')==='eq.'+x.reminder_date);
+   else if(u.pathname.endsWith('/rpc/emcia_mark_daily_payment_reminder')){const body=JSON.parse(options.body);let row=reminders.find(x=>x.student_id===body.p_student_id&&x.reminder_date===body.p_date);if(!row){row={student_id:body.p_student_id,reminder_date:body.p_date,actor_name:role,created_at:new Date().toISOString()};reminders.push(row)}out=[row];}
    else if(u.pathname.endsWith('/rpc/emcia_load_state_v2'))out={operational:op,financial:['director','accountant'].includes(role)?fin:null};
    else if(u.pathname.endsWith('/rpc/emcia_save_state_v2')){
     const body=JSON.parse(options.body);
@@ -46,7 +48,7 @@ async function saved(w){for(let i=0;i<120&&!w.document.querySelector('#emcia-clo
 (async()=>{
  let dom=createDOM(),w=await login(dom),d=w.document;
  try{
-  assert.equal(d.querySelector('#emcia-release').textContent,'2026.11.14.2');
+  assert.equal(d.querySelector('#emcia-release').textContent,'2026.11.14.3');
   w.eval("window.attDate='2026-11-14';window.attGid='';show('attendance')");
   const timed=()=>d.querySelectorAll('#attendance select[onchange^="emciaSaveTimedAttendance"]');
   assert.equal(timed().length,3);
@@ -101,12 +103,26 @@ assert.ok(w.eval("scheduleConflict({...db.sch[0],start:'15:00',end:'16:00'},'m1'
   data=make();data.sc.push({...data.sc[0],id:'f2',time:'14:00',end:'15:00'});data.sp=[{id:'other',sid:'s2',gid:'g2',a:200,date:'2026-11-14'}];seed(data);assert.equal(w.emciaSessionBalance('s1','g2','2026-11-14').due,100);assert.equal(w.emciaSessionBalance('s1','g2','2026-11-14').paid,0);
   // Deleting a receipt changes the derived balance without leaving duplicate financial records.
   data=make();data.sp=[{id:'partial',sid:'s1',gid:'g2',a:30,date:'2026-11-14'}];seed(data);assert.equal(w.teacherCalculatedDue('t1','2026-11'),15);w.eval('db.sp=[]');assert.equal(w.teacherCalculatedDue('t1','2026-11'),0);
+  // Daily monthly reminders: today's timetable, unique learners, composite payments and independent filters.
+  data=make();data.g.push({id:'g3',n:'فوج ثان',tid:'t1',f:100,r:50,active:true});data.e.push({id:'e3',sid:'s1',gid:'g3',active:true,start:'2026-11-01',billingMode:'monthly'});data.sch.push({id:'m3',gid:'g3',day:'السبت',start:'08:00',end:'09:00',active:true,rid:'room30'});
+  data.p=[{id:'comp',sid:'s1',gid:'g1',date:'2026-11-14',a:100,allocMonth:'2026-11',type:'composite',allocations:[{month:'2026-11',amount:50},{month:'2026-12',amount:50}]}];
+  data.s.push({id:'paid',n:'مؤد بالكامل',active:true},{id:'future',n:'بداية لاحقة',active:true});data.e.push({id:'epaid',sid:'paid',gid:'g1',active:true,start:'2026-11-01'},{id:'efuture',sid:'future',gid:'g1',active:true,start:'2026-11-20'});data.p.push({id:'paidreceipt',sid:'paid',gid:'g1',a:200,date:'2026-11-14',allocMonth:'2026-11'});data.at2=[{id:'a1',sid:'s1',gid:'g3',date:'2026-11-14',ref:'m:m3',status:'present'}];seed(data);
+  let daily=w.emciaDailyPaymentRows('2026-11-14');assert.equal(daily.length,1);assert.equal(daily[0].first,'08:00');assert.equal(daily[0].remaining,250);assert.equal(daily[0].details.length,2);assert.equal(daily[0].present,true);
+  assert.equal(w.emciaDailyPaymentRows('2026-11-14',{status:'partial'})[0].remaining,150);assert.equal(w.emciaDailyPaymentRows('2026-11-14',{status:'unpaid'})[0].remaining,100);assert.equal(w.emciaDailyPaymentRows('2026-11-14',{group:'g2'}).length,0);assert.equal(w.emciaDailyPaymentRows('2026-11-14',{status:'previous'}).length,0);
+  assert.equal(w.emciaDailyPaymentRows('2026-12-12',{status:'previous'})[0].remaining,250);
+  w.eval("window.dailyDate='2026-11-14';show('daily')");await wait(20);assert.match(d.querySelector('#daily-payment-alerts-content').textContent,/250.00/);
+  d.querySelector('#dailyPaymentPresent').value='present';d.querySelector('#dailyPaymentPresent').dispatchEvent(new w.Event('change'));assert.match(d.querySelector('#daily-payment-alerts-content').textContent,/250.00/);
+  await w.emciaMarkDailyReminder('s1');assert.equal(reminders.length,1);assert.match(d.querySelector('#daily-payment-alerts-content').textContent,/director/);
+  role='secretary_evening';await w.emciaMarkDailyReminder('s1');assert.equal(reminders.length,1);assert.equal(reminders[0].actor_name,'director');role='director';
+  // Payment shortcut preselects both the monthly group and learner.
+  d.querySelector('#daily-pay-s1').value='g1';d.querySelector('button[onclick^="emciaDailyPay"]').click();assert.equal(d.querySelector('#ps').value,'s1');assert.equal(w.eval('window.pg'),'g1');
+  w.eval("db.p.push({id:'settle1',sid:'s1',gid:'g1',a:150,date:'2026-11-14',allocMonth:'2026-11'},{id:'settle2',sid:'s1',gid:'g3',a:100,date:'2026-11-14',allocMonth:'2026-11'});save()");assert.equal(w.emciaDailyPaymentRows('2026-11-14').length,0);await saved(w);
   // A cloud conflict must preserve both remote payloads; there is no sequential-write fallback.
   failAtomic=true;const beforeOp=JSON.stringify(op),beforeFin=JSON.stringify(fin);let rejected=false;try{await w.EMCIA_CLOUD_SYNC.restore(fixtures())}catch{rejected=true}assert.equal(rejected,true);assert.equal(JSON.stringify(op),beforeOp);assert.equal(JSON.stringify(fin),beforeFin);failAtomic=false;
   // Legacy financial fields must keep their target when another account deletes an earlier record.
   dom.window.close();op={id:'main',payload:fixtures(),revision:1};fin={id:'main',payload:{e:[{_index:1,discountTeacher:20}]},revision:1};role='secretary_morning';dom=createDOM();w=await login(dom);w.eval("db.e=db.e.filter(x=>x.id!=='e1');save()");await saved(w);assert.deepEqual(op.payload._legacyFinancialIds.e,['e1','e2']);
   dom.window.close();role='director';dom=createDOM();w=await login(dom);assert.equal(w.eval("db.e.find(x=>x.id==='e2').discountTeacher"),20);assert.equal(w.eval("db.e.find(x=>x.id==='e1')"),undefined);
   assert.deepEqual(errors,[]);
-  console.log('PASS: actual DOM attendance handlers, independent sessions, lesson completion, receipt add/edit, cloud reload, strict dates, duplicate receipts, cash, schedule conflicts, stable IDs, legacy compatibility, atomic conflict rollback, advances, late/partial payments, discount bearers, individual balances, reports and teacher privacy. Mock writes:',writes);
+  console.log('PASS: actual DOM attendance handlers, independent sessions, lesson completion, receipt add/edit, cloud reload, strict dates, duplicate receipts, cash, schedule conflicts, stable IDs, legacy compatibility, atomic conflict rollback, advances, late/partial payments, discount bearers, individual balances, reports, teacher privacy and daily payment reminders/filtering/deduplication. Mock writes:',writes);
  }finally{dom.window.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});
