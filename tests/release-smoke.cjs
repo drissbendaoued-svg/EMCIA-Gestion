@@ -12,7 +12,7 @@ let role='director',writes=0,errors=[],alerts=[],failAtomic=false,reminders=[];
 for(const alias of ['index.html','EMCIA_Integrated_Release_Candidate.html','EMCIA_V5_15_16_Cloud_Test.html','EMCIA_V5_15_16_Supabase_Director_Test.html','EMCIA_Certification_Integration_Test.html','EMCIA_Certification_Issuance_Test.html']){
  const redirect=fs.readFileSync(path.join(__dirname,'..',alias),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
  let target;vm.runInNewContext(redirect,{URL,location:{href:'https://emcia.invalid/'+alias+'?v=103&request=example#access_token=test&type=recovery',search:'?v=103&request=example',hash:'#access_token=test&type=recovery',replace(value){target=new URL(value)}}});
- assert.equal(target.pathname,'/emcia.html');assert.equal(target.searchParams.get('v'),'2026.11.16.7');assert.equal(target.searchParams.get('request'),'example');assert.equal(target.hash,'#access_token=test&type=recovery');
+ assert.equal(target.pathname,'/emcia.html');assert.equal(target.searchParams.get('v'),'2026.11.16.8');assert.equal(target.searchParams.get('request'),'example');assert.equal(target.hash,'#access_token=test&type=recovery');
 }
 
 function createDOM(){
@@ -49,7 +49,7 @@ async function saved(w){for(let i=0;i<120&&!w.document.querySelector('#emcia-clo
 (async()=>{
  let dom=createDOM(),w=await login(dom),d=w.document;
  try{
-  assert.equal(d.querySelector('#emcia-release').textContent,'2026.11.16.7');
+  assert.equal(d.querySelector('#emcia-release').textContent,'2026.11.16.8');
   w.eval("window.attDate='2026-11-14';window.attGid='';show('attendance')");
   const timed=()=>d.querySelectorAll('#attendance select[onchange^="emciaSaveTimedAttendance"]');
   assert.equal(timed().length,3);
@@ -85,7 +85,7 @@ async function saved(w){for(let i=0;i<120&&!w.document.querySelector('#emcia-clo
   w.eval("window.emciaPaymentMode='monthly';window.pg='g1';show('payments')");for(const[id,value]of Object.entries({ps:'s1',pa:'200',preceipt:'TEST-SESSION-1'}))d.getElementById(id).value=value;
   w.addPayment();assert.match(alerts.pop(),/مسجل سابقاً/);assert.equal(w.eval('db.p.length'),0);
   assert.equal(w.eval("scheduleConflict({...db.sch[0]},'m1').length"),0);
-  const edits=['السبت','09:30','10:30','1'];w.prompt=()=>edits.shift();w.eval("editSchedule('m1')");assert.equal(w.eval("db.sch[0].start"),'09:30');
+  const edits=['السبت','09:30','10:30','1','1'];w.prompt=()=>edits.shift();w.eval("editSchedule('m1')");assert.equal(w.eval("db.sch[0].start"),'09:30');
   assert.match(w.emciaScheduleAttendance('m1'),/removeSchedule/);
 assert.ok(w.eval("scheduleConflict({...db.sch[0],start:'15:00',end:'16:00'},'m1').length")>0);
   await saved(w);assert.equal(op.payload.sp[0].a,125);assert.ok(fin.payload.e.every(x=>x._id));

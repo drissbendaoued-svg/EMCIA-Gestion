@@ -1,9 +1,9 @@
 {
   "name": "emcia-gestion",
   "private": true,
-  "version": "2026.11.16-7",
+  "version": "2026.11.16-8",
   "scripts": {
-    "test": "node tests/release-smoke.cjs && node tests/waiting-groups.cjs"
+    "test": "node tests/release-smoke.cjs && node tests/waiting-groups.cjs && node tests/schedule-room.cjs"
   },
   "devDependencies": {
     "jsdom": "26.1.0"

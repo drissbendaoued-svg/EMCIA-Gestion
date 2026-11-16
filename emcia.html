@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>EMCIA Gestion</title>
-<meta name="emcia-release" content="2026.11.16.7">
+<meta name="emcia-release" content="2026.11.16.8">
 <meta name="application-name" content="EMCIA Gestion">
 <meta name="apple-mobile-web-app-title" content="EMCIA Gestion">
 <style>
@@ -509,7 +509,7 @@ try{
 }catch(e){}
 </script></head>
 <body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>تسجيل دخول المدير والموظفين المفعّلين</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label for="authPassword">كلمة المرور</label><div class="emcia-password-field"><div class="emcia-eye-wrap"><input id="authPassword" type="password" required autocomplete="current-password"><input id="authPasswordVisible" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" style="display:none" oninput="document.getElementById('authPassword').value=this.value"><button class="emcia-eye-button" id="authPasswordEye" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false" onclick="emciaLoginEyeClick()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات محفوظة بأمان في النظام السحابي للمؤسسة.</small></div></div>
-<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.16.7</small></header>
+<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.16.8</small></header>
 <div id="langMenu" class="lang-menu">
 <button id="langMenuBtn" type="button" onclick="toggleLangMenu()" aria-label="اختيار اللغة">🌐</button>
 <div id="langChoices" class="lang-choices">
@@ -3290,9 +3290,18 @@ function editSchedule(id){
  let types="1. رسمية\n2. إضافية\n3. تعويضية\n4. استثنائية",cur={official:1,extra:2,makeup:3,exceptional:4}[o.type||"official"]||1;
  let pick=prompt(`نوع الحصة:\n${types}`,String(cur));if(pick===null)return;
  let type=({1:"official",2:"extra",3:"makeup",4:"exceptional"})[+pick];if(!type)return alert("نوع الحصة غير صحيح");
- let c={...o,day:day.trim()||o.day,start,end,type,makeupFor:type==="makeup"?o.makeupFor||"":""};
+ const rooms=db.rooms.filter(r=>r.active!==false||r.id===o.rid);
+ if(!rooms.length)return alert("لا توجد قاعات متاحة. أضف قاعة أولاً.");
+ const currentRoom=rooms.findIndex(r=>r.id===o.rid);
+ const roomPick=prompt("تعديل القاعة — اختر الرقم من اللائحة:\n"+rooms.map((r,i)=>(i+1)+". "+r.n+" — السعة: "+r.cap+(r.active===false?" (القاعة الحالية غير نشطة)":"")).join("\n"),currentRoom>=0?String(currentRoom+1):"");
+ if(roomPick===null)return;
+ const roomNumber=Number(roomPick.trim()),room=Number.isInteger(roomNumber)?rooms[roomNumber-1]:null;
+ if(!room)return alert("اختر رقم قاعة صحيحاً من اللائحة");
+ let c={...o,day:day.trim()||o.day,start,end,type,rid:room.id,makeupFor:type==="makeup"?o.makeupFor||"":""};
  if(!DAYS.includes(c.day)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(start)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(end))return alert("اليوم أو التوقيت غير صحيح");
  let p=scheduleConflict(c,id);if(p.length)return alert("تعذر تعديل الحصة:\n• "+p.join("\n• "));
+ const learners=db.e.filter(e=>emciaEnrollmentDate(e,today())&&e.gid===c.gid).length;
+ if(learners>Number(room.cap)&&!confirm("عدد المسجلين ("+learners+") يتجاوز سعة القاعة ("+room.cap+"). هل تريد حفظ التعديل رغم ذلك؟"))return;
  Object.assign(o,c);save();schedule()
 }
 function removeSchedule(id){if(!confirm("حذف هذه الحصة من استعمال الزمن؟"))return;const row=by(db.sch,id);if(row){row.active=false;row.archivedAt=new Date().toISOString()}save();schedule()}
