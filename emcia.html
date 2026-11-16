@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>EMCIA Gestion</title>
-<meta name="emcia-release" content="2026.11.15.1">
+<meta name="emcia-release" content="2026.11.16.1">
 <meta name="application-name" content="EMCIA Gestion">
 <meta name="apple-mobile-web-app-title" content="EMCIA Gestion">
 <style>
@@ -497,7 +497,7 @@ try{
 }catch(e){}
 </script></head>
 <body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>تسجيل دخول المدير والموظفين المفعّلين</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label for="authPassword">كلمة المرور</label><div class="emcia-password-field"><div class="emcia-eye-wrap"><input id="authPassword" type="password" required autocomplete="current-password"><input id="authPasswordVisible" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" style="display:none" oninput="document.getElementById('authPassword').value=this.value"><button class="emcia-eye-button" id="authPasswordEye" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false" onclick="emciaLoginEyeClick()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات محفوظة بأمان في النظام السحابي للمؤسسة.</small></div></div>
-<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.15.1</small></header>
+<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.16.1</small></header>
 <div id="langMenu" class="lang-menu">
 <button id="langMenuBtn" type="button" onclick="toggleLangMenu()" aria-label="اختيار اللغة">🌐</button>
 <div id="langChoices" class="lang-choices">
@@ -1175,7 +1175,7 @@ function dashboardStats(m){
  let registrations=ens.length;
  let paidPs=emciaFinancialPayments().filter(p=>p.receiptMonth===m), paidStudents=new Set(paidPs.filter(p=>(+p.a||0)>0).map(p=>p.sid)).size;
  let gross=paidPs.reduce((s,p)=>s+(+(p.netAfterRefund??p.a)||0),0), prof=paidPs.reduce((s,p)=>s+teacherDueOf(p),0), em=paidPs.reduce((s,p)=>s+(+p.e||0),0);
- let other=db.oi.filter(x=>x.month===m).reduce((s,x)=>s+(+x.a||0),0), exp=db.x.filter(x=>x.month===m).reduce((s,x)=>s+(+x.a||0),0), sav=db.sv.filter(x=>x.month===m).reduce((s,x)=>s+(+x.a||0),0);
+ let other=db.oi.filter(x=>emciaAccountingMonth(x)===m).reduce((s,x)=>s+(+x.a||0),0), exp=db.x.filter(x=>emciaAccountingMonth(x)===m).reduce((s,x)=>s+(+x.a||0),0), sav=db.sv.filter(x=>emciaAccountingMonth(x)===m).reduce((s,x)=>s+(+x.a||0),0);
  let teachers=db.t.filter(t=>t.active).map(t=>{
    let gids=new Set(db.g.filter(g=>g.tid===t.id&&g.active!==false).map(g=>g.id));
    let tes=ens.filter(e=>gids.has(e.gid)), students=new Set(tes.map(e=>e.sid)).size;
@@ -2521,8 +2521,8 @@ function emciaExtraSelect(){
 }
 function emciaExtraAdd(){
  let cat=document.getElementById("oc").value,a=+document.getElementById("oa").value;
- if(!cat||!(a>0))return alert("اختر نوع المدخول وأدخل مبلغاً");
- emciaExtraDraft.push({cat,a});document.getElementById("oa").value="";emciaExtraRender();
+ if(!cat||!Number.isFinite(a)||!(a>0))return alert("اختر نوع المدخول وأدخل مبلغاً صحيحاً أكبر من صفر");
+ emciaExtraDraft.push({cat,a});document.getElementById("oa").value="";document.getElementById("oc").value="";emciaExtraRender();
 }
 function emciaExtraRender(){
  let el=document.getElementById("oiDraft");if(!el)return;
@@ -2530,23 +2530,44 @@ function emciaExtraRender(){
 }
 function expenses(){
  $("#expenses").innerHTML=`<div class="grid"><div class="card"><h3>المصاريف</h3><div class="row"><select id="xc"><option value="">— اختر المصروف —</option>${expenseCats.map(x=>`<option>${x}</option>`)}</select><select id="xt"><option value="fixed">ثابت</option><option value="variable">متغير</option></select><input id="xa" type="number" placeholder="المبلغ"><input id="xm" type="month" value="${nowMonth()}"><input id="xn" placeholder="ملاحظة"><button onclick="addExpense()">إضافة مصروف</button></div></div>
- <div class="card"><h3>مداخيل أخرى</h3><p class="muted">سجّل رسوم التسجيل والتأمين والكتب والنسخ هنا منفصلة عن واجبات الدراسة، حتى لا تدخل في مستحقات الأستاذ. مبالغ التأمين المحصلة تُتابع على حدة إلى حين تسويتها مع الجهة المعنية، ولا تُعد ربحاً صافياً تلقائياً. اذكر اسم المتعلم ورقم التوصيل في الملاحظة.</p><div class="oi-compact-grid"><div><label>الفوج</label><select id="oiGroup" onchange="emciaExtraSelect()"><option value="">— جميع الأفواج —</option>${db.g.map(g=>`<option value="${esc(g.id)}">${esc(g.n)}</option>`).join("")}</select></div><div><label>المتعلم</label><select id="oiStudent"></select></div><div><label>بداية الاسم</label><input id="oiSearch" oninput="emciaExtraSelect()" placeholder="بحث بالاسم"></div></div><div class="oi-compact-grid"><div><label>نوع المدخول</label><select id="oc"><option value="">— اختر المدخول —</option><option>التسجيل</option><option>التأمين (مبالغ محصلة)</option><option>الامتحانات</option><option>الكتب والنسخ</option><option>أخرى</option></select></div><div><label>المبلغ</label><input id="oa" type="number" placeholder="درهم"></div><div><label>تاريخ الأداء</label><input id="om" type="date" value="${today()}"></div></div><div class="oi-compact-grid"><div><label>رقم التوصيل</label><input id="oiReceipt" placeholder="رقم التوصيل"></div><div><label>التفاصيل</label><input id="on" placeholder="تعيين الرسوم"></div><div class="oi-action"><button type="button" onclick="emciaExtraAdd()">+ أضف مدخولاً</button></div></div><div id="oiDraft"></div><button type="button" onclick="addOther()">حفظ المداخيل المضافة</button></div></div></div>
- <div class="card"><h3>المداخيل الأخرى المسجلة</h3><table><tr><th>تاريخ الأداء</th><th>المتعلم</th><th>المصدر</th><th>المبلغ</th><th>ملاحظة</th><th></th></tr>${db.oi.slice().reverse().map(x=>`<tr><td>${esc(x.date||x.month||"—")}</td><td>${x.sid?esc(name(db.s,x.sid)):"—"}</td><td>${esc(x.cat)}</td><td>${money(x.a)}</td><td>${esc(x.note||"")}</td><td class="actions"><button onclick="editSimple('oi','${x.id}')">✏️</button><button class="danger" onclick="delTx('oi','${x.id}')">🗑️</button></td></tr>`).join("")}</table></div>
+ <div class="card"><h3>مداخيل أخرى</h3><p class="muted">سجّل رسوم التسجيل والتأمين والكتب والنسخ هنا منفصلة عن واجبات الدراسة، حتى لا تدخل في مستحقات الأستاذ. مبالغ التأمين المحصلة تُتابع على حدة إلى حين تسويتها مع الجهة المعنية، ولا تُعد ربحاً صافياً تلقائياً. اذكر اسم المتعلم ورقم التوصيل في الملاحظة.</p><div class="oi-compact-grid"><div><label>الفوج</label><select id="oiGroup" onchange="emciaExtraSelect()"><option value="">— جميع الأفواج —</option>${db.g.map(g=>`<option value="${esc(g.id)}">${esc(g.n)}</option>`).join("")}</select></div><div><label>المتعلم</label><select id="oiStudent"></select></div><div><label>بداية الاسم</label><input id="oiSearch" oninput="emciaExtraSelect()" placeholder="بحث بالاسم"></div></div><div class="oi-compact-grid"><div><label>نوع المدخول</label><select id="oc"><option value="">— اختر المدخول —</option><option>التسجيل</option><option>التأمين (مبالغ محصلة)</option><option>الامتحانات</option><option>الكتب والنسخ</option><option>أخرى</option></select></div><div><label>المبلغ</label><input id="oa" type="number" min="0.01" step="0.01" placeholder="درهم"></div><div><label>تاريخ الأداء</label><input id="om" type="date" value="${today()}"></div></div><div class="oi-compact-grid"><div><label>رقم التوصيل</label><input id="oiReceipt" placeholder="رقم التوصيل"></div><div><label>التفاصيل</label><input id="on" placeholder="تعيين الرسوم"></div><div class="oi-action"><button type="button" onclick="emciaExtraAdd()">+ أضف مدخولاً</button></div></div><div id="oiDraft"></div><button type="button" onclick="addOther()">حفظ المداخيل المضافة</button></div></div></div>
+ <div class="card" id="oiRegistered"><h3>المداخيل الأخرى المسجلة</h3><table><tr><th>تاريخ الأداء</th><th>المتعلم</th><th>المصدر</th><th>المبلغ</th><th>التوصيل</th><th>ملاحظة</th><th></th></tr>${db.oi.slice().reverse().map(x=>`<tr><td>${esc(x.date||x.month||"—")}</td><td>${x.sid?esc(name(db.s,x.sid)):"—"}</td><td>${esc(x.cat)}</td><td>${money(x.a)}</td><td>${esc(x.receiptNo||"—")}</td><td>${esc(x.note||"")}</td><td class="actions"><button onclick="editSimple('oi','${x.id}')">✏️</button><button class="danger" onclick="delTx('oi','${x.id}')">🗑️</button></td></tr>`).join("")}<tfoot><tr><th colspan="3">إجمالي المداخيل المسجلة — جميع الأشهر</th><th id="oiRegisteredTotal">${money(db.oi.reduce((sum,x)=>sum+(+x.a||0),0))}</th><td colspan="3"></td></tr></tfoot></table></div>
  <div class="card"><h3>المصاريف المسجلة</h3><table><tr><th>الشهر</th><th>الفئة</th><th>النوع</th><th>المبلغ</th><th>ملاحظة</th><th></th></tr>${db.x.slice().reverse().map(x=>`<tr><td>${x.month}</td><td>${esc(x.cat)}</td><td>${x.type==="fixed"?"ثابت":"متغير"}</td><td>${money(x.a)}</td><td>${esc(x.note||"")}</td><td class="actions"><button onclick="editSimple('x','${x.id}')">✏️</button><button class="danger" onclick="delTx('x','${x.id}')">🗑️</button></td></tr>`).join("")}</table></div>`;
  emciaExtraSelect();emciaExtraRender();
 }
 function addExpense(){let cat=$("#xc").value;if(!cat)return alert("اختر المصروف");let a=+$("#xa").value;if(!(a>0))return alert("أدخل المبلغ");db.x.push({id:uid(),cat:cat,type:$("#xt").value,a,month:$("#xm").value,note:$("#xn").value});save();expenses()}
 function addOther(){
- if(!emciaExtraDraft.length)return alert("أضف مدخولاً واحداً على الأقل");
+ const pendingAmount=document.getElementById("oa").value.trim();
+ if(pendingAmount){
+  const before=emciaExtraDraft.length;emciaExtraAdd();
+  if(emciaExtraDraft.length===before)return;
+ }
+ if(!emciaExtraDraft.length)return alert("أدخل نوع المدخول والمبلغ أو أضف مدخولاً إلى اللائحة");
  let sid=document.getElementById("oiStudent").value,gid=document.getElementById("oiGroup").value;
  if(gid&&!sid)return alert("اختر المتعلم");
  let date=document.getElementById("om").value,month=date.slice(0,7),receiptNo=document.getElementById("oiReceipt").value.trim(),note=document.getElementById("on").value,batchId=uid();
- if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return alert("حدد تاريخ الأداء باليوم والشهر والسنة");
+ if(!emciaValidDate(date))return alert("حدد تاريخ أداء صحيحاً باليوم والشهر والسنة");
  if(!confirm("حفظ المداخيل الإضافية بمجموع "+money(emciaExtraDraft.reduce((z,x)=>z+x.a,0))+"؟"))return;
  emciaExtraDraft.forEach(x=>db.oi.push({id:uid(),batchId,sid:sid||null,gid:gid||null,cat:x.cat,a:x.a,date,month,receiptNo,note}));
  emciaExtraDraft=[];save();expenses();
 }
-function editSimple(arr,id){let o=by(db[arr],id),a=prompt("المبلغ",o.a);if(a===null||isNaN(a))return;let m=prompt("الشهر YYYY-MM",o.month);if(m===null)return;o.a=+a;o.month=m;save();render(document.querySelector(".page.active").id)}
+function emciaAccountingMonth(record){return record.month||(record.date||"").slice(0,7)}
+function editSimple(arr,id){
+ const o=by(db[arr],id);if(!o)return;
+ const a=prompt("المبلغ",o.a);if(a===null)return;
+ if(!a.trim()||!Number.isFinite(+a)||+a<=0)return alert("أدخل مبلغاً صحيحاً أكبر من صفر");
+ let changes={a:+a};
+ if(arr==="oi"){
+  const date=prompt("تاريخ الأداء YYYY-MM-DD",o.date||((o.month||nowMonth())+"-01"));if(date===null)return;
+  if(!emciaValidDate(date))return alert("أدخل تاريخاً صحيحاً");
+  changes.date=date;changes.month=date.slice(0,7);
+ }else{
+  const month=prompt("الشهر YYYY-MM",emciaAccountingMonth(o));if(month===null)return;
+  if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))return alert("أدخل شهراً صحيحاً");
+  changes.month=month;if(o.date)changes.date=month+"-01";
+ }
+ Object.assign(o,changes);save();render(document.querySelector(".page.active").id)
+}
 function emciaMissingFinancialRates(){
  return db.g.filter(g=>g.active!==false&&db.p.some(p=>p.gid===g.id)&&(g.r==null||!Number.isFinite(Number(g.r))));
 }
@@ -2555,7 +2576,7 @@ function emciaFinancialSetupNotice(){
  return missing.length?'<div class="card" style="border:2px solid #c2410c;padding:12px"><strong>⚠️ تعذر احتساب حصص الأستاذ والمؤسسة</strong><p>توجد أفواج لها أداءات مسجلة لكن نسبة الأستاذ غير محفوظة في البيانات المالية: '+missing.map(g=>esc(g.n||g.id)).join('، ')+'. افتح قسم الأفواج من حساب المدير، وحدد نسبة الأستاذ واحفظها، ثم أعد تحميل التقرير.</p></div>':'';
 }
 function budget(){
- let m=window.bm||nowMonth(), rec=emciaFinancialPayments().filter(p=>p.receiptMonth===m), gross=rec.reduce((s,p)=>s+(+(p.netAfterRefund??p.a)||0),0), prof=rec.reduce((s,p)=>s+teacherDueOf(p),0), em=rec.reduce((s,p)=>s+(+p.e||0),0), other=db.oi.filter(x=>x.month===m).reduce((s,x)=>s+(+x.a||0),0), fixed=db.x.filter(x=>x.month===m&&x.type==="fixed").reduce((s,x)=>s+(+x.a||0),0), variable=db.x.filter(x=>x.month===m&&x.type!=="fixed").reduce((s,x)=>s+(+x.a||0),0), sav=db.sv.filter(x=>x.month===m).reduce((s,x)=>s+(+x.a||0),0), operating=em+other-fixed-variable, avail=operating-sav;
+ let m=window.bm||nowMonth(), rec=emciaFinancialPayments().filter(p=>p.receiptMonth===m), gross=rec.reduce((s,p)=>s+(+(p.netAfterRefund??p.a)||0),0), prof=rec.reduce((s,p)=>s+teacherDueOf(p),0), em=rec.reduce((s,p)=>s+(+p.e||0),0), other=db.oi.filter(x=>emciaAccountingMonth(x)===m).reduce((s,x)=>s+(+x.a||0),0), fixed=db.x.filter(x=>x.month===m&&x.type==="fixed").reduce((s,x)=>s+(+x.a||0),0), variable=db.x.filter(x=>x.month===m&&x.type!=="fixed").reduce((s,x)=>s+(+x.a||0),0), sav=db.sv.filter(x=>emciaAccountingMonth(x)===m).reduce((s,x)=>s+(+x.a||0),0), operating=em+other-fixed-variable, avail=operating-sav;
  let low=db.sv.filter(x=>x.fund==="low").reduce((s,x)=>s+(+x.a||0),0), dev=db.sv.filter(x=>x.fund==="dev").reduce((s,x)=>s+(+x.a||0),0);
  $("#budget").innerHTML=emciaFinancialSetupNotice()+`<div class="card"><h3>تدبير الميزانية / Gestion du budget</h3><input type="month" value="${m}" onchange="window.bm=this.value;budget()"></div>
  <div class="grid budget-kpi-strip"><div class="card"><div class="muted">إجمالي المقبوضات الدراسية</div><div class="kpi">${money(gross)}</div></div><div class="card"><div class="muted">مستحقات الأساتذة</div><div class="kpi">${money(prof)}</div></div><div class="card"><div class="muted">حصة EMCIA</div><div class="kpi">${money(em)}</div></div><div class="card"><div class="muted">مداخيل أخرى</div><div class="kpi">${money(other)}</div></div><div class="card"><div class="muted">المصاريف الثابتة</div><div class="kpi">${money(fixed)}</div></div><div class="card"><div class="muted">المصاريف المتغيرة</div><div class="kpi">${money(variable)}</div></div><div class="card"><div class="muted">صافي التشغيل قبل الادخار</div><div class="kpi">${money(operating)}</div></div><div class="card"><div class="muted">الرصيد المتاح بعد الادخار</div><div class="kpi">${money(avail)}</div></div></div>
@@ -2748,7 +2769,7 @@ function rcBuildReport(){
    '<h3>الحركة المالية حسب تاريخ القبض</h3>'+cash+
    '<p class="muted">التحصيل والاستحقاقات أعلاه محسوبان حسب الشهر الذي تخصه الواجبات. أما الحركة المالية فحسب شهر القبض؛ لذلك قد تختلف القيم بين القسمين. التقرير للعرض ولا يغيّر السجلات.</p>');
  } else if(type==="monthly"){
-   let ps=emciaFinancialPayments().filter(p=>(p.date||"").slice(0,7)===m),gross=ps.reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0),td=ps.reduce((z,p)=>z+teacherDueOf(p),0),em=ps.reduce((z,p)=>z+(+p.e||0),0),oi=db.oi.filter(x=>(x.date||"").slice(0,7)===m).reduce((z,x)=>z+(+x.a||0),0),ex=db.x.filter(x=>(x.date||"").slice(0,7)===m).reduce((z,x)=>z+(+x.a||0),0),sv=db.sv.filter(x=>(x.date||"").slice(0,7)===m).reduce((z,x)=>z+(+x.a||0),0);
+   let ps=emciaFinancialPayments().filter(p=>(p.date||"").slice(0,7)===m),gross=ps.reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0),td=ps.reduce((z,p)=>z+teacherDueOf(p),0),em=ps.reduce((z,p)=>z+(+p.e||0),0),oi=db.oi.filter(x=>emciaAccountingMonth(x)===m).reduce((z,x)=>z+(+x.a||0),0),ex=db.x.filter(x=>emciaAccountingMonth(x)===m).reduce((z,x)=>z+(+x.a||0),0),sv=db.sv.filter(x=>emciaAccountingMonth(x)===m).reduce((z,x)=>z+(+x.a||0),0);
    let active=db.e.filter(e=>emciaEnrollmentMonth(e,m)),uniq=new Set(active.map(e=>e.sid)).size,att=emciaAttendanceRecords().filter(a=>a.date.slice(0,7)===m);
    let rows=db.t.filter(x=>x.active!==false).map(x=>{let gs=db.g.filter(g=>g.tid===x.id),ids=new Set(gs.map(g=>g.id)),pp=ps.filter(p=>ids.has(p.gid));return[esc(objName(x)),new Set(db.e.filter(e=>emciaEnrollmentMonth(e,m)&&ids.has(e.gid)).map(e=>e.sid)).size,money(pp.reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0)),money(pp.reduce((z,p)=>z+teacherDueOf(p),0)),money(pp.reduce((z,p)=>z+(+p.e||0),0))]});
    rcSetReport(`التقرير الشهري الشامل — ${m}`,`<div class="meta">تقرير إداري ومالي وتربوي</div><p><span class="k">المتعلمون النشطون:</span> ${uniq} | <span class="k">سجلات الحضور:</span> ${att.length}</p>${rcTable(["المؤشر","القيمة"],[["مداخيل الدراسة",money(gross)],["مستحقات الأساتذة",money(td)],["حصة EMCIA",money(em)],["مداخيل أخرى",money(oi)],["المصاريف",money(ex)],["الادخار",money(sv)],["الرصيد المتاح",money(em+oi-ex-sv)]])}<h3>حسب الأستاذ</h3>${rcTable(["الأستاذ","المتعلمون","المحصل","مستحق الأستاذ","حصة EMCIA"],rows)}`)
@@ -2767,7 +2788,7 @@ function rcBuildReport(){
    let rows=[];db.e.filter(e=>emciaEnrollmentMonth(e,m)).forEach(e=>{let d=dueForEnrollmentMonth(e,m),pa=emciaFinancialPayments().filter(p=>p.sid===e.sid&&p.gid===e.gid&&p.allocMonth===m).reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);if(d-pa>0){let s=by(db.s,e.sid),g=by(db.g,e.gid);rows.push([esc(objName(s)),esc(g?g.n:"—"),esc(s&&s.ph?s.ph:"—"),money(d),money(pa),money(d-pa)])}});
    rcSetReport(`تقرير المتأخرات — ${m}`,rcTable(["المتعلم","الفوج","الهاتف","المستحق","المؤدى","المتبقي"],rows))
  } else if(type==="financial"){
-   let ps=emciaFinancialPayments().filter(p=>(p.date||"").slice(0,7)===m),gross=ps.reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0),td=ps.reduce((z,p)=>z+teacherDueOf(p),0),em=ps.reduce((z,p)=>z+(+p.e||0),0),oi=db.oi.filter(x=>(x.date||"").slice(0,7)===m).reduce((z,x)=>z+(+x.a||0),0),ex=db.x.filter(x=>(x.date||"").slice(0,7)===m).reduce((z,x)=>z+(+x.a||0),0),sv=db.sv.filter(x=>(x.date||"").slice(0,7)===m).reduce((z,x)=>z+(+x.a||0),0);
+   let ps=emciaFinancialPayments().filter(p=>(p.date||"").slice(0,7)===m),gross=ps.reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0),td=ps.reduce((z,p)=>z+teacherDueOf(p),0),em=ps.reduce((z,p)=>z+(+p.e||0),0),oi=db.oi.filter(x=>emciaAccountingMonth(x)===m).reduce((z,x)=>z+(+x.a||0),0),ex=db.x.filter(x=>emciaAccountingMonth(x)===m).reduce((z,x)=>z+(+x.a||0),0),sv=db.sv.filter(x=>emciaAccountingMonth(x)===m).reduce((z,x)=>z+(+x.a||0),0);
    rcSetReport(`التقرير المالي — ${m}`,rcTable(["البيان","المبلغ"],[["إجمالي التحصيل",money(gross)],["مستحقات الأساتذة",money(td)],["حصة EMCIA",money(em)],["مداخيل أخرى",money(oi)],["المصاريف",money(ex)],["الادخار",money(sv)],["الرصيد المتاح",money(em+oi-ex-sv)]]))
  }
  if(["financial","executive","arrears"].includes(type))$("#rcPreview").innerHTML+=emciaSessionBalancesHTML(m);
