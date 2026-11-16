@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>EMCIA Gestion</title>
-<meta name="emcia-release" content="2026.11.16.2">
+<meta name="emcia-release" content="2026.11.16.3">
 <meta name="application-name" content="EMCIA Gestion">
 <meta name="apple-mobile-web-app-title" content="EMCIA Gestion">
 <style>
@@ -497,7 +497,7 @@ try{
 }catch(e){}
 </script></head>
 <body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>تسجيل دخول المدير والموظفين المفعّلين</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label for="authPassword">كلمة المرور</label><div class="emcia-password-field"><div class="emcia-eye-wrap"><input id="authPassword" type="password" required autocomplete="current-password"><input id="authPasswordVisible" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" style="display:none" oninput="document.getElementById('authPassword').value=this.value"><button class="emcia-eye-button" id="authPasswordEye" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false" onclick="emciaLoginEyeClick()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات محفوظة بأمان في النظام السحابي للمؤسسة.</small></div></div>
-<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.16.2</small></header>
+<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.16.3</small></header>
 <div id="langMenu" class="lang-menu">
 <button id="langMenuBtn" type="button" onclick="toggleLangMenu()" aria-label="اختيار اللغة">🌐</button>
 <div id="langChoices" class="lang-choices">
@@ -1476,7 +1476,21 @@ function subjectCatalog(){return ["الفرنسية","الإنجليزية","ا�
 
 
 function emciaFilterOptions(){return '<option value="">— جميع المواد —</option>'+[...new Set(db.g.map(g=>g.subject).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar')).map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')}
-function emciaTableFilter(inputId,tableId){let q=($(inputId)?.value||'').trim().toLocaleLowerCase();let sub=($(inputId+'Subject')?.value||'');let level=($(inputId+'Level')?.value||'').trim().toLocaleLowerCase();let gid=($(inputId+'Group')?.value||'');document.querySelectorAll('#'+tableId+' tbody tr').forEach(tr=>{let hay=(tr.textContent||'').toLocaleLowerCase(),sid=tr.dataset.studentId||'',student=db.s.find(x=>x.id===sid),requests=studentRequestLabels(student||{}).join(' ').toLocaleLowerCase(),matches=!sub||requests.includes(sub.toLocaleLowerCase())||(tr.dataset.subject||'')===sub;tr.style.display=hay.includes(q)&&matches&&(!level||(requests+' '+hay).includes(level))&&(!gid||tr.dataset.group===gid||(sid&&db.e.some(e=>e.sid===sid&&e.gid===gid&&emciaEnrollmentDate(e,today()))))?'':'none'})}
+function emciaTableFilter(inputId,tableId){
+ const value=id=>(document.getElementById(id)?.value||'').trim();
+ const q=value(inputId).toLocaleLowerCase(),sub=value(inputId+'Subject'),level=value(inputId+'Level').toLocaleLowerCase(),gid=value(inputId+'Group');
+ document.querySelectorAll('#'+tableId+' tr[data-student-id]').forEach(row=>{
+  const sid=row.dataset.studentId,student=by(db.s,sid)||{};
+  const enrollments=db.e.filter(e=>e.sid===sid&&emciaEnrollmentDate(e,today()));
+  const groups=enrollments.map(e=>by(db.g,e.gid)).filter(Boolean);
+  const requests=studentRequestLabels(student).join(' ').toLocaleLowerCase();
+  const hay=[row.textContent,student.n,student.nAr,student.nFr,student.ph,student.parent,student.land].filter(Boolean).join(' ').toLocaleLowerCase();
+  const levels=[student.level,...(student.requestedSubjectLevels||[]).map(r=>r.level),...groups.map(g=>g.level)].filter(Boolean).map(x=>String(x).trim().toLocaleLowerCase());
+  const matchesSubject=!sub||requests.includes(sub.toLocaleLowerCase())||groups.some(g=>g.subject===sub);
+  row.style.display=hay.includes(q)&&matchesSubject&&(!level||levels.includes(level))&&(!gid||enrollments.some(e=>e.gid===gid))?'':'none';
+ });
+}
+
 function emciaStudentTableFilters(){return `<div class="row" style="margin:10px 0"><input id="studentTableQuery" placeholder="بحث باسم المتعلم أو الهاتف" oninput="emciaTableFilter('studentTableQuery','studentRecordsTable')"><select id="studentTableQuerySubject" onchange="emciaTableFilter('studentTableQuery','studentRecordsTable')">${emciaFilterOptions()}</select><select id="studentTableQueryLevel" onchange="emciaTableFilter('studentTableQuery','studentRecordsTable')"><option value="">— جميع المستويات —</option>${[...new Set(db.s.flatMap(o=>[o.level,...(o.requestedSubjectLevels||[]).map(r=>r.level)].filter(Boolean)))].sort((a,b)=>a.localeCompare(b,"ar")).map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("")}</select><select id="studentTableQueryGroup" onchange="emciaTableFilter('studentTableQuery','studentRecordsTable')"><option value="">— جميع الأفواج —</option>${db.g.filter(g=>g.active!==false).map(g=>`<option value="${g.id}">${esc(groupCompactName(g))}</option>`).join("")}</select></div>`}
 function students(){
  tempStudentSubjects=[];tempStudentRequests=[];

@@ -12,7 +12,7 @@ let role='director',writes=0,errors=[],alerts=[],failAtomic=false,reminders=[];
 for(const alias of ['index.html','EMCIA_Integrated_Release_Candidate.html','EMCIA_V5_15_16_Cloud_Test.html','EMCIA_V5_15_16_Supabase_Director_Test.html','EMCIA_Certification_Integration_Test.html','EMCIA_Certification_Issuance_Test.html']){
  const redirect=fs.readFileSync(path.join(__dirname,'..',alias),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
  let target;vm.runInNewContext(redirect,{URL,location:{href:'https://emcia.invalid/'+alias+'?v=103&request=example#access_token=test&type=recovery',search:'?v=103&request=example',hash:'#access_token=test&type=recovery',replace(value){target=new URL(value)}}});
- assert.equal(target.pathname,'/emcia.html');assert.equal(target.searchParams.get('v'),'2026.11.16.2');assert.equal(target.searchParams.get('request'),'example');assert.equal(target.hash,'#access_token=test&type=recovery');
+ assert.equal(target.pathname,'/emcia.html');assert.equal(target.searchParams.get('v'),'2026.11.16.3');assert.equal(target.searchParams.get('request'),'example');assert.equal(target.hash,'#access_token=test&type=recovery');
 }
 
 function createDOM(){
@@ -49,7 +49,7 @@ async function saved(w){for(let i=0;i<120&&!w.document.querySelector('#emcia-clo
 (async()=>{
  let dom=createDOM(),w=await login(dom),d=w.document;
  try{
-  assert.equal(d.querySelector('#emcia-release').textContent,'2026.11.16.2');
+  assert.equal(d.querySelector('#emcia-release').textContent,'2026.11.16.3');
   w.eval("window.attDate='2026-11-14';window.attGid='';show('attendance')");
   const timed=()=>d.querySelectorAll('#attendance select[onchange^="emciaSaveTimedAttendance"]');
   assert.equal(timed().length,3);
@@ -219,6 +219,26 @@ assert.ok(w.eval("scheduleConflict({...db.sch[0],start:'15:00',end:'16:00'},'m1'
   w.eval("db.e[1].start='2026-10-01';db.e[1].discountStart='2026-10';db.att[0].date='2026-10-20';db.sp=db.sp.slice(0,1);db.sp[0].date='2026-11-10'");
   assert.equal(w.eval("emciaAnalysisDue(db.e[1],'2026-10')"),80);assert.equal(w.emciaAnalysisPayments('2026-10').reduce((sum,p)=>sum+p.a,0),80);
   assert.equal(w.emciaAnalysisPayments('2026-11').reduce((sum,p)=>sum+p.a,0),0);assert.equal(w.teacherCalculatedDue('t1','2026-11'),40);assert.equal(w.teacherCalculatedDue('t1','2026-10'),0);
+  // Learner filters read actual control IDs, combine criteria, and retain headers with zero matches.
+  data=make();data.s=[
+   {id:'filter-1',n:'آدم',nAr:'آدم',nFr:'Adam Test',level:'A1',ph:'0600111222',active:true,requestedSubjectLevels:[{subject:'الألمانية',level:'A1'}]},
+   {id:'filter-2',n:'سلمى',level:'A2',ph:'0600333444',active:true,requestedSubjectLevels:[]},
+   {id:'filter-3',n:'ياسين',level:'A10',ph:'0600555666',active:true,requestedSubjectLevels:[{subject:'الألمانية',level:'A10'}]}
+  ];
+  data.g[0].subject='الألمانية';data.g[1].subject='الفرنسية';
+  data.e=data.s.map((s,i)=>({id:'filter-e'+i,sid:s.id,gid:i===1?'g2':'g1',active:true,start:'2026-11-01',billingMode:'monthly'}));seed(data);w.eval("show('students')");
+  const visibleStudents=()=>[...d.querySelectorAll('#studentRecordsTable tr[data-student-id]')].filter(r=>r.style.display!=='none').map(r=>r.dataset.studentId).sort();
+  const filterStudent=(suffix,value)=>{const el=d.getElementById('studentTableQuery'+suffix);el.value=value;el.dispatchEvent(new w.Event(suffix?'change':'input',{bubbles:true}))};
+  assert.deepEqual(visibleStudents(),['filter-1','filter-2','filter-3']);
+  filterStudent('','آدم');assert.deepEqual(visibleStudents(),['filter-1']);
+  filterStudent('','0600333');assert.deepEqual(visibleStudents(),['filter-2']);
+  filterStudent('','adam');assert.deepEqual(visibleStudents(),['filter-1']);filterStudent('','');
+  filterStudent('Subject','الفرنسية');assert.deepEqual(visibleStudents(),['filter-2']);filterStudent('Subject','');
+  filterStudent('Level','A1');assert.deepEqual(visibleStudents(),['filter-1']);filterStudent('Level','');
+  filterStudent('Group','g1');assert.deepEqual(visibleStudents(),['filter-1','filter-3']);
+  filterStudent('Subject','الألمانية');filterStudent('Level','A1');filterStudent('','0600');assert.deepEqual(visibleStudents(),['filter-1']);
+  filterStudent('','لا يوجد اسم مماثل');assert.deepEqual(visibleStudents(),[]);assert.equal(d.querySelector('#studentRecordsTable tr').style.display,'');
+  filterStudent('','');filterStudent('Group','');filterStudent('Level','');filterStudent('Subject','');assert.equal(visibleStudents().length,3);
   // Additional income: direct save, batch save, lower table, monthly totals and persisted reload.
   data=make();seed(data);w.eval("show('expenses')");
   const fillIncome=(cat,amount,date='2026-11-14')=>{
