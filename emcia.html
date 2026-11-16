@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>EMCIA Gestion</title>
-<meta name="emcia-release" content="2026.11.16.3">
+<meta name="emcia-release" content="2026.11.16.4">
 <meta name="application-name" content="EMCIA Gestion">
 <meta name="apple-mobile-web-app-title" content="EMCIA Gestion">
 <style>
@@ -497,7 +497,7 @@ try{
 }catch(e){}
 </script></head>
 <body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>تسجيل دخول المدير والموظفين المفعّلين</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label for="authPassword">كلمة المرور</label><div class="emcia-password-field"><div class="emcia-eye-wrap"><input id="authPassword" type="password" required autocomplete="current-password"><input id="authPasswordVisible" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" style="display:none" oninput="document.getElementById('authPassword').value=this.value"><button class="emcia-eye-button" id="authPasswordEye" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false" onclick="emciaLoginEyeClick()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات محفوظة بأمان في النظام السحابي للمؤسسة.</small></div></div>
-<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.16.3</small></header>
+<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.16.4</small></header>
 <div id="langMenu" class="lang-menu">
 <button id="langMenuBtn" type="button" onclick="toggleLangMenu()" aria-label="اختيار اللغة">🌐</button>
 <div id="langChoices" class="lang-choices">
@@ -544,7 +544,7 @@ let raw={}; try{raw=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){}
 let db={
  subj:Array.isArray(raw.subj)?raw.subj:[], t:Array.isArray(raw.t)?raw.t:[], s:Array.isArray(raw.s)?raw.s:[], g:Array.isArray(raw.g)?raw.g:[],
  e:Array.isArray(raw.e)?raw.e:[], p:Array.isArray(raw.p)?raw.p:[], sp:Array.isArray(raw.sp)?raw.sp:[], sc:Array.isArray(raw.sc)?raw.sc:[], at2:Array.isArray(raw.at2)?raw.at2:[], tp:Array.isArray(raw.tp)?raw.tp:[], adj:Array.isArray(raw.adj)?raw.adj:[], cash:Array.isArray(raw.cash)?raw.cash:[], shifts:Array.isArray(raw.shifts)?raw.shifts:[], tatt:Array.isArray(raw.tatt)?raw.tatt:[], wait:Array.isArray(raw.wait)?raw.wait:[], wls:Array.isArray(raw.wls)?raw.wls:[],
- x:Array.isArray(raw.x)?raw.x:[], oi:Array.isArray(raw.oi)?raw.oi:[], sv:Array.isArray(raw.sv)?raw.sv:[], att:Array.isArray(raw.att)?raw.att:[], sch:Array.isArray(raw.sch)?raw.sch:[], rooms:Array.isArray(raw.rooms)?raw.rooms:[]
+ obligations:Array.isArray(raw.obligations)?raw.obligations:[], x:Array.isArray(raw.x)?raw.x:[], oi:Array.isArray(raw.oi)?raw.oi:[], sv:Array.isArray(raw.sv)?raw.sv:[], att:Array.isArray(raw.att)?raw.att:[], sch:Array.isArray(raw.sch)?raw.sch:[], rooms:Array.isArray(raw.rooms)?raw.rooms:[]
 };
 if(!db.rooms.length)db.rooms=[
  {id:"room30",n:"القاعة 1",cap:30,active:true},
@@ -862,7 +862,7 @@ function enterApp(){
  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
  $("#workspace").classList.add("active");
  let y=new Date().getFullYear(),m=new Date().getMonth()+1,season=m>=9?`${y}/${y+1}`:`${y-1}/${y}`;
- $("#workspace").innerHTML=`<div class="card emcia-dashboard-brand"><img class="emcia-official-logo" src="./EMCIA_Official_Logo-1.jpg" alt="الشعار الرسمي لمؤسسة EMCIA" loading="eager"><div class="welcome-season">الموسم الدراسي ${season.replace("/", "–")}</div></div>`;
+ $("#workspace").innerHTML=`<div class="card emcia-dashboard-brand"><img class="emcia-official-logo" src="./EMCIA_Official_Logo-1.jpg" alt="الشعار الرسمي لمؤسسة EMCIA" loading="eager"><div class="welcome-season">الموسم الدراسي ${season.replace("/", "–")}</div></div>${emciaObligationAlertsHTML()}`;
  nav();
  applyLang();
 }
@@ -2416,7 +2416,7 @@ function editPayment(id){
  Object.assign(p,{receiptNo,method,paymentRef,allocations,a,date,receiptMonth:date.slice(0,7),allocMonth:am,d:split.teacher,e:split.emcia,discount:split.discount,discountTeacher:split.discountTeacher,discountEmcia:split.discountEmcia,dueAfterDiscount:split.due});save();payments();
 }
 
-const expenseCats=["المحاسبة","السكرتارية","الكراء","كهرباء الطابق الأول","كهرباء الطابق الثاني","الهاتف والإنترنت","النظافة","النسخ","الماء","إشهار","معدات","إصلاحات","أخرى"];
+const expenseCats=["المحاسبة","السكرتارية","رواتب المستخدمين","الكراء","كهرباء الطابق الأول","كهرباء الطابق الثاني","الهاتف والإنترنت","النظافة","النسخ","الماء","إشهار","معدات","إصلاحات","أخرى"];
 
 
 function adjustmentForPayment(pid){return db.adj.find(x=>x.pid===pid)}
@@ -2542,14 +2542,100 @@ function emciaExtraRender(){
  let el=document.getElementById("oiDraft");if(!el)return;
  el.innerHTML=emciaExtraDraft.length?'<div style="margin-top:12px"><strong>المداخيل المضافة</strong>'+emciaExtraDraft.map((x,i)=>'<div style="display:flex;align-items:center;gap:10px;justify-content:space-between;padding:10px 4px;border-bottom:1px solid #d9e2ec"><span style="flex:1;min-width:0;font-weight:650;font-size:16px;overflow-wrap:anywhere">'+esc(x.cat)+'</span><strong style="white-space:nowrap;direction:ltr">'+money(x.a)+'</strong><button type="button" class="danger" style="flex:0 0 auto;width:38px;min-width:38px;padding:7px;border-radius:8px" aria-label="حذف المدخول" title="حذف المدخول" onclick="emciaExtraDraft.splice('+i+',1);emciaExtraRender()">✕</button></div>').join('')+'<div style="text-align:left;margin-top:12px;font-size:18px;font-weight:750">المجموع: '+money(emciaExtraDraft.reduce((z,x)=>z+x.a,0))+'</div></div>':'<p class="muted">لم تتم إضافة أي مدخول بعد.</p>';
 }
+Object.assign(I18N,{
+ "رواتب المستخدمين":"Salaires du personnel","الالتزامات الشهرية والتذكير":"Échéances mensuelles et rappels","إضافة موعد شهري":"Ajouter une échéance mensuelle","تعديل التزام":"Modifier une échéance","الاسم / اسم المستخدم":"Libellé / nom du salarié","المبلغ المستحق (اختياري)":"Montant dû (facultatif)","يوم الاستحقاق من الشهر":"Jour d’échéance du mois","التذكير قبل الموعد بالأيام":"Rappel avant échéance (jours)","بداية التذكير":"Premier mois","شهر تطبيق التعديل":"Mois d’application du changement","حفظ الموعد":"Enregistrer l’échéance","إلغاء التعديل":"Annuler la modification","شهر المتابعة":"Mois de suivi","الالتزام":"Engagement","الموعد":"Échéance","المستحق":"Dû","المؤدى":"Payé","الحالة":"État","مؤدى":"Payé","متأخر":"En retard","مستحق اليوم":"À régler aujourd’hui","اقترب الموعد":"Échéance proche","قادم":"À venir","غير محدد":"Non précisé","تسجيل المصروف":"Enregistrer la dépense","ضبط المواعيد الشهرية":"Configurer les échéances mensuelles","ربط المصروف المحدد":"Associer la dépense sélectionnée","إلغاء الربط":"Annuler l’association","إيقاف من الشهر المقبل":"Arrêter dès le mois prochain"
+});
+// Recurring institutional obligations are financial-only configuration, not booked expenses.
+function emciaObligationDueDate(month,day){
+ const [year,number]=month.split('-').map(Number),last=new Date(Date.UTC(year,number,0)).getUTCDate();
+ return month+'-'+String(Math.min(last,Math.max(1,+day||1))).padStart(2,'0');
+}
+function emciaObligationTerms(rule,month){return (rule.versions||[]).filter(x=>x.from<=month).sort((a,b)=>b.from.localeCompare(a.from))[0]||null}
+function emciaObligationRows(date=emciaLocalDay(),selectedMonth=''){
+ if(!emciaCanViewManagement())return [];
+ const rows=[],through=selectedMonth||monthShift(date.slice(0,7),1);
+ for(const rule of db.obligations||[]){
+  for(let month=selectedMonth||rule.start;month&&month<=through;month=monthShift(month,1)){
+   if(month<rule.start||rule.end&&month>rule.end)continue;
+   const terms=emciaObligationTerms(rule,month);if(!terms)continue;
+   const dueDate=emciaObligationDueDate(month,terms.day),paid=db.x.filter(x=>x.obligationId===rule.id&&x.obligationMonth===month&&(x.date||x.month+'-01')<=date).reduce((sum,x)=>sum+(+x.a||0),0);
+   const amount=+terms.amount||0,remaining=Math.max(0,Math.round((amount-paid)*100)/100),settled=amount>0?remaining<0.005:paid>0;
+   const days=Math.round((new Date(dueDate+'T12:00:00Z')-new Date(date+'T12:00:00Z'))/86400000);
+   const status=settled?'paid':days<0?'overdue':days===0?'today':days<=terms.lead?'soon':'future';
+   rows.push({rule,month,dueDate,amount,paid,remaining,status,days});
+  }
+ }
+ return rows.sort((a,b)=>a.dueDate.localeCompare(b.dueDate)||a.rule.n.localeCompare(b.rule.n));
+}
+function emciaObligationAlertsHTML(date=emciaLocalDay()){
+ if(!emciaCanViewManagement())return '';
+ const rows=emciaObligationRows(date).filter(x=>['overdue','today','soon'].includes(x.status)),late=rows.some(x=>x.status==='overdue');
+ return '<details class="card emcia-obligation-alerts" style="border:2px solid '+(rows.length?(late?'#b91c1c':'#b45309'):'#cbd5e1')+';background:'+(rows.length?'#fff7ed':'#fff')+'"><summary style="cursor:pointer;font-weight:750">🔔 التزامات المؤسسة — '+rows.length+' تنبيه</summary>'+(rows.length?'<div style="overflow-x:auto"><table><tr><th>الالتزام</th><th>الموعد</th><th>المتبقي</th><th>الحالة</th><th></th></tr>'+rows.map(x=>'<tr><td>'+esc(x.rule.n)+'</td><td>'+x.dueDate+'</td><td>'+(x.amount?money(x.remaining):'يحدد عند الأداء')+'</td><td>'+({overdue:'متأخر',today:'مستحق اليوم',soon:'اقترب الموعد'}[x.status])+'</td><td><button type="button" onclick="emciaPayObligation(\''+x.rule.id+'\',\''+x.month+'\')">تسجيل المصروف</button></td></tr>').join('')+'</table></div>':'<p>لا توجد التزامات تستدعي التذكير حالياً.</p>')+'<button type="button" class="secondary" onclick="document.getElementById(\'emcia-alerts-panel\')?.remove();show(\'expenses\');document.getElementById(\'obligationsManager\')?.scrollIntoView?.({block:\'start\'})">ضبط المواعيد الشهرية</button></details>';
+}
+function emciaRefreshObligationAlerts(){
+ if(!emciaCanViewManagement())return;
+ document.querySelectorAll('.emcia-obligation-alerts').forEach(panel=>{
+  const open=panel.open,holder=document.createElement('div');
+  holder.innerHTML=emciaObligationAlertsHTML(panel.closest('#daily')?(window.dailyDate||emciaLocalDay()):emciaLocalDay());
+  const next=holder.firstElementChild;if(next){next.open=open;panel.replaceWith(next)}
+ });
+ window.emciaUpdateAlertCounter?.();
+}
+window.addEventListener('focus',emciaRefreshObligationAlerts);
+setInterval(()=>{if(!document.hidden)emciaRefreshObligationAlerts()},60000);
+function emciaObligationsHTML(){
+ if(!emciaCanViewManagement())return '';
+ const month=window.obligationMonth||nowMonth(),rule=(db.obligations||[]).find(x=>x.id===window.obligationEditId),terms=rule?emciaObligationTerms(rule,month)||rule.versions[0]:null;
+ const selected=rule?.cat||'الكراء',rows=emciaObligationRows(emciaLocalDay(),month);
+ const pending=window.pendingObligation;
+ const link=pending?'<div class="card" style="border:2px solid #b45309"><strong>تسجيل أداء: '+esc(pending.label)+' — '+pending.month+'</strong><p>أدخل المبلغ المدفوع فعلياً كتسجيل مصروف، أو اربط مصروفاً سبق تسجيله أدناه.</p><select id="obligationExisting"><option value="">— اختر مصروفاً مسجلاً —</option>'+db.x.filter(x=>!x.obligationId).slice().reverse().map(x=>'<option value="'+x.id+'">'+esc(x.date||x.month)+' — '+esc(x.cat)+' — '+money(x.a)+' — '+esc(x.note||'')+'</option>').join('')+'</select><button type="button" onclick="emciaLinkObligationExpense()">ربط المصروف المحدد</button><button type="button" class="secondary" onclick="window.pendingObligation=null;expenses()">إلغاء الربط</button></div>':'';
+ return link+'<div class="card" id="obligationsManager"><h3>الالتزامات الشهرية والتذكير</h3><p class="muted">تظهر التنبيهات داخل التطبيق للمدير والمحاسب. لا تُسجّل مصاريف تلقائياً. اترك المبلغ فارغاً للفواتير المتغيرة؛ يختفي تذكيرها بعد تسجيل المصروف وربطه.</p><details id="obligationForm" '+(rule?'open':'')+'><summary>＋ '+(rule?'تعديل التزام':'إضافة موعد شهري')+'</summary><div class="row"><div><label>النوع</label><select id="obCat">'+expenseCats.map(c=>'<option '+(c===selected?'selected':'')+'>'+esc(c)+'</option>').join('')+'</select></div><div><label>الاسم / اسم المستخدم</label><input id="obName" value="'+esc(rule?.n||'')+'" placeholder="مثال: راتب المستخدم — الاسم"></div><div><label>المبلغ المستحق (اختياري)</label><input id="obAmount" type="number" min="0" step="0.01" value="'+(terms?.amount||'')+'"></div><div><label>يوم الاستحقاق من الشهر</label><input id="obDay" type="number" min="1" max="31" value="'+(terms?.day||'')+'"></div><div><label>التذكير قبل الموعد بالأيام</label><input id="obLead" type="number" min="0" max="31" value="'+(terms?.lead??3)+'"></div><div><label>'+(rule?'شهر تطبيق التعديل':'بداية التذكير')+'</label><input id="obStart" type="month" value="'+(rule?month:nowMonth())+'"></div></div><p class="muted">اليوم 29 أو 30 أو 31 يصبح آخر يوم في الشهر الأقصر. التعديل يطبق من الشهر المختار؛ تبقى شروط الأشهر الأقدم محفوظة.</p><button type="button" onclick="emciaSaveObligation()">حفظ الموعد</button>'+(rule?'<button type="button" class="secondary" onclick="window.obligationEditId=\'\';expenses()">إلغاء التعديل</button>':'')+'</details><label>شهر المتابعة</label><input type="month" value="'+month+'" onchange="window.obligationMonth=this.value;expenses()"><div style="overflow-x:auto"><table><tr><th>الالتزام</th><th>الموعد</th><th>المستحق</th><th>المؤدى</th><th>الحالة</th><th></th></tr>'+rows.map(x=>'<tr><td>'+esc(x.rule.n)+'</td><td>'+x.dueDate+'</td><td>'+(x.amount?money(x.amount):'غير محدد')+'</td><td>'+money(x.paid)+'</td><td>'+({paid:'مؤدى',overdue:'متأخر',today:'مستحق اليوم',soon:'اقترب الموعد',future:'قادم'}[x.status])+(x.rule.end?' — يتوقف بعد '+x.rule.end:'')+'</td><td><button type="button" onclick="window.obligationEditId=\''+x.rule.id+'\';expenses()">تعديل</button>'+(x.status!=='paid'?'<button type="button" onclick="emciaPayObligation(\''+x.rule.id+'\',\''+x.month+'\')">تسجيل المصروف</button>':'')+(!x.rule.end?'<button type="button" class="secondary" onclick="emciaStopObligation(\''+x.rule.id+'\')">إيقاف من الشهر المقبل</button>':'')+'</td></tr>').join('')+'</table></div>'+(rows.length?'':'<p>لا توجد مواعيد مسجلة لهذا الشهر.</p>')+'</div>'+emciaObligationAlertsHTML();
+}
+function emciaSaveObligation(){
+ if(!emciaCanViewManagement())return;
+ const n=$('#obName').value.trim(),cat=$('#obCat').value,amount=Number($('#obAmount').value),day=Number($('#obDay').value),lead=Number($('#obLead').value),from=$('#obStart').value;
+ if(!n||!expenseCats.includes(cat)||!Number.isFinite(amount)||amount<0||!Number.isInteger(day)||day<1||day>31||!Number.isInteger(lead)||lead<0||lead>31||!/^\d{4}-(0[1-9]|1[0-2])$/.test(from)||from<EMCIA_ACCOUNTING_START_MONTH)return alert('أدخل الاسم وموعد الاستحقاق وشهر البداية بشكل صحيح');
+ db.obligations=db.obligations||[];const rule=db.obligations.find(x=>x.id===window.obligationEditId);
+ if(rule){if(from<rule.start||rule.end&&from>rule.end)return alert('اختر شهراً ضمن مدة الالتزام');rule.n=n;rule.cat=cat;rule.versions=rule.versions.filter(x=>x.from!==from).concat({from,amount,day,lead}).sort((a,b)=>a.from.localeCompare(b.from));}
+ else db.obligations.push({id:uid(),n,cat,start:from,versions:[{from,amount,day,lead}]});
+ window.obligationEditId='';save();expenses();
+}
+function emciaStopObligation(id){
+ if(!emciaCanViewManagement()||!confirm('إيقاف التذكير من الشهر المقبل؟ تبقى الالتزامات السابقة ومصاريفها محفوظة.'))return;
+ const rule=(db.obligations||[]).find(x=>x.id===id);if(!rule)return;rule.end=nowMonth();save();expenses();
+}
+function emciaPayObligation(id,month){
+ if(!emciaCanViewManagement())return;
+ const row=emciaObligationRows(emciaLocalDay(),month).find(x=>x.rule.id===id);if(!row||row.status==='paid')return;
+ document.getElementById('emcia-alerts-panel')?.remove();
+ window.pendingObligation={id,month,label:row.rule.n};show('expenses');$('#xc').value=row.rule.cat;$('#xt').value='fixed';$('#xa').value=row.amount?row.remaining:'';$('#xn').value=row.rule.n+' — '+month;$('#xd').value=emciaLocalDay();$('#xa').focus();
+}
+function emciaLinkObligationExpense(){
+ if(!emciaCanViewManagement())return;
+ const pending=window.pendingObligation,x=by(db.x,$('#obligationExisting')?.value);if(!pending||!x||x.obligationId)return alert('اختر المصروف المراد ربطه');
+ const row=emciaObligationRows(emciaLocalDay(),pending.month).find(z=>z.rule.id===pending.id);if(!row||row.status==='paid')return alert('هذا الالتزام مسدد بالفعل');
+ if(!confirm('ربط هذا المصروف بالالتزام دون تسجيل مصروف جديد؟'))return;
+ Object.assign(x,{obligationId:pending.id,obligationMonth:pending.month});window.pendingObligation=null;save();expenses();
+}
+
 function expenses(){
- $("#expenses").innerHTML=`<div class="grid"><div class="card"><h3>المصاريف</h3><div class="row"><select id="xc"><option value="">— اختر المصروف —</option>${expenseCats.map(x=>`<option>${x}</option>`)}</select><select id="xt"><option value="fixed">ثابت</option><option value="variable">متغير</option></select><input id="xa" type="number" placeholder="المبلغ"><input id="xm" type="month" value="${nowMonth()}"><input id="xn" placeholder="ملاحظة"><button onclick="addExpense()">إضافة مصروف</button></div></div>
+ $("#expenses").innerHTML=emciaObligationsHTML()+`<div class="grid"><div class="card"><h3>المصاريف</h3><div class="row"><select id="xc"><option value="">— اختر المصروف —</option>${expenseCats.map(x=>`<option>${x}</option>`)}</select><select id="xt"><option value="fixed">ثابت</option><option value="variable">متغير</option></select><input id="xa" type="number" placeholder="المبلغ"><input id="xd" type="date" value="${emciaLocalDay()}"><input id="xn" placeholder="ملاحظة"><button onclick="addExpense()">إضافة مصروف</button></div></div>
  <div class="card"><h3>مداخيل أخرى</h3><p class="muted">سجّل رسوم التسجيل والتأمين والكتب والنسخ هنا منفصلة عن واجبات الدراسة، حتى لا تدخل في مستحقات الأستاذ. مبالغ التأمين المحصلة تُتابع على حدة إلى حين تسويتها مع الجهة المعنية، ولا تُعد ربحاً صافياً تلقائياً. اذكر اسم المتعلم ورقم التوصيل في الملاحظة.</p><div class="oi-compact-grid"><div><label>الفوج</label><select id="oiGroup" onchange="emciaExtraSelect()"><option value="">— جميع الأفواج —</option>${db.g.map(g=>`<option value="${esc(g.id)}">${esc(g.n)}</option>`).join("")}</select></div><div><label>المتعلم</label><select id="oiStudent"></select></div><div><label>بداية الاسم</label><input id="oiSearch" oninput="emciaExtraSelect()" placeholder="بحث بالاسم"></div></div><div class="oi-compact-grid"><div><label>نوع المدخول</label><select id="oc"><option value="">— اختر المدخول —</option><option>التسجيل</option><option>التأمين (مبالغ محصلة)</option><option>الامتحانات</option><option>الكتب والنسخ</option><option>أخرى</option></select></div><div><label>المبلغ</label><input id="oa" type="number" min="0.01" step="0.01" placeholder="درهم"></div><div><label>تاريخ الأداء</label><input id="om" type="date" value="${today()}"></div></div><div class="oi-compact-grid"><div><label>رقم التوصيل</label><input id="oiReceipt" placeholder="رقم التوصيل"></div><div><label>التفاصيل</label><input id="on" placeholder="تعيين الرسوم"></div><div class="oi-action"><button type="button" onclick="emciaExtraAdd()">+ أضف مدخولاً</button></div></div><div id="oiDraft"></div><button type="button" onclick="addOther()">حفظ المداخيل المضافة</button></div></div></div>
  <div class="card" id="oiRegistered"><h3>المداخيل الأخرى المسجلة</h3><table><tr><th>تاريخ الأداء</th><th>المتعلم</th><th>المصدر</th><th>المبلغ</th><th>التوصيل</th><th>ملاحظة</th><th></th></tr>${db.oi.slice().reverse().map(x=>`<tr><td>${esc(x.date||x.month||"—")}</td><td>${x.sid?esc(name(db.s,x.sid)):"—"}</td><td>${esc(x.cat)}</td><td>${money(x.a)}</td><td>${esc(x.receiptNo||"—")}</td><td>${esc(x.note||"")}</td><td class="actions"><button onclick="editSimple('oi','${x.id}')">✏️</button><button class="danger" onclick="delTx('oi','${x.id}')">🗑️</button></td></tr>`).join("")}<tfoot><tr><th colspan="3">إجمالي المداخيل المسجلة — جميع الأشهر</th><th id="oiRegisteredTotal">${money(db.oi.reduce((sum,x)=>sum+(+x.a||0),0))}</th><td colspan="3"></td></tr></tfoot></table></div>
- <div class="card"><h3>المصاريف المسجلة</h3><table><tr><th>الشهر</th><th>الفئة</th><th>النوع</th><th>المبلغ</th><th>ملاحظة</th><th></th></tr>${db.x.slice().reverse().map(x=>`<tr><td>${x.month}</td><td>${esc(x.cat)}</td><td>${x.type==="fixed"?"ثابت":"متغير"}</td><td>${money(x.a)}</td><td>${esc(x.note||"")}</td><td class="actions"><button onclick="editSimple('x','${x.id}')">✏️</button><button class="danger" onclick="delTx('x','${x.id}')">🗑️</button></td></tr>`).join("")}</table></div>`;
+ <div class="card"><h3>المصاريف المسجلة</h3><table><tr><th>التاريخ</th><th>الفئة</th><th>النوع</th><th>المبلغ</th><th>ملاحظة</th><th></th></tr>${db.x.slice().reverse().map(x=>`<tr><td>${esc(x.date||x.month)}</td><td>${esc(x.cat)}</td><td>${x.type==="fixed"?"ثابت":"متغير"}</td><td>${money(x.a)}</td><td>${esc(x.note||"")}</td><td class="actions"><button onclick="editSimple('x','${x.id}')">✏️</button><button class="danger" onclick="delTx('x','${x.id}')">🗑️</button></td></tr>`).join("")}</table></div>`;
  emciaExtraSelect();emciaExtraRender();
 }
-function addExpense(){let cat=$("#xc").value;if(!cat)return alert("اختر المصروف");let a=+$("#xa").value;if(!(a>0))return alert("أدخل المبلغ");db.x.push({id:uid(),cat:cat,type:$("#xt").value,a,month:$("#xm").value,note:$("#xn").value});save();expenses()}
+function addExpense(){
+ const cat=$('#xc').value,a=Number($('#xa').value),date=$('#xd').value,pending=window.pendingObligation;
+ if(!cat||!Number.isFinite(a)||a<=0||!emciaValidDate(date))return alert('أدخل المصروف والمبلغ والتاريخ بشكل صحيح');
+ if(pending){
+  if(!emciaCanViewManagement())return;
+  const row=emciaObligationRows(emciaLocalDay(),pending.month).find(x=>x.rule.id===pending.id);
+  if(!row||row.status==='paid')return alert('هذا الالتزام مسدد بالفعل. حدّث الصفحة.');
+ }
+ db.x.push({id:uid(),cat,type:$('#xt').value,a,date,month:date.slice(0,7),note:$('#xn').value,...(pending?{obligationId:pending.id,obligationMonth:pending.month}:{})});
+ window.pendingObligation=null;save();expenses();
+}
 function addOther(){
  const pendingAmount=document.getElementById("oa").value.trim();
  if(pendingAmount){
@@ -3033,7 +3119,7 @@ function daily(){
  $("#daily").innerHTML=`<div class="card"><div class="row"><div><label>التاريخ</label><input type="date" value="${date}" onchange="window.dailyDate=this.value;daily()"></div><div><b>${day}</b></div></div></div>
  <div class="grid daily-stats-grid"><div class="card"><div class="muted">حصص اليوم</div><div class="kpi">${sessions.length}</div></div><div class="card"><div class="muted">حضور غير مكتمل</div><div class="kpi">${unfinished.length}</div></div><div class="card"><div class="muted">تنبيهات السعة</div><div class="kpi">${capacity.length}</div></div><div class="card"><div class="muted">غياب متكرر هذا الشهر</div><div class="kpi">${abs.length}</div></div><div class="card"><div class="muted">حالات متأخرة في الأداء</div><div class="kpi">${debtors}</div><div class="muted">${money(debtTotal)}</div></div><button type="button" class="card daily-payment-count" id="daily-payment-count-card" onclick="emciaOpenDailyPayments()" aria-controls="daily-payment-panel" title="${tr('عرض متعلمي حصص اليوم الذين لديهم مستحقات شهرية')}"><div class="muted">${tr('تنبيهات أداء اليوم')}</div><div class="kpi" id="daily-payment-count-value" aria-live="polite">${emciaDailyPaymentRows(date).length}</div><div class="muted" id="daily-payment-count-total">${money(emciaDailyPaymentRows(date).reduce((sum,row)=>sum+row.remaining,0))}</div></button></div>
  <div class="card"><h3>برنامج اليوم</h3>${sessions.length?`<table><tr><th>الوقت</th><th>الفوج</th><th>الأستاذ</th><th>القاعة</th><th>المسجلون</th><th>الحضور</th><th></th></tr>${sessions.map(s=>{let g=by(db.g,s.gid),r=by(db.rooms,s.rid),st=sessionAttendanceStatus(s,date);return`<tr><td>${s.start}–${s.end}</td><td>${esc(g?g.n:"—")}</td><td>${esc(g?objName(by(db.t,g.tid)):"—")}</td><td>${esc(r?r.n:"—")}</td><td>${st.n}${r?` / ${r.cap}`:""}</td><td><b>${st.label}</b></td><td><button onclick="goAttendance('${date}','${s.gid}','m:${s.id}')">تسجيل الحضور</button></td></tr>`}).join("")}</table>`:"<p class='muted'>لا توجد حصص مبرمجة لهذا اليوم.</p>"}</div>
- ${emciaDailyPaymentPanel(date)}<div class="card"><h3>التنبيهات التشغيلية</h3>${unfinished.length?`<p><b>الحضور:</b> ${unfinished.length} حصة لم يكتمل تسجيل حضورها.</p>`:"<p>✓ تسجيل الحضور مكتمل للحصص المسجلة اليوم.</p>"}${capacity.length?`<p><b>السعة:</b> ${capacity.map(x=>`${esc(x.g.n)} (${x.n}/${x.r.cap} في ${esc(x.r.n)})`).join("، ")}</p>`:"<p>✓ لا يوجد تجاوز لسعة القاعات في حصص اليوم.</p>"}${abs.length?`<p><b>الغياب المتكرر:</b></p><table><tr><th>المتعلم</th><th>الفوج</th><th>مرات الغياب هذا الشهر</th></tr>${abs.map(x=>`<tr><td>${esc(objName(x.s))}</td><td>${esc(x.g.n)}</td><td>${x.n}</td></tr>`).join("")}</table>`:"<p>✓ لا توجد حالياً حالات غياب غير مبرر متكرر (3 مرات فأكثر) هذا الشهر.</p>"}<p><b>المتابعة المالية:</b> ${debtors} تسجيل/حالة بها مبالغ متبقية إلى غاية ${m} بإجمالي ${money(debtTotal)}. <button onclick="show('arrears')">فتح المتأخرات</button></p></div>`;emciaRenderDailyPayments();emciaLoadDailyReminders(date);applyLang()
+ ${emciaDailyPaymentPanel(date)}${emciaObligationAlertsHTML(date)}<div class="card"><h3>التنبيهات التشغيلية</h3>${unfinished.length?`<p><b>الحضور:</b> ${unfinished.length} حصة لم يكتمل تسجيل حضورها.</p>`:"<p>✓ تسجيل الحضور مكتمل للحصص المسجلة اليوم.</p>"}${capacity.length?`<p><b>السعة:</b> ${capacity.map(x=>`${esc(x.g.n)} (${x.n}/${x.r.cap} في ${esc(x.r.n)})`).join("، ")}</p>`:"<p>✓ لا يوجد تجاوز لسعة القاعات في حصص اليوم.</p>"}${abs.length?`<p><b>الغياب المتكرر:</b></p><table><tr><th>المتعلم</th><th>الفوج</th><th>مرات الغياب هذا الشهر</th></tr>${abs.map(x=>`<tr><td>${esc(objName(x.s))}</td><td>${esc(x.g.n)}</td><td>${x.n}</td></tr>`).join("")}</table>`:"<p>✓ لا توجد حالياً حالات غياب غير مبرر متكرر (3 مرات فأكثر) هذا الشهر.</p>"}<p><b>المتابعة المالية:</b> ${debtors} تسجيل/حالة بها مبالغ متبقية إلى غاية ${m} بإجمالي ${money(debtTotal)}. <button onclick="show('arrears')">فتح المتأخرات</button></p></div>`;emciaRenderDailyPayments();emciaLoadDailyReminders(date);applyLang()
 }
 function goAttendance(date,gid,ref=""){window.attDate=date;window.attGid=gid;window.emciaAttendanceFocusRef=ref;show("attendance")}
 
@@ -3256,10 +3342,10 @@ function emciaPendingAlertCount(){
 window.emciaUpdateAlertCounter=function(){
  const badge=document.getElementById('emcia-alert-count');
  if(!badge)return;
- const count=emciaPendingAlertCount();
+ const count=emciaPendingAlertCount()+emciaObligationRows().filter(x=>['overdue','today','soon'].includes(x.status)).length;
  badge.textContent=count>99?'99+':String(count);
  badge.style.display='inline-flex';
- badge.title=count+' تسجيلات تستدعي متابعة الأداء';
+ badge.title=count+' تنبيهات تستدعي المتابعة';
 };
 function emciaAdministrativeAlerts(){
  const existing=document.getElementById('emcia-alerts-panel');if(existing)existing.remove();
@@ -3281,6 +3367,7 @@ function emciaAdministrativeAlerts(){
  const go=document.createElement('button');go.type='button';go.textContent='فتح متابعة المتأخرات';go.style.margin='8px';go.onclick=()=>{panel.remove();show('arrears')};
  filters.append(monthLabel,typeLabel,allMonths);
  panel.append(close,heading,intro,filters,count,go,list);
+ const institutional=document.createElement('div');institutional.innerHTML=emciaObligationAlertsHTML();panel.insertBefore(institutional,filters);
  function renderAlerts(){
   const selected=monthInput.value, current=nowMonth(),items=[];
   db.e.filter(e=>emciaBillingHistory(e)&&e.start&&e.start.slice(0,7)<=current).forEach(e=>{
@@ -3657,7 +3744,7 @@ window.addEventListener('beforeunload',event=>{
 const operationalUrl=api+'/rest/v1/emcia_operational_state_v2';
 const financialUrl=api+'/rest/v1/emcia_financial_state_v2';
 const operationalKeys=['subj','t','s','g','e','p','sp','sc','att','at2','sch','rooms','tatt','wait','wls','cash','shifts'];
-const financialKeys=['tp','adj','x','oi','sv'];
+const financialKeys=['tp','adj','x','oi','sv','obligations'];
 const restrictedFields={sc:['unitTeacherDiscount'],g:[],e:['discountTeacher','discountEmcia'],p:['discountTeacher','discountEmcia']};
 const financialFieldPattern=/^(teacherShare|emciaShare|instituteShare|teacherDue|emciaDue|salary|profit|netProfit|commission)$/i;
 let opRevision=0,finRevision=0,legacyFinancialIds={};

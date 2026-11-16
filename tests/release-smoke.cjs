@@ -12,7 +12,7 @@ let role='director',writes=0,errors=[],alerts=[],failAtomic=false,reminders=[];
 for(const alias of ['index.html','EMCIA_Integrated_Release_Candidate.html','EMCIA_V5_15_16_Cloud_Test.html','EMCIA_V5_15_16_Supabase_Director_Test.html','EMCIA_Certification_Integration_Test.html','EMCIA_Certification_Issuance_Test.html']){
  const redirect=fs.readFileSync(path.join(__dirname,'..',alias),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
  let target;vm.runInNewContext(redirect,{URL,location:{href:'https://emcia.invalid/'+alias+'?v=103&request=example#access_token=test&type=recovery',search:'?v=103&request=example',hash:'#access_token=test&type=recovery',replace(value){target=new URL(value)}}});
- assert.equal(target.pathname,'/emcia.html');assert.equal(target.searchParams.get('v'),'2026.11.16.3');assert.equal(target.searchParams.get('request'),'example');assert.equal(target.hash,'#access_token=test&type=recovery');
+ assert.equal(target.pathname,'/emcia.html');assert.equal(target.searchParams.get('v'),'2026.11.16.4');assert.equal(target.searchParams.get('request'),'example');assert.equal(target.hash,'#access_token=test&type=recovery');
 }
 
 function createDOM(){
@@ -49,7 +49,7 @@ async function saved(w){for(let i=0;i<120&&!w.document.querySelector('#emcia-clo
 (async()=>{
  let dom=createDOM(),w=await login(dom),d=w.document;
  try{
-  assert.equal(d.querySelector('#emcia-release').textContent,'2026.11.16.3');
+  assert.equal(d.querySelector('#emcia-release').textContent,'2026.11.16.4');
   w.eval("window.attDate='2026-11-14';window.attGid='';show('attendance')");
   const timed=()=>d.querySelectorAll('#attendance select[onchange^="emciaSaveTimedAttendance"]');
   assert.equal(timed().length,3);
@@ -283,12 +283,57 @@ assert.ok(w.eval("scheduleConflict({...db.sch[0],start:'15:00',end:'16:00'},'m1'
   }
   await saved(w);dom.window.close();role='director';dom=createDOM();w=await login(dom);d=w.document;
   assert.equal(w.eval('db.oi.length'),3);assert.equal(w.dashboardStats('2026-11').other,39.25);assert.equal(w.dashboardStats('2026-12').other,0);
+  // Institutional recurring reminders: configuration never books expenses; only linked payments settle a month.
+  data=make();data.obligations=[];seed(data);w.eval("window.obligationMonth='2026-11';show('expenses')");
+  const obFill=(fields)=>{for(const[id,value]of Object.entries(fields))d.getElementById(id).value=value};
+  obFill({obName:'كراء المقر',obCat:'الكراء',obAmount:'1000',obDay:'16',obLead:'3',obStart:'2026-11'});
+  d.querySelector('button[onclick="emciaSaveObligation()"]').click();
+  const rentId=w.eval('db.obligations[0].id');assert.equal(w.eval('db.x.length'),0);assert.equal(w.dashboardStats('2026-11').exp,0);
+  let obligationRows=w.emciaObligationRows('2026-11-14','2026-11');assert.equal(obligationRows[0].status,'soon');assert.equal(obligationRows[0].remaining,1000);
+  assert.equal(w.emciaObligationRows('2026-11-16','2026-11')[0].status,'today');assert.equal(w.emciaObligationRows('2026-11-17','2026-11')[0].status,'overdue');
+  assert.equal(w.emciaObligationDueDate('2027-02',31),'2027-02-28');assert.equal(w.emciaObligationDueDate('2028-02',31),'2028-02-29');assert.equal(w.emciaObligationDueDate('2026-04',31),'2026-04-30');
+  w.eval("show('home')");assert.match(d.querySelector('#workspace .emcia-obligation-alerts').textContent,/كراء المقر/);
+  w.eval("window.dailyDate='2026-11-14';show('daily')");assert.match(d.querySelector('#daily .emcia-obligation-alerts').textContent,/اقترب الموعد/);
+  w.emciaPayObligation(rentId,'2026-11');assert.equal(d.querySelector('#xa').value,'1000');assert.equal(w.eval('db.x.length'),0);
+  d.querySelector('#xa').value='400';d.querySelector('button[onclick="addExpense()"]').click();
+  assert.equal(w.eval('db.x.length'),1);assert.equal(w.emciaObligationRows('2026-11-14','2026-11')[0].remaining,600);assert.equal(w.dashboardStats('2026-11').exp,400);
+  // Existing expenses can settle a reminder without any new cash transaction.
+  w.eval("db.x.push({id:'existing-rent',cat:'الكراء',a:600,month:'2026-11',date:'2026-11-14',type:'fixed'})");
+  w.emciaPayObligation(rentId,'2026-11');d.querySelector('#obligationExisting').value='existing-rent';w.emciaLinkObligationExpense();
+  assert.equal(w.eval('db.x.length'),2);assert.equal(w.emciaObligationRows('2026-11-14','2026-11')[0].status,'paid');assert.equal(w.dashboardStats('2026-11').exp,1000);
+  w.emciaPayObligation(rentId,'2026-11');assert.equal(w.eval('window.pendingObligation'),null);
+  // Deleting a linked expense reopens the remaining amount. A new month has its own balance.
+  w.eval("db.x=db.x.filter(x=>x.id!=='existing-rent')");assert.equal(w.emciaObligationRows('2026-11-14','2026-11')[0].remaining,600);assert.equal(w.emciaObligationRows('2026-12-01','2026-12')[0].paid,0);
+  // Terms change from the selected month and leave earlier amounts intact.
+  w.eval('window.obligationEditId='+JSON.stringify(rentId)+';expenses()');obFill({obAmount:'1200',obStart:'2026-12'});w.emciaSaveObligation();
+  assert.equal(w.emciaObligationRows('2026-11-14','2026-11')[0].amount,1000);assert.equal(w.emciaObligationRows('2026-12-01','2026-12')[0].amount,1200);
+  w.emciaStopObligation(rentId);assert.equal(w.emciaObligationRows('2026-12-01','2026-12').length,0);assert.equal(w.emciaObligationRows('2026-11-14','2026-11').length,1);
+  // Variable bills are settled by an actual expense; next-month reminders can appear before month-end.
+  obFill({obName:'فاتورة الماء',obCat:'الماء',obAmount:'',obDay:'1',obLead:'3',obStart:'2026-12'});w.emciaSaveObligation();
+  const waterId=w.eval('db.obligations[1].id');assert.equal(w.emciaObligationRows('2026-11-28').find(x=>x.rule.id===waterId).status,'soon');
+  assert.equal(w.emciaObligationRows('2026-11-14').filter(x=>x.rule.id===waterId).length,1);assert.equal(w.emciaObligationRows('2026-11-14').find(x=>x.rule.id===waterId).status,'future');
+  w.emciaPayObligation(waterId,'2026-12');d.querySelector('#xa').value='35.50';w.addExpense();assert.equal(w.emciaObligationRows('2026-12-01','2026-12').find(x=>x.rule.id===waterId).status,'paid');
+  assert.equal(w.emciaObligationRows('2027-01-01','2027-01').find(x=>x.rule.id===waterId).status,'today');
+  w.eval("db.x.push({id:'late-rent',cat:'الكراء',a:600,date:'2026-12-03',month:'2026-12',obligationId:db.obligations[0].id,obligationMonth:'2026-11'})");
+  assert.equal(w.emciaObligationRows('2026-12-04','2026-11')[0].status,'paid');assert.equal(w.emciaObligationRows('2026-11-14','2026-11')[0].remaining,600);
+  assert.equal(w.dashboardStats('2026-12').exp,600);w.eval("db.x=db.x.filter(x=>x.id!=='late-rent')");
+  // Invalid configuration does not save, and no user is assigned an invented amount or deadline.
+  obFill({obName:'راتب مستخدم',obCat:'رواتب المستخدمين',obAmount:'2000',obDay:'32',obLead:'3',obStart:'2026-11'});w.emciaSaveObligation();assert.equal(w.eval('db.obligations.length'),2);
+  obFill({obDay:'25'});w.emciaSaveObligation();assert.equal(w.eval('db.obligations.length'),3);
+  w.emciaPayObligation(w.eval('db.obligations[2].id'),'2026-11');d.querySelector('#xa').value='2000';w.addExpense();assert.equal(w.emciaObligationRows('2026-11-14','2026-11').find(x=>x.rule.n==='راتب مستخدم').status,'paid');
+  w.eval('save()');await saved(w);assert.equal(fin.payload.obligations.length,3);assert.equal(op.payload.obligations,undefined);
+  // Configuration stays in the financial state, hidden from secretaries and preserved by operational-only writes.
+  const storedObligations=JSON.stringify(fin.payload.obligations);dom.window.close();role='secretary_morning';dom=createDOM();w=await login(dom);d=w.document;
+  assert.equal(w.eval('db.obligations.length'),0);assert.equal(w.emciaObligationRows().length,0);w.eval("show('expenses')");assert.equal(d.querySelector('#obligationsManager'),null);
+  w.eval('save()');await saved(w);assert.equal(JSON.stringify(fin.payload.obligations),storedObligations);
+  dom.window.close();role='accountant';dom=createDOM();w=await login(dom);d=w.document;assert.equal(w.eval('db.obligations.length'),3);
+  assert.equal(w.emciaObligationRows('2026-11-14','2026-11').find(x=>x.rule.n==='كراء المقر').remaining,600);role='director';
   // A cloud conflict must preserve both remote payloads; there is no sequential-write fallback.
   failAtomic=true;const beforeOp=JSON.stringify(op),beforeFin=JSON.stringify(fin);let rejected=false;try{await w.EMCIA_CLOUD_SYNC.restore(fixtures())}catch{rejected=true}assert.equal(rejected,true);assert.equal(JSON.stringify(op),beforeOp);assert.equal(JSON.stringify(fin),beforeFin);failAtomic=false;
   // Legacy financial fields must keep their target when another account deletes an earlier record.
   dom.window.close();op={id:'main',payload:fixtures(),revision:1};fin={id:'main',payload:{e:[{_index:1,discountTeacher:20}]},revision:1};role='secretary_morning';dom=createDOM();w=await login(dom);w.eval("db.e=db.e.filter(x=>x.id!=='e1');save()");await saved(w);assert.deepEqual(op.payload._legacyFinancialIds.e,['e1','e2']);
   dom.window.close();role='director';dom=createDOM();w=await login(dom);assert.equal(w.eval("db.e.find(x=>x.id==='e2').discountTeacher"),20);assert.equal(w.eval("db.e.find(x=>x.id==='e1')"),undefined);
   assert.deepEqual(errors,[]);
-  console.log('PASS: actual DOM attendance handlers, independent sessions, lesson completion, receipt add/edit, cloud reload, strict dates, duplicate receipts, cash, schedule conflicts, stable IDs, legacy compatibility, atomic conflict rollback, advances, late/partial payments, discount bearers, individual balances, reports, teacher privacy, daily payment reminders/filtering/deduplication, lesson-based monthly settlements, dated study stops, preserved historical arrears, future credits re-enrollment gaps, additional-income direct/batch entry, decimal totals, month edits, deletion, legacy monthly reports and accountant/director reload. Mock writes:',writes);
+  console.log('PASS: actual DOM attendance handlers, independent sessions, lesson completion, receipt add/edit, cloud reload, strict dates, duplicate receipts, cash, schedule conflicts, stable IDs, legacy compatibility, atomic conflict rollback, advances, late/partial payments, discount bearers, individual balances, reports, teacher privacy, daily payment reminders/filtering/deduplication, lesson-based monthly settlements, dated study stops, preserved historical arrears, future credits re-enrollment gaps, additional-income direct/batch entry, decimal totals, month edits, deletion, legacy monthly reports, recurring institutional obligations, partial payments, linked existing expenses, calendar edges, versioned terms, financial privacy and accountant/director reload. Mock writes:',writes);
  }finally{dom.window.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});
