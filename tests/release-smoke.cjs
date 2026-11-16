@@ -12,7 +12,7 @@ let role='director',writes=0,errors=[],alerts=[],failAtomic=false,reminders=[];
 for(const alias of ['index.html','EMCIA_Integrated_Release_Candidate.html','EMCIA_V5_15_16_Cloud_Test.html','EMCIA_V5_15_16_Supabase_Director_Test.html','EMCIA_Certification_Integration_Test.html','EMCIA_Certification_Issuance_Test.html']){
  const redirect=fs.readFileSync(path.join(__dirname,'..',alias),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
  let target;vm.runInNewContext(redirect,{URL,location:{href:'https://emcia.invalid/'+alias+'?v=103&request=example#access_token=test&type=recovery',search:'?v=103&request=example',hash:'#access_token=test&type=recovery',replace(value){target=new URL(value)}}});
- assert.equal(target.pathname,'/emcia.html');assert.equal(target.searchParams.get('v'),'2026.11.16.1');assert.equal(target.searchParams.get('request'),'example');assert.equal(target.hash,'#access_token=test&type=recovery');
+ assert.equal(target.pathname,'/emcia.html');assert.equal(target.searchParams.get('v'),'2026.11.16.2');assert.equal(target.searchParams.get('request'),'example');assert.equal(target.hash,'#access_token=test&type=recovery');
 }
 
 function createDOM(){
@@ -49,7 +49,7 @@ async function saved(w){for(let i=0;i<120&&!w.document.querySelector('#emcia-clo
 (async()=>{
  let dom=createDOM(),w=await login(dom),d=w.document;
  try{
-  assert.equal(d.querySelector('#emcia-release').textContent,'2026.11.16.1');
+  assert.equal(d.querySelector('#emcia-release').textContent,'2026.11.16.2');
   w.eval("window.attDate='2026-11-14';window.attGid='';show('attendance')");
   const timed=()=>d.querySelectorAll('#attendance select[onchange^="emciaSaveTimedAttendance"]');
   assert.equal(timed().length,3);
@@ -194,6 +194,31 @@ assert.ok(w.eval("scheduleConflict({...db.sch[0],start:'15:00',end:'16:00'},'m1'
   w.eval("db.e.push({id:'return',sid:'s1',gid:'g1',active:true,billingMode:'monthly',start:'2027-02-01'});save()");
   assert.equal(w.eval("dueForEnrollmentMonth(db.e[0],'2027-01')"),0);assert.equal(w.eval("enrollmentFor('s1','g1','2026-11').id"),'e1');assert.equal(w.eval("enrollmentFor('s1','g1','2027-02').id"),'return');assert.equal(w.eval("dueForEnrollmentMonth(db.e.find(e=>e.id==='return'),'2027-02')"),200);
   assert.equal(w.eval("db.p.find(p=>p.id==='future').d"),0);assert.equal(w.eval("db.p.find(p=>p.id==='future').creditAmount"),200);
+  // Session audit regression: one legacy attendance, two receipts, shared discount, independent learner IDs.
+  data=make();data.sc=[];data.att=[{id:'legacy-session',sid:'s1',gid:'g2',date:'2026-11-13',status:'present'}];
+  Object.assign(data.e[1],{sessionPrice:100,discountAmount:20,discountBearer:'half'});
+  data.s.push({id:'s-duplicate-name',n:'متعلم اختبار',active:true});data.e.push({...data.e[1],id:'e-separate',sid:'s-duplicate-name'});
+  data.sp=[{id:'session-cash-1',sid:'s1',gid:'g2',a:80,date:'2026-11-13'},{id:'session-cash-2',sid:'s1',gid:'g2',a:80,date:'2026-11-13'}];seed(data);
+  assert.equal(w.emciaSessionLedger().lessons.length,1);assert.equal(w.emciaSessionBalance('s1','g2').credit,80);
+  assert.equal(w.emciaSessionBalance('s-duplicate-name','g2').paid,0);
+  assert.equal(w.teacherCalculatedDue('t1','2026-11'),40);assert.equal(w.dashboardStats('2026-11').em,40);assert.equal(w.dashboardStats('2026-11').gross,160);
+  assert.equal(w.eval("emciaAnalysisDue(db.e[1],'2026-11')"),80);
+  assert.equal(w.emciaAnalysisPayments('2026-11').reduce((sum,p)=>sum+p.a,0),80);
+  w.eval("window.fam='2026-11';show('analysis')");
+  const analysisTeacherRow=[...d.querySelectorAll('#analysis tr')].find(r=>r.textContent.includes('أستاذ اختبار'));
+  assert.deepEqual([...analysisTeacherRow.cells].slice(3).map(c=>c.textContent),['280.00 DH','80.00 DH','200.00 DH','28.6%','40.00 DH']);
+  w.eval("window.rm='2026-11';window.rg='g2';window.rt='t1';show('reports')");
+  assert.match(d.querySelector('#legacyTeacherSummary').textContent,/160.00 DH/);assert.match(d.querySelector('#legacyTeacherSummary').textContent,/مستحق الأستاذ: 40.00 DH/);
+  const sessionGroupRow=[...d.querySelectorAll('#reports tr')].find(r=>r.cells[0]?.textContent==='متعلم اختبار');
+  assert.equal(sessionGroupRow.cells[2].textContent,'80.00 DH');assert.equal(sessionGroupRow.cells[4].textContent,'80.00 DH');
+  w.eval("show('reportcenter')");d.querySelector('#rcType').value='executive';d.querySelector('#rcMonth').value='2026-11';w.rcBuildReport();
+  const reportRows=()=>[...d.querySelectorAll('#rcPreview tr')];
+  assert.match(reportRows().find(r=>r.cells[0]?.textContent==='المستحقات عن الشهر').textContent,/280.00/);
+  assert.match(reportRows().find(r=>r.cells[0]?.textContent==='المحصل عن استحقاقات الشهر').textContent,/80.00/);
+  // A late receipt belongs to its lesson month for collection analysis, and recognition month for earnings.
+  w.eval("db.e[1].start='2026-10-01';db.e[1].discountStart='2026-10';db.att[0].date='2026-10-20';db.sp=db.sp.slice(0,1);db.sp[0].date='2026-11-10'");
+  assert.equal(w.eval("emciaAnalysisDue(db.e[1],'2026-10')"),80);assert.equal(w.emciaAnalysisPayments('2026-10').reduce((sum,p)=>sum+p.a,0),80);
+  assert.equal(w.emciaAnalysisPayments('2026-11').reduce((sum,p)=>sum+p.a,0),0);assert.equal(w.teacherCalculatedDue('t1','2026-11'),40);assert.equal(w.teacherCalculatedDue('t1','2026-10'),0);
   // Additional income: direct save, batch save, lower table, monthly totals and persisted reload.
   data=make();seed(data);w.eval("show('expenses')");
   const fillIncome=(cat,amount,date='2026-11-14')=>{

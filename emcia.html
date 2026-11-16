@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>EMCIA Gestion</title>
-<meta name="emcia-release" content="2026.11.16.1">
+<meta name="emcia-release" content="2026.11.16.2">
 <meta name="application-name" content="EMCIA Gestion">
 <meta name="apple-mobile-web-app-title" content="EMCIA Gestion">
 <style>
@@ -497,7 +497,7 @@ try{
 }catch(e){}
 </script></head>
 <body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>تسجيل دخول المدير والموظفين المفعّلين</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label for="authPassword">كلمة المرور</label><div class="emcia-password-field"><div class="emcia-eye-wrap"><input id="authPassword" type="password" required autocomplete="current-password"><input id="authPasswordVisible" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" style="display:none" oninput="document.getElementById('authPassword').value=this.value"><button class="emcia-eye-button" id="authPasswordEye" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false" onclick="emciaLoginEyeClick()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات محفوظة بأمان في النظام السحابي للمؤسسة.</small></div></div>
-<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.16.1</small></header>
+<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.16.2</small></header>
 <div id="langMenu" class="lang-menu">
 <button id="langMenuBtn" type="button" onclick="toggleLangMenu()" aria-label="اختيار اللغة">🌐</button>
 <div id="langChoices" class="lang-choices">
@@ -2731,22 +2731,22 @@ function rcBuildReport(){
   rcSetReport(`تقرير التخفيضات — ${m}`,emciaDiscountReportHTML(m));
  }else if(type==="executive"){
   if(!emciaCanViewManagement()){rcClearPreview("هذا التقرير متاح للمدير والمحاسب فقط.");return false}
-  const ens=activeEnrollmentsForMonth(m),due=ens.reduce((z,e)=>z+dueForEnrollmentMonth(e,m),0);
-  const allocated=emciaFinancialPayments().filter(p=>p.allocMonth===m),paid=allocated.reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);
+  const ens=activeEnrollmentsForMonth(m),due=ens.reduce((z,e)=>z+emciaAnalysisDue(e,m),0);
+  const allocated=emciaAnalysisPayments(m),paid=allocated.reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);
   const remaining=Math.max(0,due-paid),rate=due?paid/due*100:0;
-  const previous=monthShift(m,-1),prevDue=activeEnrollmentsForMonth(previous).reduce((z,e)=>z+dueForEnrollmentMonth(e,previous),0);
-  const prevPaid=emciaFinancialPayments().filter(p=>p.allocMonth===previous).reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);
+  const previous=monthShift(m,-1),prevDue=activeEnrollmentsForMonth(previous).reduce((z,e)=>z+emciaAnalysisDue(e,previous),0);
+  const prevPaid=emciaAnalysisPayments(previous).reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);
   const prevRate=prevDue?prevPaid/prevDue*100:0;
   const stats=dashboardStats(m);
   const groups=new Set(ens.map(e=>e.gid).filter(id=>by(db.g,id)?.active!==false)).size;
   const pending=ens.filter(e=>{
-   const amount=dueForEnrollmentMonth(e,m);
+   const amount=emciaAnalysisDue(e,m);
    const received=allocated.filter(p=>p.sid===e.sid&&p.gid===e.gid).reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);
    return amount>0&&received<amount-0.001;
   }).length;
   const history=Array.from({length:6},(_,i)=>monthShift(m,i-5)).map(mm=>{
-   const expected=activeEnrollmentsForMonth(mm).reduce((z,e)=>z+dueForEnrollmentMonth(e,mm),0);
-   const received=emciaFinancialPayments().filter(p=>p.allocMonth===mm).reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);
+   const expected=activeEnrollmentsForMonth(mm).reduce((z,e)=>z+emciaAnalysisDue(e,mm),0);
+   const received=emciaAnalysisPayments(mm).reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);
    return [esc(mm),money(expected),money(received),expected?(received/expected*100).toFixed(1)+'%':'—'];
   });
   const summary=rcTable(['المؤشر','القيمة'],[
@@ -3372,11 +3372,21 @@ function dueForEnrollmentMonth(e,m){
  const terms=emciaMonthlyTerms(by(db.g,e.gid),e,m),discount=activeDiscount(e,m);
  return Math.max(0,Math.round((terms.base-(discount?.amount||0)*terms.factor)*100)/100);
 }
+// Accrual analysis follows the lesson month; receipt/earnings reports retain recognition dates.
+function emciaAnalysisPayments(month){
+ const monthly=db.p.filter(p=>p.allocMonth===month);
+ const sessions=emciaSessionLedger().allocations.filter(x=>x.lesson.date.slice(0,7)===month).map(x=>({sid:x.lesson.sid,gid:x.lesson.gid,enrollmentId:x.lesson.e.id,allocMonth:month,date:x.date,a:x.amount,d:x.teacher,e:x.emcia,type:'sessionRecognition'}));
+ return [...monthly,...sessions];
+}
+function emciaAnalysisDue(enrollment,month){
+ if(enrollment.billingMode!=='session')return dueForEnrollmentMonth(enrollment,month);
+ return emciaSessionLedger().lessons.filter(x=>x.e.id===enrollment.id&&x.date.slice(0,7)===month).reduce((sum,x)=>sum+x.cost,0)/100;
+}
 function analysis(){
- let m=window.fam||nowMonth(),ens=activeEnrollmentsForMonth(m),due=ens.reduce((z,e)=>z+dueForEnrollmentMonth(e,m),0),ps=db.p.filter(p=>p.allocMonth===m),paid=ps.reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0),remain=Math.max(0,due-paid),rate=due?Math.min(100,paid/due*100):0;
+ let m=window.fam||nowMonth(),ens=activeEnrollmentsForMonth(m),due=ens.reduce((z,e)=>z+emciaAnalysisDue(e,m),0),ps=emciaAnalysisPayments(m),paid=ps.reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0),remain=Math.max(0,due-paid),rate=due?Math.min(100,paid/due*100):0;
  const previousMonth=monthShift(m,-1),prevEns=activeEnrollmentsForMonth(previousMonth);
- const prevDue=prevEns.reduce((z,e)=>z+dueForEnrollmentMonth(e,previousMonth),0);
- const prevPaid=db.p.filter(p=>p.allocMonth===previousMonth).reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);
+ const prevDue=prevEns.reduce((z,e)=>z+emciaAnalysisDue(e,previousMonth),0);
+ const prevPaid=emciaAnalysisPayments(previousMonth).reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);
  const prevRate=prevDue?Math.min(100,prevPaid/prevDue*100):0;
  const changePaid=paid-prevPaid,changeRate=rate-prevRate;
  const changeLabel=(n,unit)=>((n>0?'+':'')+n.toFixed(1)+unit);
@@ -3384,35 +3394,35 @@ function analysis(){
  const activeGroupCount=new Set(ens.map(e=>e.gid).filter(id=>by(db.g,id)?.active!==false)).size;
  const paidStudentCount=new Set(ps.filter(p=>(+(p.netAfterRefund??p.a)||0)>0).map(p=>p.sid)).size;
  const unpaidEnrollments=ens.filter(e=>{
-  const d=dueForEnrollmentMonth(e,m);
+  const d=emciaAnalysisDue(e,m);
   const received=ps.filter(p=>p.sid===e.sid&&p.gid===e.gid).reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);
   return d>0&&received<d-0.001;
  }).length;
  const trendMonths=Array.from({length:6},(_,i)=>monthShift(m,i-5));
  const trend=trendMonths.map(mm=>({
   month:mm,
-  due:activeEnrollmentsForMonth(mm).reduce((sum,e)=>sum+dueForEnrollmentMonth(e,mm),0),
-  paid:db.p.filter(p=>p.allocMonth===mm).reduce((sum,p)=>sum+(+(p.netAfterRefund??p.a)||0),0)
+  due:activeEnrollmentsForMonth(mm).reduce((sum,e)=>sum+emciaAnalysisDue(e,mm),0),
+  paid:emciaAnalysisPayments(mm).reduce((sum,p)=>sum+(+(p.netAfterRefund??p.a)||0),0)
  }));
  const trendMax=Math.max(1,...trend.flatMap(x=>[x.due,x.paid]));
  const trendChart='<div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;align-items:end;min-height:220px;margin:14px 0">'+trend.map(x=>'<div style="display:flex;flex-direction:column;justify-content:end;align-items:center;min-width:0;height:220px;gap:5px"><div style="display:flex;align-items:end;justify-content:center;gap:3px;width:100%;height:185px"><div title="المستحقات: '+esc(money(x.due))+'" aria-label="'+esc(x.month+' المستحقات '+money(x.due))+'" style="width:40%;max-width:30px;height:'+Math.max(3,Math.round(x.due/trendMax*150))+'px;background:#a7b6c5;border-radius:4px 4px 0 0"></div><div title="المحصل: '+esc(money(x.paid))+'" aria-label="'+esc(x.month+' المحصل '+money(x.paid))+'" style="width:40%;max-width:30px;height:'+Math.max(3,Math.round(x.paid/trendMax*150))+'px;background:#267a94;border-radius:4px 4px 0 0"></div></div><span style="font-size:11px;direction:ltr">'+esc(x.month.slice(5))+'</span><span style="font-size:11px;font-weight:700;white-space:nowrap" title="نسبة التحصيل في '+esc(x.month)+'">'+(x.due?(x.paid/x.due*100).toFixed(1)+'%':'—')+'</span></div>').join('')+'</div>';
- let rows=db.t.filter(t=>t.active).map(t=>{let gids=new Set(db.g.filter(g=>g.tid===t.id&&g.active!==false).map(g=>g.id)),es=ens.filter(e=>gids.has(e.gid)),td=es.reduce((z,e)=>z+dueForEnrollmentMonth(e,m),0),tp=ps.filter(p=>gids.has(p.gid)),pa=tp.reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);return{name:objName(t),students:new Set(es.map(e=>e.sid)).size,enroll:es.length,due:td,paid:pa,remain:Math.max(0,td-pa),rate:td?Math.min(100,pa/td*100):0,emcia:tp.reduce((z,p)=>z+(+p.e||0),0)}}).sort((a,b)=>b.paid-a.paid);
- let gr=db.g.filter(g=>g.active!==false).map(g=>{let es=ens.filter(e=>e.gid===g.id),d=es.reduce((z,e)=>z+dueForEnrollmentMonth(e,m),0),gp=ps.filter(p=>p.gid===g.id),pa=gp.reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);return{name:g.n,teacher:objName(by(db.t,g.tid)),n:es.length,due:d,paid:pa,remain:Math.max(0,d-pa),rate:d?Math.min(100,pa/d*100):0}}).filter(x=>x.n||x.paid).sort((a,b)=>b.paid-a.paid);
+ let rows=db.t.filter(t=>t.active).map(t=>{let gids=new Set(db.g.filter(g=>g.tid===t.id&&g.active!==false).map(g=>g.id)),es=ens.filter(e=>gids.has(e.gid)),td=es.reduce((z,e)=>z+emciaAnalysisDue(e,m),0),tp=ps.filter(p=>gids.has(p.gid)),pa=tp.reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);return{name:objName(t),students:new Set(es.map(e=>e.sid)).size,enroll:es.length,due:td,paid:pa,remain:Math.max(0,td-pa),rate:td?Math.min(100,pa/td*100):0,emcia:tp.reduce((z,p)=>z+(+p.e||0),0)}}).sort((a,b)=>b.paid-a.paid);
+ let gr=db.g.filter(g=>g.active!==false).map(g=>{let es=ens.filter(e=>e.gid===g.id),d=es.reduce((z,e)=>z+emciaAnalysisDue(e,m),0),gp=ps.filter(p=>p.gid===g.id),pa=gp.reduce((z,p)=>z+(+(p.netAfterRefund??p.a)||0),0);return{name:g.n,teacher:objName(by(db.t,g.tid)),n:es.length,due:d,paid:pa,remain:Math.max(0,d-pa),rate:d?Math.min(100,pa/d*100):0}}).filter(x=>x.n||x.paid).sort((a,b)=>b.paid-a.paid);
  $("#analysis").innerHTML=`<div class="card"><h3>التحليل المالي والتحصيل</h3><div class="row"><div><label>شهر التحليل</label><input type="month" value="${m}" onchange="window.fam=this.value;analysis()"></div></div></div><div class="grid analysis-kpi-strip"><div class="card"><div class="muted">إجمالي الاستحقاقات</div><div class="kpi">${money(due)}</div></div><div class="card"><div class="muted">المؤدى عن استحقاقات الشهر</div><div class="kpi">${money(paid)}</div></div><div class="card"><div class="muted">المتبقي للتحصيل</div><div class="kpi">${money(remain)}</div></div><div class="card"><div class="muted">نسبة التحصيل</div><div class="kpi">${rate.toFixed(1)}%</div></div><div class="card"><div class="muted">التسجيلات المستحقة</div><div class="kpi">${ens.length}</div></div></div>
  <div class="card"><h3>مقارنة بالشهر السابق (${previousMonth})</h3><div class="grid analysis-kpi-strip"><div class="card"><div class="muted">تحصيل الشهر السابق</div><div class="kpi">${money(prevPaid)}</div></div><div class="card"><div class="muted">فرق التحصيل</div><div class="kpi">${money(changePaid)}</div></div><div class="card"><div class="muted">نسبة تحصيل الشهر السابق</div><div class="kpi">${prevRate.toFixed(1)}%</div></div><div class="card"><div class="muted">فرق نسبة التحصيل</div><div class="kpi">${changeLabel(changeRate,' نقطة')}</div></div></div><p class="muted">مقارنة حسب شهر الاستحقاق، لا حسب تاريخ قبض المبلغ. الفرق الموجب يعني زيادة مقارنة بالشهر السابق.</p></div>
  <div class="card"><h3>المؤشرات الإدارية للشهر المختار</h3><div class="grid analysis-kpi-strip"><div class="card"><div class="muted">المتعلمون المسجلون (دون تكرار)</div><div class="kpi">${studentCount}</div></div><div class="card"><div class="muted">الأفواج النشطة ذات التسجيلات</div><div class="kpi">${activeGroupCount}</div></div><div class="card"><div class="muted">متعـلمون لديهم أداء عن الشهر</div><div class="kpi">${paidStudentCount}</div></div><div class="card"><div class="muted">تسجيلات بأداء ناقص أو غير مؤدى</div><div class="kpi">${unpaidEnrollments}</div></div></div><p class="muted">تُحسب أعداد المتعلمين دون تكرار، بينما يُحسب التأخر على مستوى التسجيل في الفوج. الأرقام تخص الشهر المختار ولا تشمل بالضرورة متأخرات الأشهر السابقة.</p></div>
- <div class="card"><h3>المستحقات والتحصيل خلال آخر ستة أشهر حتى ${m}</h3><p class="muted"><span style="color:#778b9e">■</span> المستحقات &nbsp; <span style="color:#267a94">■</span> المحصل — بالدرهم. المس القيم أو مرر المؤشر فوق الأعمدة لمعرفة المبالغ.</p>${trendChart}<p class="muted">الأشهر مرتبة من الأقدم يساراً إلى الأحدث يميناً. النسبة أسفل كل شهر = المحصل ÷ المستحقات × 100؛ والشرطة تعني عدم وجود مستحقات. المبالغ منسوبة إلى شهر الاستحقاق، وليس تاريخ القبض.</p></div>
+ <div class="card"><h3>المستحقات والتحصيل خلال آخر ستة أشهر حتى ${m}</h3><p class="muted"><span style="color:#778b9e">■</span> المستحقات &nbsp; <span style="color:#267a94">■</span> المحصل — بالدرهم. المس القيم أو مرر المؤشر فوق الأعمدة لمعرفة المبالغ.</p>${trendChart}<p class="muted">الأشهر مرتبة من الأقدم يساراً إلى الأحدث يميناً. النسبة أسفل كل شهر = المحصل ÷ المستحقات × 100؛ والشرطة تعني عدم وجود مستحقات. المبالغ منسوبة إلى شهر الاستحقاق؛ التدريس بالحصة حسب شهر إنجازها، دون احتساب الرصيد المسبق تحصيلاً للحصص.</p></div>
  <div class="card"><h3>التحصيل حسب الأستاذ</h3><table><tr><th>الأستاذ</th><th>المتعلمون</th><th>التسجيلات</th><th>المستحق</th><th>المؤدى</th><th>المتبقي</th><th>نسبة التحصيل</th><th>حصة EMCIA</th></tr>${rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${r.students}</td><td>${r.enroll}</td><td>${money(r.due)}</td><td>${money(r.paid)}</td><td>${money(r.remain)}</td><td>${r.rate.toFixed(1)}%</td><td>${money(r.emcia)}</td></tr>`).join("")}</table></div>
  <div class="card"><h3>التحصيل حسب الفوج</h3><table><tr><th>الفوج</th><th>الأستاذ</th><th>التسجيلات</th><th>المستحق</th><th>المؤدى</th><th>المتبقي</th><th>نسبة التحصيل</th></tr>${gr.map(r=>`<tr><td>${esc(r.name)}</td><td>${esc(r.teacher)}</td><td>${r.n}</td><td>${money(r.due)}</td><td>${money(r.paid)}</td><td>${money(r.remain)}</td><td>${r.rate.toFixed(1)}%</td></tr>`).join("")}</table></div><div class="card"><h3>قراءة المؤشرات</h3><p>تفصل هذه الصفحة بين <b>الاستحقاق</b> و<b>التحصيل الفعلي</b>. ويُنسب الأداء إلى شهر الاستحقاق الذي يغطيه، حتى لو تم قبضه لاحقاً.</p><p class="muted">الشهر الأول يعتمد الاستحقاق الاستثنائي المسجل عند التسجيل إن وجد، وإلا يعتمد الواجب الشهري الكامل للفوج.</p></div>`;applyLang()
 }
 
 function reports(){
  let m=window.rm||nowMonth(),gid=window.rg||"",tid=window.rt||"";
- let rows=gid?db.e.filter(e=>e.gid===gid&&emciaEnrollmentMonth(e,m)).map(e=>{let paid=emciaMonthlyPaid(e.sid,gid,m),di=dueInfo(e,m,paid);return {n:name(db.s,e.sid),due:di.due,dueDate:di.dueDate,last:di.last,paid,rem:Math.max(0,di.due-paid),status:di.status}}):[];
- let tp=tid?db.p.filter(p=>by(db.g,p.gid)?.tid===tid&&p.receiptMonth===m):[],ta=tp.reduce((s,p)=>s+(+(p.netAfterRefund??p.a)||0),0),td=tp.reduce((s,p)=>s+teacherDueOf(p),0);
+ let rows=gid?db.e.filter(e=>e.gid===gid&&emciaEnrollmentMonth(e,m)).map(e=>{let session=e.billingMode==='session',paid=session?emciaAnalysisPayments(m).filter(p=>p.enrollmentId===e.id).reduce((sum,p)=>sum+p.a,0):emciaMonthlyPaid(e.sid,gid,m),di=session?{due:emciaAnalysisDue(e,m),dueDate:e.start||'',last:'',status:'حسب الحصص المنجزة'}:dueInfo(e,m,paid);return {n:name(db.s,e.sid),due:di.due,dueDate:di.dueDate,last:di.last,paid,rem:Math.max(0,di.due-paid),status:di.status}}):[];
+ let tp=tid?emciaFinancialPayments().filter(p=>by(db.g,p.gid)?.tid===tid&&p.receiptMonth===m):[],ta=tp.reduce((s,p)=>s+(+(p.netAfterRefund??p.a)||0),0),td=tp.reduce((s,p)=>s+teacherDueOf(p),0);
  $("#reports").innerHTML=`<div class="card"><h3>التقارير الشهرية</h3><div class="row"><input type="month" value="${m}" onchange="window.rm=this.value;reports()"><select onchange="window.rg=this.value;reports()">${opts(db.g,gid)}</select><select onchange="window.rt=this.value;reports()">${opts(db.t,tid)}</select></div></div>
  <div class="card"><h3>كشف الفوج</h3><table><tr><th>المتعلم</th><th>تاريخ الاستحقاق</th><th>المستحق</th><th>آخر أداء</th><th>المؤدى</th><th>المتبقي</th><th>الحالة</th></tr>${rows.map(r=>`<tr><td>${esc(r.n)}</td><td>${r.dueDate}</td><td>${money(r.due)}</td><td>${r.last||"—"}</td><td>${money(r.paid)}</td><td>${money(r.rem)}</td><td>${r.status}</td></tr>`).join("")}</table></div>
- <div class="card"><h3>كشف الأستاذ</h3><p>إجمالي الأداءات المرتبطة بأفواجه: <b>${money(ta)}</b> — <strong>مستحق الأستاذ: ${money(td)}</strong></p><p class="muted">هذا الكشف لا يعرض حصة المؤسسة.</p></div>`;
+ <div class="card" id="legacyTeacherSummary"><h3>كشف الأستاذ</h3><p>إجمالي الأداءات المرتبطة بأفواجه: <b>${money(ta)}</b> — <strong>مستحق الأستاذ: ${money(td)}</strong></p><p class="muted">هذا الكشف لا يعرض حصة المؤسسة.</p></div>`;
 }
 
 function teacherExportData(tid,m){
