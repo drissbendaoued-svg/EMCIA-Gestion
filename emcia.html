@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>EMCIA Gestion</title>
-<meta name="emcia-release" content="2026.11.16.6">
+<meta name="emcia-release" content="2026.11.16.7">
 <meta name="application-name" content="EMCIA Gestion">
 <meta name="apple-mobile-web-app-title" content="EMCIA Gestion">
 <style>
@@ -325,6 +325,18 @@ body.reception-mode #langMenu{display:block}
 
 /* Compact three-column income entry, including narrow phones. */
 .oi-compact-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:8px 0;align-items:end}.oi-compact-grid>div{min-width:0}.oi-compact-grid label{display:block;font-size:12px;margin:0 0 4px}.oi-compact-grid input,.oi-compact-grid select{width:100%;min-width:0;max-width:100%;padding:8px 5px;font-size:clamp(11px,2.7vw,14px);height:39px}.oi-compact-grid .oi-action button{width:100%;min-width:0;padding:8px 3px;font-size:clamp(10px,2.5vw,13px);min-height:39px;white-space:normal}
+
+/* Waiting cohorts: contact-first cards fit narrow phones. */
+.wl-cohort>summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;font-weight:700}
+.wl-cohort>summary::before{content:"▸"}.wl-cohort[open]>summary::before{content:"▾"}
+.wl-cohort>summary span{font-size:12px;color:var(--muted)}
+.wl-person{padding:12px 0;border-bottom:1px solid var(--line);min-width:0}
+.wl-person-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px}
+.wl-person-head>span{font-size:12px;color:var(--muted)}
+.wl-contact{display:flex;flex-wrap:wrap;gap:7px;margin:9px 0}
+.wl-phone{display:inline-flex;align-items:center;gap:6px;padding:9px 10px;background:#eaf2f8;border:1px solid #9fb3c8;border-radius:9px;text-decoration:none;color:#123b54;font-weight:650;min-height:42px}
+.wl-phone>span{font-size:11px;font-weight:400}
+.wl-plan{margin-top:12px}.wl-plan>summary{cursor:pointer;font-weight:650}
 </style>
 
 <style>
@@ -497,7 +509,7 @@ try{
 }catch(e){}
 </script></head>
 <body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>تسجيل دخول المدير والموظفين المفعّلين</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label for="authPassword">كلمة المرور</label><div class="emcia-password-field"><div class="emcia-eye-wrap"><input id="authPassword" type="password" required autocomplete="current-password"><input id="authPasswordVisible" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" style="display:none" oninput="document.getElementById('authPassword').value=this.value"><button class="emcia-eye-button" id="authPasswordEye" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false" onclick="emciaLoginEyeClick()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات محفوظة بأمان في النظام السحابي للمؤسسة.</small></div></div>
-<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.16.6</small></header>
+<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.16.7</small></header>
 <div id="langMenu" class="lang-menu">
 <button id="langMenuBtn" type="button" onclick="toggleLangMenu()" aria-label="اختيار اللغة">🌐</button>
 <div id="langChoices" class="lang-choices">
@@ -1709,85 +1721,147 @@ function waitConfig(material,level=""){
  if(!r){r={id:uid(),key:k,material:normalizeSubjectName(material),level:(level||"").trim(),target:5,status:"waiting",teacherId:"",firstSession:"",note:"",createdAt:new Date().toISOString()};db.wait.push(r);save()}
  return r
 }
-function waitingStatusRecord(sid,material){
- let mat=normalizeSubjectName(material),r=db.wls.find(x=>x.sid===sid&&normalizeSubjectName(x.material)===mat);
- return r||null
+
+Object.assign(I18N,{"كل المواد":"Toutes les matières","جميع المستويات والتخصصات":"Tous les niveaux et spécialités","جميع التوقيتات":"Tous les horaires","التوقيت المفضل":"Horaire souhaité","البحث بالاسم أو الهاتف":"Rechercher par nom ou téléphone","اسم المتعلم أو رقم الهاتف":"Nom ou numéro de téléphone","طلبات الانتظار":"Demandes en attente","المنتظرون فعلياً":"En attente effective","المتعلمون دون تكرار":"Apprenants sans doublons","إجمالي الطلبات":"Total des demandes","طلبات مستبعدة بسبب عدم الالتحاق":"Demandes écartées après suivi","ملخص عام حسب المادة والمستوى":"Synthèse générale par matière et niveau","الهاتف غير مسجل":"Téléphone non renseigné","شخصي":"Personnel","ولي الأمر":"Responsable","ثابت":"Fixe","تحديث البيانات والهاتف":"Modifier les coordonnées","إعداد فوج لهذا المستوى":"Préparer un groupe pour ce niveau","متابعة تكوين فوج لهذا المستوى":"Suivi de constitution du groupe","يلزم تحديد المستوى":"Niveau à préciser","بلغ العدد الهدف؛ راجع توافق التوقيت والأستاذ":"Seuil atteint ; vérifier horaires et enseignant","كل مجموعة أدناه تخص مادة ومستوى محددين. توافق التوقيت والأستاذ ضروري قبل فتح فوج، والأعداد لا تعني إنشاء فوج تلقائياً.":"Chaque liste correspond à une matière et un niveau. Vérifiez les horaires et l’enseignant avant de créer le groupe. Aucun groupe n’est créé automatiquement."});
+function emciaWaitLevel(value){
+ const raw=String(value||'').trim().replace(/\s+/g,' ');
+ const key=raw.toLocaleLowerCase().replace(/[\u064b-\u065f\u0670\u0640]/g,'').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي');
+ const aliases={'1bac':'الأولى بكالوريا','1 bac':'الأولى بكالوريا','bac1':'الأولى بكالوريا','1ere bac':'الأولى بكالوريا','1ère bac':'الأولى بكالوريا','اولى بكالوريا':'الأولى بكالوريا','الاولي بكالوريا':'الأولى بكالوريا','2bac':'الثانية بكالوريا','2 bac':'الثانية بكالوريا','bac2':'الثانية بكالوريا','الثانية بكالوريا':'الثانية بكالوريا','ثانية بكالوريا':'الثانية بكالوريا','جذع مشترك':'الجذع المشترك','الجذع المشترك':'الجذع المشترك'};
+ if(aliases[key])return aliases[key];
+ if(/^[abc][12]$/i.test(raw))return raw.toUpperCase();
+ const known=educationLevelCatalog().find(x=>x.toLocaleLowerCase().replace(/[أإآ]/g,'ا').replace(/ى/g,'ي')===key);
+ if(known)return known;
+ if(!raw||['غير محدد','مستوى غير محدد'].includes(key))return 'غير محدد';
+ if(['ابتدائي','اعدادي','ثانوي','جامعي'].includes(key))return raw+' — مستوى غير محدد';
+ return raw;
+}
+function emciaWaitMissingLevel(level){return level==='غير محدد'||level.includes('مستوى غير محدد')}
+function emciaWaitingRequests(s){
+ const requests=s.requestedSubjectLevels||[],materials=[...new Set([...studentRequestedMaterials(s),...requests.map(r=>normalizeSubjectName(r.subject||'')).filter(Boolean)])],seen=new Set(),result=[];
+ for(const material of materials){
+  const specific=requests.filter(r=>normalizeSubjectName(r.subject||'')===material),items=specific.length?specific:[{level:s.level||s.educationLevel||''}];
+  for(const request of items){
+   const level=emciaWaitLevel(request.level||s.level||s.educationLevel||''),key=material+'||'+level;
+   if(!seen.has(key)){seen.add(key);result.push({s,material,level})}
+  }
+ }
+ return result;
+}
+function waitingStatusRecord(sid,material,level){
+ const mat=normalizeSubjectName(material),items=db.wls.filter(x=>x.sid===sid&&normalizeSubjectName(x.material)===mat);
+ if(level===undefined)return items.find(x=>!x.level)||items[0]||null;
+ return items.find(x=>x.level&&emciaWaitLevel(x.level)===emciaWaitLevel(level))||items.find(x=>!x.level)||null;
 }
 function studentEnrolledInMaterial(sid,material){
- let mat=normalizeSubjectName(material);
+ return db.e.some(e=>e.sid===sid&&emciaEnrollmentDate(e,today())&&normalizeSubjectName(by(db.g,e.gid)?.subject||'')===normalizeSubjectName(material));
+}
+function emciaWaitEnrolled(request){
  return db.e.some(e=>{
-   if(!emciaEnrollmentDate(e,today())||e.sid!==sid)return false;
-   let g=db.g.find(x=>x.id===e.gid);
-   return !!(g&&normalizeSubjectName(g.subject||"")===mat);
- })
+  if(e.sid!==request.s.id||!emciaEnrollmentDate(e,today()))return false;
+  const g=by(db.g,e.gid);if(!g||normalizeSubjectName(g.subject||'')!==request.material)return false;
+  return emciaWaitMissingLevel(request.level)||(!emciaWaitMissingLevel(emciaWaitLevel(g.level||g.specialty))&&emciaWaitLevel(g.level||g.specialty)===request.level);
+ });
 }
 function waitingReasonLabel(v){
- return {"":"—","noanswer":"لا يجيب على الهاتف","notinterested":"غير راغب في الدراسة","schedule":"التوقيت غير مناسب","othercenter":"التحق بمؤسسة أخرى","deferred":"مؤجل","other":"سبب آخر"}[v]||v
+ return {"":"—",noanswer:"لا يجيب على الهاتف",notinterested:"غير راغب في الدراسة",schedule:"التوقيت غير مناسب",othercenter:"التحق بمؤسسة أخرى",deferred:"مؤجل",other:"سبب آخر"}[v]||v;
 }
-function setWaitingReason(sid,material,value){
- let mat=normalizeSubjectName(material),r=waitingStatusRecord(sid,mat);
- if(!value){if(r)db.wls=db.wls.filter(x=>x!==r)}
+function setWaitingReason(sid,material,value,level){
+ const mat=normalizeSubjectName(material);
+ let r=level===undefined?waitingStatusRecord(sid,mat):db.wls.find(x=>x.sid===sid&&normalizeSubjectName(x.material)===mat&&x.level&&emciaWaitLevel(x.level)===emciaWaitLevel(level));
+ if(level===undefined&&!value){if(r)db.wls=db.wls.filter(x=>x!==r)}
  else if(r){r.reason=value;r.updatedAt=new Date().toISOString()}
- else db.wls.push({id:uid(),sid,material:mat,reason:value,note:"",createdAt:new Date().toISOString()});
- save();waitingRefresh()
+ else db.wls.push({id:uid(),sid,material:mat,...(level===undefined?{}:{level:emciaWaitLevel(level)}),reason:value,note:'',createdAt:new Date().toISOString()});
+ save();waitingRefresh();
 }
-function editWaitingReasonNote(sid,material){
- let mat=normalizeSubjectName(material),r=waitingStatusRecord(sid,mat);
- if(!r){alert("حدد أولاً سبب عدم الالتحاق.");return}
- let x=prompt("ملاحظة حول عدم الالتحاق:",r.note||"");if(x===null)return;r.note=x.trim();r.updatedAt=new Date().toISOString();save();waitingRefresh()
+function editWaitingReasonNote(sid,material,level){
+ let r=waitingStatusRecord(sid,material,level);if(!r?.reason)return alert('حدد أولاً سبب عدم الالتحاق.');
+ const note=prompt('ملاحظة حول عدم الالتحاق:',r.note||'');if(note===null)return;
+ if(level!==undefined&&!r.level){r={...r,id:uid(),level:emciaWaitLevel(level)};db.wls.push(r)}
+ r.note=note.trim();r.updatedAt=new Date().toISOString();save();waitingRefresh();
+}
+function emciaWaitingGroups(filters={}){
+ const groups=new Map(),seen=new Set();
+ for(const s of db.s.filter(x=>x.active!==false&&x.studyStatus!=='stopped')){
+  for(const item of emciaWaitingRequests(s)){
+   const id=s.id+'||'+item.material+'||'+item.level;if(seen.has(id))continue;seen.add(id);
+   if(emciaWaitEnrolled(item))continue;
+   if(filters.material&&item.material!==filters.material)continue;
+   if(filters.level&&item.level!==emciaWaitLevel(filters.level))continue;
+   const query=(filters.query||'').trim().toLocaleLowerCase(),search=[s.n,s.nAr,s.nFr,s.ph,s.parent,s.landline].filter(Boolean).join(' ').toLocaleLowerCase();
+   if(query&&!search.includes(query))continue;
+   if(filters.time){const time=s.preferredTime||'unspecified',compatible=time===filters.time||(['day','evening'].includes(filters.time)&&time==='both');if(!compatible)continue;}
+   const key=waitKey(item.material,item.level)+(filters.time?'||time:'+filters.time:'');
+   if(!groups.has(key))groups.set(key,{key,material:item.material,level:item.level,time:filters.time||'',items:[]});
+   groups.get(key).items.push(item);
+  }
+ }
+ return [...groups.values()].map(g=>{
+  g.items.sort((a,b)=>Number(!!waitingStatusRecord(a.s.id,a.material,a.level)?.reason)-Number(!!waitingStatusRecord(b.s.id,b.material,b.level)?.reason)||objName(a.s).localeCompare(objName(b.s),'ar'));
+  g.active=g.items.filter(x=>!waitingStatusRecord(x.s.id,x.material,x.level)?.reason);g.excluded=g.items.length-g.active.length;
+  return g;
+ }).sort((a,b)=>a.material.localeCompare(b.material,'ar')||Number(emciaWaitMissingLevel(a.level))-Number(emciaWaitMissingLevel(b.level))||a.level.localeCompare(b.level,'ar',{numeric:true}));
+}
+function emciaWaitConfig(group){
+ return db.wait.find(x=>x.key===group.key)||(!group.time?db.wait.find(x=>normalizeSubjectName(x.material||'')===group.material&&emciaWaitLevel(x.level)===group.level&&!x.preferredTime):null)||{key:group.key,material:group.material,level:group.level,target:5,teacherId:'',firstSession:'',note:'',preferredTime:group.time};
+}
+function emciaWaitPhoneLinks(s){
+ const seen=new Set(),links=[];
+ for(const [label,value] of [['شخصي',s.ph],['ولي الأمر',s.parent],['ثابت',s.landline]]){
+  const text=String(value||'').trim(),clean=text.replace(/[^+\d]/g,'');
+  if(!text||seen.has(clean))continue;seen.add(clean);
+  if(!/^\+?\d{6,15}$/.test(clean))continue;
+  links.push('<a class="wl-phone" href="tel:'+esc(clean)+'"><span>'+tr(label)+'</span> <bdi dir="ltr">'+esc(text)+'</bdi></a>');
+ }
+ return links.length?links.join(' '):'<span class="muted">'+tr('الهاتف غير مسجل')+'</span>';
+}
+function emciaWaitStudentCard(item){
+ const {s,material,level}=item,r=waitingStatusRecord(s.id,material,level),args=[s.id,material,level].map(x=>esc(JSON.stringify(x))),time={day:'نهاراً',evening:'مساءً',both:'نهاراً أو مساءً',unspecified:'غير محدد'}[s.preferredTime]||'غير محدد';
+ return '<article class="wl-person '+(r?.reason?'wait-excluded':'')+'"><div class="wl-person-head"><strong>'+esc(objName(s))+'</strong><span>'+tr(time)+'</span></div><div class="wl-contact">'+emciaWaitPhoneLinks(s)+'</div><div class="row"><div><label>'+tr('سبب عدم الالتحاق')+'</label><select onchange="setWaitingReason('+args[0]+','+args[1]+',this.value,'+args[2]+')">'+[['','في الانتظار'],['noanswer','لا يجيب على الهاتف'],['notinterested','غير راغب في الدراسة'],['schedule','التوقيت غير مناسب'],['othercenter','التحق بمؤسسة أخرى'],['deferred','مؤجل'],['other','سبب آخر']].map(([v,t])=>'<option value="'+v+'" '+((r?.reason||'')===v?'selected':'')+'>'+tr(t)+'</option>').join('')+'</select></div><button type="button" class="secondary" onclick="show(\'students\');editStudentRegistration('+args[0]+')">'+tr('تحديث البيانات والهاتف')+'</button></div>'+(r?.reason?'<button type="button" class="secondary" onclick="editWaitingReasonNote('+args.join(',')+')">'+esc(r.note||tr('إضافة ملاحظة'))+'</button>':'')+'</article>';
 }
 function waiting(){
- let materialSet=new Set();
- db.s.filter(s=>s.active!==false).forEach(s=>studentRequestedMaterials(s).forEach(mat=>materialSet.add(mat)));
- db.g.filter(g=>g.active!==false&&g.subject).forEach(g=>materialSet.add(normalizeSubjectName(g.subject)));
- let mats=[...materialSet].sort((a,b)=>a.localeCompare(b,"ar"));
- $("#waiting").innerHTML=`<div class="card"><div class="row">
- <div><label>البحث بالمادة</label><select id="wlMat" onchange="waitingRefresh()"><option value="">— كل المواد —</option>${mats.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("")}</select></div>
- <div><label>البحث بالمتعلم</label><input id="wlStudentSearch" placeholder="اكتب اسم المتعلم..." oninput="waitingRefresh()"></div>
- <div><label>المستوى أو التخصص</label><input id="wlLevel" placeholder="اختياري: A1 أو الثانية بكالوريا" oninput="waitingRefresh()"></div>
- </div><p class="muted">يمكن البحث بالمادة أو باسم المتعلم أو باستعمالهما معاً. لائحة الانتظار للمتابعة فقط؛ إنشاء الفوج يتم من «إضافة فوج» ثم الإلحاق من «تسجيل متعلم».</p></div>
- <div id="wlBody"></div>
- <div class="card"><h3>ملخص التسجيلات حسب المواد</h3><div id="waitingSummary">${mats.length?`<table><tr><th>المادة</th><th>إجمالي المسجلين</th><th>غير الملتحقين</th><th>المنتظرون فعلياً</th></tr>${mats.map(mat=>{let all=db.s.filter(s=>s.active!==false&&studentRequestedMaterials(s).includes(mat)&&!studentEnrolledInMaterial(s.id,mat)),excluded=all.filter(s=>waitingStatusRecord(s.id,mat)?.reason).length;return`<tr><td>${esc(mat)}</td><td>${all.length}</td><td>${excluded}</td><td><b>${all.length-excluded}</b></td></tr>`}).join("")}</table>`:"<p class='muted'>لا توجد طلبات مواد مسجلة بعد.</p>"}</div></div>`;
- waitingRefresh()
+ const requests=db.s.filter(s=>s.active!==false).flatMap(emciaWaitingRequests),mats=[...new Set(requests.map(x=>x.material))].sort((a,b)=>a.localeCompare(b,'ar'));
+ $("#waiting").innerHTML='<div class="card"><div class="row"><div><label>'+tr('المادة')+'</label><select id="wlMat" onchange="emciaWaitRefreshLevels();waitingRefresh()"><option value="">'+tr('كل المواد')+'</option>'+mats.map(m=>'<option>'+esc(m)+'</option>').join('')+'</select></div><div><label>'+tr('المستوى أو التخصص')+'</label><select id="wlLevel" onchange="waitingRefresh()"></select></div><div><label>'+tr('التوقيت المفضل')+'</label><select id="wlTime" onchange="waitingRefresh()">'+[['','جميع التوقيتات'],['day','نهاراً'],['evening','مساءً'],['both','نهاراً أو مساءً'],['unspecified','غير محدد']].map(([v,t])=>'<option value="'+v+'">'+tr(t)+'</option>').join('')+'</select></div><div><label>'+tr('البحث بالاسم أو الهاتف')+'</label><input id="wlStudentSearch" placeholder="'+tr('اسم المتعلم أو رقم الهاتف')+'" oninput="waitingRefresh()"></div></div><p class="muted">'+tr('كل مجموعة أدناه تخص مادة ومستوى محددين. توافق التوقيت والأستاذ ضروري قبل فتح فوج، والأعداد لا تعني إنشاء فوج تلقائياً.')+'</p></div><div id="wlBody"></div><details class="card"><summary>'+tr('ملخص عام حسب المادة والمستوى')+'</summary><div id="waitingSummary"></div></details>';
+ emciaWaitRefreshLevels();waitingRefresh();
+}
+function emciaWaitRefreshLevels(){
+ const select=$("#wlLevel");if(!select)return;
+ const previous=select.value,material=$("#wlMat")?.value||'',levels=[...new Set(db.s.filter(x=>x.active!==false).flatMap(emciaWaitingRequests).filter(x=>!material||x.material===material).map(x=>x.level))].sort((a,b)=>Number(emciaWaitMissingLevel(a))-Number(emciaWaitMissingLevel(b))||a.localeCompare(b,'ar',{numeric:true}));
+ select.innerHTML='<option value="">'+tr('جميع المستويات والتخصصات')+'</option>'+levels.map(l=>'<option value="'+esc(l)+'">'+esc(l)+'</option>').join('');
+ if(levels.includes(previous))select.value=previous;
 }
 function waitingRefresh(){
- const summary=$("#waitingSummary");if(summary){let mats=[...new Set(db.s.filter(s=>s.active!==false).flatMap(s=>studentRequestedMaterials(s)))].sort((a,b)=>a.localeCompare(b,'ar'));summary.innerHTML=mats.length?'<table><tr><th>المادة</th><th>إجمالي الطلبات</th><th>الملتحقون</th><th>غير الملتحقين</th><th>المنتظرون فعلياً</th></tr>'+mats.map(mat=>{let all=db.s.filter(s=>s.active!==false&&studentRequestedMaterials(s).includes(mat));let enrolled=all.filter(s=>studentEnrolledInMaterial(s.id,mat));let remaining=all.filter(s=>!studentEnrolledInMaterial(s.id,mat));let excluded=remaining.filter(s=>waitingStatusRecord(s.id,mat)?.reason).length;return '<tr><td>'+esc(mat)+'</td><td>'+all.length+'</td><td>'+enrolled.length+'</td><td>'+remaining.length+'</td><td><b>'+(remaining.length-excluded)+'</b></td></tr>'}).join('')+'</table>':'<p class="muted">لا توجد طلبات مواد مسجلة بعد.</p>'}
- let mat=$("#wlMat")?.value||"",q=($("#wlStudentSearch")?.value||"").trim().toLocaleLowerCase(),level=($("#wlLevel")?.value||"").trim().toLocaleLowerCase();
- let enrolledMaterial=new Set();
- db.e.filter(e=>emciaEnrollmentDate(e,today())).forEach(e=>{
-   let g=db.g.find(x=>x.id===e.gid);
-   if(g&&g.subject) enrolledMaterial.add(e.sid+"||"+normalizeSubjectName(g.subject));
- });
- let pairs=[];
- db.s.filter(s=>s.active!==false).forEach(s=>{
-   studentRequestedMaterials(s).forEach(sm=>{
-     if(enrolledMaterial.has(s.id+"||"+normalizeSubjectName(sm)))return;
-     if(mat&&sm!==mat)return;
-     if(q&&!objName(s).toLocaleLowerCase().includes(q))return;
-     if(level&&!((s.level||"").toLocaleLowerCase().includes(level)))return;
-     pairs.push({s,material:sm})
-   })
- });
- if(!mat&&!q&&!level){$("#wlBody").innerHTML=`<div class="card"><p class="muted">اختر مادة أو اكتب اسم متعلم لعرض لائحة الانتظار.</p></div>`;return}
- pairs.sort((a,b)=>{
-   let ax=waitingStatusRecord(a.s.id,a.material)?.reason?1:0;
-   let bx=waitingStatusRecord(b.s.id,b.material)?.reason?1:0;
-   if(ax!==bx)return ax-bx;
-   return objName(a.s).localeCompare(objName(b.s),"ar");
- });
- let excluded=pairs.filter(x=>waitingStatusRecord(x.s.id,x.material)?.reason),active=pairs.filter(x=>!waitingStatusRecord(x.s.id,x.material)?.reason);
- let cfg=mat?waitConfig(mat,($("#wlLevel")?.value||"").trim()):null,target=cfg?Math.max(1,+cfg.target||5):0;
- let state=mat?(active.length>=target?"جاهز للفتح":active.length>=Math.max(1,target-2)?"قريب من الاكتمال":"في الانتظار"):"نتائج البحث";
- $("#wlBody").innerHTML=`<div class="card"><div class="grid wait-counts">
- <div><div class="muted">إجمالي المسجلين</div><div class="kpi">${pairs.length}</div></div>
- <div><div class="muted">غير الملتحقين</div><div class="kpi">${excluded.length}</div></div>
- <div><div class="muted">المنتظرون فعلياً</div><div class="kpi">${active.length}</div></div></div>
- ${mat?`<div class="row"><div><label>العدد المستهدف لفتح الفوج</label><input id="wlTarget" type="number" min="1" value="${target}"></div><div><label>الحالة</label><input value="${state}" disabled></div><div><label>الأستاذ المقترح</label><select id="wlTeacher"><option value="">— يحدد لاحقاً —</option>${db.t.filter(x=>x.active!==false&&teacherCanTeachMaterial(x,mat)).map(x=>`<option value="${x.id}" ${cfg.teacherId===x.id?"selected":""}>${esc(objName(x))}</option>`).join("")}</select></div><div><label>موعد الحصة الأولى</label><input id="wlFirst" type="datetime-local" value="${esc(cfg.firstSession||"")}"></div></div><div><label>ملاحظة إدارية</label><textarea id="wlNote">${esc(cfg.note||"")}</textarea></div><div class="actions"><button onclick="saveWaitingConfig()">حفظ المتابعة</button></div>`:""}</div>
- <div class="card"><h3>لائحة الانتظار (${pairs.length})</h3>${pairs.length?`<table><tr><th>المتعلم</th><th>المادة</th><th>الهواتف</th><th>المستوى/التخصص</th><th>التوقيت</th><th>سبب عدم الالتحاق</th><th>ملاحظة</th></tr>${pairs.map(({s,material})=>{let r=waitingStatusRecord(s.id,material),tm=s.preferredTime==="day"?"نهاراً":s.preferredTime==="evening"?"مساءً":s.preferredTime==="both"?"نهاراً أو مساءً":"غير محدد";return`<tr class="${r?.reason?"wait-excluded":""}"><td>${esc(objName(s))}</td><td>${esc(material)}</td><td>${esc([s.ph,s.parent,s.landline].filter(Boolean).join(" / ")||"—")}</td><td>${esc([s.educationLevel,s.level].filter(Boolean).join(" — ")||"—")}</td><td>${tm}</td><td><select onchange="setWaitingReason('${s.id}','${esc(material)}',this.value)"><option value="">— سيلتحق / في الانتظار —</option><option value="noanswer" ${r?.reason==="noanswer"?"selected":""}>لا يجيب على الهاتف</option><option value="notinterested" ${r?.reason==="notinterested"?"selected":""}>غير راغب في الدراسة</option><option value="schedule" ${r?.reason==="schedule"?"selected":""}>التوقيت غير مناسب</option><option value="othercenter" ${r?.reason==="othercenter"?"selected":""}>التحق بمؤسسة أخرى</option><option value="deferred" ${r?.reason==="deferred"?"selected":""}>مؤجل</option><option value="other" ${r?.reason==="other"?"selected":""}>سبب آخر</option></select></td><td>${r?.reason?`<button onclick="editWaitingReasonNote('${s.id}','${esc(material)}')">${esc(r.note||"إضافة ملاحظة")}</button>`:"—"}</td></tr>`}).join("")}</table>`:"<p class='muted'>لا توجد نتائج مطابقة.</p>"}</div>`
+ const open=new Set([...document.querySelectorAll('#wlBody details[data-wl-key][open]')].map(x=>x.dataset.wlKey));
+ const groups=emciaWaitingGroups({material:$("#wlMat")?.value||'',level:$("#wlLevel")?.value||'',query:$("#wlStudentSearch")?.value||'',time:$("#wlTime")?.value||''});window.emciaWaitGroups=groups;
+ const items=groups.flatMap(g=>g.items),active=groups.reduce((n,g)=>n+g.active.length,0),excluded=items.length-active,unique=new Set(items.map(x=>x.s.id)).size;
+ $("#wlBody").innerHTML='<div class="card"><div class="grid wait-counts"><div><div class="muted">'+tr('المتعلمون دون تكرار')+'</div><div class="kpi">'+unique+'</div></div><div><div class="muted">'+tr('طلبات الانتظار')+'</div><div class="kpi">'+items.length+'</div></div><div><div class="muted">'+tr('المنتظرون فعلياً')+'</div><div class="kpi">'+active+'</div></div></div><p>'+tr('طلبات مستبعدة بسبب عدم الالتحاق')+': '+excluded+'</p></div>'+groups.map((g,i)=>{
+  const cfg=emciaWaitConfig(g),target=Math.max(1,+cfg.target||5),missing=emciaWaitMissingLevel(g.level),status=missing?'يلزم تحديد المستوى':g.active.length>=target?'بلغ العدد الهدف؛ راجع توافق التوقيت والأستاذ':'في الانتظار';
+  const times=['day','evening','both','unspecified'].map(t=>{const count=g.active.filter(x=>(x.s.preferredTime||'unspecified')===t).length;return count?tr({day:'نهاراً',evening:'مساءً',both:'نهاراً أو مساءً',unspecified:'غير محدد'}[t])+': '+count:''}).filter(Boolean).join(' · ');
+  return '<details class="card wl-cohort" data-wl-key="'+esc(g.key)+'" '+(open.has(g.key)?'open':'')+'><summary><strong>'+esc(g.material)+' — '+esc(g.level)+'</strong><span>'+tr('المنتظرون فعلياً')+': '+g.active.length+' / '+tr('إجمالي الطلبات')+': '+g.items.length+'</span></summary><p>'+esc(times)+'</p><p class="muted">'+tr(status)+'</p><div class="wl-people">'+g.items.map(emciaWaitStudentCard).join('')+'</div><details class="wl-plan"><summary>'+tr('متابعة تكوين فوج لهذا المستوى')+'</summary><div class="row"><div><label>'+tr('العدد المستهدف لفتح الفوج')+'</label><input id="wlTarget-'+i+'" type="number" min="1" value="'+target+'"></div><div><label>'+tr('الأستاذ المقترح')+'</label><select id="wlTeacher-'+i+'"><option value="">'+tr('يحدد لاحقاً')+'</option>'+db.t.filter(t=>t.active!==false&&teacherCanTeachMaterial(t,g.material)).map(t=>'<option value="'+t.id+'" '+(cfg.teacherId===t.id?'selected':'')+'>'+esc(objName(t))+'</option>').join('')+'</select></div><div><label>'+tr('موعد الحصة الأولى')+'</label><input id="wlFirst-'+i+'" type="datetime-local" value="'+esc(cfg.firstSession||'')+'"></div></div><label>'+tr('ملاحظة إدارية')+'</label><textarea id="wlNote-'+i+'">'+esc(cfg.note||'')+'</textarea><div class="row"><button type="button" onclick="saveWaitingConfig('+i+')">'+tr('حفظ المتابعة')+'</button><button type="button" class="secondary" '+(missing?'disabled':'')+' onclick="emciaWaitPrepareGroup('+i+')">'+tr('إعداد فوج لهذا المستوى')+'</button></div></details></details>';
+ }).join('')+(groups.length?'':'<div class="card">'+tr('لا توجد نتائج مطابقة.')+'</div>');
+ const summary=$("#waitingSummary");if(summary){const all=emciaWaitingGroups();summary.innerHTML=all.length?'<div style="overflow-x:auto"><table><tr><th>'+tr('المادة')+'</th><th>'+tr('المستوى أو التخصص')+'</th><th>'+tr('إجمالي الطلبات')+'</th><th>'+tr('المنتظرون فعلياً')+'</th></tr>'+all.map(g=>'<tr><td>'+esc(g.material)+'</td><td>'+esc(g.level)+'</td><td>'+g.items.length+'</td><td>'+g.active.length+'</td></tr>').join('')+'</table></div>':tr('لا توجد طلبات انتظار حالياً.')}
 }
-function saveWaitingConfig(){
- let mat=$("#wlMat").value,level=($("#wlLevel").value||"").trim();if(!mat)return alert("اختر المادة أولاً");
- let cfg=waitConfig(mat,level);cfg.target=Math.max(1,+$("#wlTarget").value||5);cfg.teacherId=$("#wlTeacher").value||"";cfg.firstSession=$("#wlFirst").value||"";cfg.note=($("#wlNote").value||"").trim();cfg.updatedAt=new Date().toISOString();save();waitingRefresh()
+function saveWaitingConfig(index){
+ const g=window.emciaWaitGroups?.[index];if(!g)return;
+ const target=Number($("#wlTarget-"+index)?.value);if(!Number.isInteger(target)||target<1)return alert('أدخل عدداً مستهدفاً صحيحاً');
+ let cfg=db.wait.find(x=>x.key===g.key);
+ if(!cfg){cfg={...emciaWaitConfig(g),id:uid(),key:g.key};db.wait.push(cfg)}
+ Object.assign(cfg,{material:g.material,level:g.level,preferredTime:g.time,target,teacherId:$("#wlTeacher-"+index).value||'',firstSession:$("#wlFirst-"+index).value||'',note:$("#wlNote-"+index).value.trim(),updatedAt:new Date().toISOString()});
+ save();waitingRefresh();
+}
+function emciaWaitPrepareGroup(index){
+ const g=window.emciaWaitGroups?.[index];if(!g||emciaWaitMissingLevel(g.level))return;
+ const cfg=emciaWaitConfig(g),subject=activeSubjectRecords().find(x=>normalizeSubjectName(x.n)===g.material);
+ show('groups');
+ const categories=['لغة','دعم مدرسي','تكوين','أخرى'],category=categories.includes(subject?.category)?subject.category:categories.find(c=>groupSubjectsByCategory(c).includes(g.material))||'أخرى';
+ $("#gcat").value=category;refreshGroupByCategory();
+ if([...$("#gsub").options].some(x=>x.value===g.material))$("#gsub").value=g.material;
+ else{$("#gsub").value='__other__';$("#gsubOther").value=g.material}
+ refreshGroupBySubject();
+ if([...$("#gspec").options].some(x=>x.value===g.level))$("#gspec").value=g.level;
+ else{$("#gspec").value='__other__';$("#gspecOther").value=g.level}
+ toggleGroupOtherSpec();
+ if(cfg.teacherId&&[...$("#gt").options].some(x=>x.value===cfg.teacherId))$("#gt").value=cfg.teacherId;
+ updateSuggestedGroupName();
 }
 
 function emciaFilterGroupList(){let q=($("#groupListQuery")?.value||"").toLocaleLowerCase(),sub=$("#groupListSubject")?.value||"",lev=($("#groupListLevel")?.value||"").toLocaleLowerCase();document.querySelectorAll("#groupListTable tr[data-group-id]").forEach(tr=>{let g=by(db.g,tr.dataset.groupId);tr.style.display=g&&(!sub||g.subject===sub)&&(!lev||(g.level||"").toLocaleLowerCase().includes(lev))&&(!gid||g.id===gid)&&tr.textContent.toLocaleLowerCase().includes(q)?"":"none"})}
