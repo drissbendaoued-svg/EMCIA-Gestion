@@ -3550,15 +3550,17 @@ function emciaAdministrativeAlerts(){
  const institutional=document.createElement('div');institutional.innerHTML=emciaObligationAlertsHTML();panel.insertBefore(institutional,filters);
  function renderAlerts(){
   const selected=monthInput.value, current=nowMonth(),items=[];
-  db.e.filter(e=>emciaBillingHistory(e)&&e.start&&e.start.slice(0,7)<=current).forEach(e=>{
-   const student=by(db.s,e.sid),group=by(db.g,e.gid);if(!student||!group)return;
-   const months=selected?[selected]:monthRange(e.start,current);
-   months.forEach(mm=>{
-    if(mm<e.start.slice(0,7)||mm>current)return;
-    const due=dueForEnrollmentMonth(e,mm);
-    const paid=emciaMonthlyPaid(e.sid,e.gid,mm);
-    const remaining=Math.max(0,due-paid);if(remaining<=0)return;
-    const category=paid>0?'partial':'unpaid';
+  // Reuse the same reconciled ledger as Arrears, rather than calculating alerts separately.
+  const accounts=emciaAccountRows(current,{through:true});
+  accounts.forEach(account=>{
+   const student=by(db.s,account.sid),group=by(db.g,account.gid);
+   if(!student||!group)return;
+   account.details.forEach(detail=>{
+    const mm=detail.mm;
+    if(mm<EMCIA_ACCOUNTING_START_MONTH||mm>current||(selected&&selected!==mm))return;
+    const remaining=Math.max(0,Math.round((+detail.rem||0)*100)/100);
+    if(remaining<=0.005)return;
+    const paid=+detail.paid||0,category=paid>0?'partial':'unpaid';
     if(typeSelect.value==='partial'&&category!=='partial')return;
     if(typeSelect.value==='unpaid'&&category!=='unpaid')return;
     if(typeSelect.value==='old'&&mm>=current)return;
