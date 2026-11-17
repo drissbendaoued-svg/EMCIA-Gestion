@@ -2356,7 +2356,7 @@ function emciaAccountRows(month="",options={}){
   const r=get(sid,gid,"monthly"),factor=p.netAfterRefund==null?1:(+p.a>0?Math.max(0,+p.netAfterRefund)/+p.a:0);
   if(cashPeriod(p.date))r.cash+=Number(p.netAfterRefund??p.a)||0;
   const allocations=paymentAllocations(p);
-  if(inPeriod(p.allocMonth||p.receiptMonth||"")){r.teacher+=teacherDueOf(p);r.emcia+=+p.e||0;r.teacherDiscount+=+p.discountTeacher||0}
+  if(cashPeriod(p.date)){r.teacher+=teacherDueOf(p);r.emcia+=+p.e||0;r.teacherDiscount+=+p.discountTeacher||0}
   allocations.forEach(x=>{
    if(inPeriod(x.month)){
     let line=r.details.find(d=>d.mm===x.month);if(!line)r.details.push(line={mm:x.month,due:0,paid:0,rem:0});
@@ -2663,7 +2663,7 @@ function saveExceptionalAdjustment(){
 
 function teacherCalculatedDue(tid,m){
  let gids=new Set(db.g.filter(g=>g.tid===tid).map(g=>g.id));
- return emciaFinancialPayments().filter(p=>gids.has(p.gid)&&p.allocMonth===m).reduce((s,p)=>s+(teacherDueOf(p)),0)
+ return emciaFinancialPayments().filter(p=>gids.has(p.gid)&&(p.type==="sessionRecognition"?p.allocMonth===m:(p.date||"").slice(0,7)===m)).reduce((s,p)=>s+(teacherDueOf(p)),0)
 }
 function teacherSettlement(tid,m){return db.tp.find(x=>x.tid===tid&&x.month===m)}
 function teacherSettlementStatus(calc,rec){
@@ -3738,10 +3738,10 @@ function adminExportData(m){
 }
 function teacherReportHTML(tid,m){
  let d=teacherExportData(tid,m); if(!d.teacher)return "";
- let body=d.groups.map(x=>'<h3>الفوج: '+esc(x.group.n)+'</h3><table><tr><th>المتعلم</th><th>نظام الأداء</th><th>المستحق الدراسي</th><th>المخصص للدراسة</th><th>المتبقي</th><th>الرصيد المسبق / الزائد</th><th>التخفيض الذي يتحمله الأستاذ</th><th>مستحق الأستاذ</th></tr>'+x.rows.map(r=>'<tr><td>'+esc(r.name)+'</td><td>'+emciaAccountMode(r.mode)+'</td>'+[r.studyDue,r.paid,r.debt,r.credit,r.teacherDiscount,r.due].map(n=>'<td>'+money(n)+'</td>').join("")+'</tr>').join("")+'<tr><th colspan="3">مجموع الفوج</th><th>'+money(x.paid)+'</th><th colspan="2"></th><th>'+money(x.teacherDiscount)+'</th><th>'+money(x.teacherDue)+'</th></tr></table>').join("");
+ let body=d.groups.map(x=>'<h3>الفوج: '+esc(x.group.n)+'</h3><table><tr><th>المتعلم</th><th>نظام الأداء</th><th>المستحق الدراسي</th><th>المخصص لشهر الدراسة</th><th>المقبوض خلال الشهر</th><th>المتبقي</th><th>الرصيد المسبق / الزائد</th><th>التخفيض الذي يتحمله الأستاذ</th><th>مستحق الأستاذ</th></tr>'+x.rows.map(r=>'<tr><td>'+esc(r.name)+'</td><td>'+emciaAccountMode(r.mode)+'</td>'+[r.studyDue,r.paid,r.cash,r.debt,r.credit,r.teacherDiscount,r.due].map(n=>'<td>'+money(n)+'</td>').join("")+'</tr>').join("")+'<tr><th colspan="3">مجموع الفوج</th><th>'+money(x.paid)+'</th><th>'+money(x.rows.reduce((s,r)=>s+r.cash,0))+'</th><th colspan="2"></th><th>'+money(x.teacherDiscount)+'</th><th>'+money(x.teacherDue)+'</th></tr></table>').join("");
  let total=d.groups.reduce((s,x)=>s+x.teacherDue,0),disc=d.groups.reduce((s,x)=>s+x.teacherDiscount,0),rec=teacherSettlement(tid,m),approved=rec?(+rec.confirmedDue||0):total,st=teacherSettlementStatus(approved,rec);
  let settlement=`<div style="margin-top:28px;border-top:2px solid #222;padding-top:14px"><h3>بيان التسوية والاستلام</h3><table><tr><th>المستحق المعتمد</th><th>المبلغ المستلم فعلياً</th><th>المتبقي</th><th>حالة الأداء</th><th>تاريخ الاستلام</th></tr><tr><td>${money(approved)}</td><td>${money(st.paid)}</td><td>${money(st.remain)}</td><td>${st.label}</td><td>${rec?esc(rec.date):"—"}</td></tr></table>${rec?.note?`<p><b>ملاحظة التسوية:</b> ${esc(rec.note)}</p>`:""}<p style="margin-top:24px"><b>إقرار بالاستلام:</b> أقر أنا الأستاذ(ة) المذكور(ة) أعلاه أنني استلمت من مؤسسة EMCIA مبلغ <b>${money(st.paid)}</b> المبين في هذا الكشف عن الشهر المذكور أعلاه.</p><table style="margin-top:22px"><tr><th style="width:50%">الأستاذ(ة)</th><th style="width:50%">المؤسسة</th></tr><tr><td style="height:90px;vertical-align:top">الاسم: ${esc(objName(d.teacher))}<br><br>التوقيع:</td><td style="height:90px;vertical-align:top">توقيع وخاتم المؤسسة:</td></tr></table></div>`;
- return `<h1>EMCIA — كشف الأستاذ الشهري</h1><p><b>الأستاذ:</b> ${esc(objName(d.teacher))} &nbsp; | &nbsp; <b>الشهر:</b> ${m}</p>${body}${disc>0?`<p><b>إجمالي التخفيضات التي يتحملها الأستاذ:</b> ${money(disc)}</p>`:""}<h2>إجمالي مستحق الأستاذ: ${money(total)}</h2>${settlement}`;
+ return `<h1>EMCIA — كشف الأستاذ الشهري</h1><p><b>الأستاذ:</b> ${esc(objName(d.teacher))} &nbsp; | &nbsp; <b>الشهر:</b> ${m}</p>${body}${disc>0?`<p><b>إجمالي التخفيضات التي يتحملها الأستاذ:</b> ${money(disc)}</p>`:""}<p>المقبوضات حسب تاريخ التحصيل، والمخصص للدراسة حسب شهر الاستحقاق الأصلي. تُحتسب حصة الأستاذ من الأداءات الشهرية في شهر قبضها دون تكرار.</p><h2>إجمالي مستحق الأستاذ: ${money(total)}</h2>${settlement}`;
 }
 function adminReportHTML(m){
  let rows=adminExportData(m), paid=rows.reduce((s,r)=>s+r.paid,0), td=rows.reduce((s,r)=>s+r.teacherDue,0), em=rows.reduce((s,r)=>s+r.emcia,0);
