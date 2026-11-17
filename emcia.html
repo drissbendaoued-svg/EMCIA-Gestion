@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>EMCIA Gestion</title>
-<meta name="emcia-release" content="2026.11.16.8">
+<meta name="emcia-release" content="2026.11.17.1">
 <meta name="application-name" content="EMCIA Gestion">
 <meta name="apple-mobile-web-app-title" content="EMCIA Gestion">
 <style>
@@ -509,7 +509,7 @@ try{
 }catch(e){}
 </script></head>
 <body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>تسجيل دخول المدير والموظفين المفعّلين</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label for="authPassword">كلمة المرور</label><div class="emcia-password-field"><div class="emcia-eye-wrap"><input id="authPassword" type="password" required autocomplete="current-password"><input id="authPasswordVisible" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" style="display:none" oninput="document.getElementById('authPassword').value=this.value"><button class="emcia-eye-button" id="authPasswordEye" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false" onclick="emciaLoginEyeClick()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات محفوظة بأمان في النظام السحابي للمؤسسة.</small></div></div>
-<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.16.8</small></header>
+<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.17.1</small></header>
 <div id="langMenu" class="lang-menu">
 <button id="langMenuBtn" type="button" onclick="toggleLangMenu()" aria-label="اختيار اللغة">🌐</button>
 <div id="langChoices" class="lang-choices">
@@ -3053,14 +3053,45 @@ function teacherfile(){
  <div class="card"><div class="row"><button onclick="show('schedule')">فتح استعمال الزمن</button><button onclick="show('attendance')">فتح الحضور</button><button onclick="show('analysis')">فتح التحليل المالي</button><button onclick="show('reports')">فتح التقارير</button></div></div>`;applyLang()
 }
 
+
+Object.assign(I18N,{"البحث عن ملف متعلم":"Rechercher un dossier apprenant","البحث باسم المتعلم":"Rechercher par nom","اكتب الاسم بالعربية أو الفرنسية":"Nom en arabe ou en français","جميع الأفواج":"Tous les groupes","مسح التصفية":"Effacer les filtres","النتائج المطابقة":"Résultats correspondants","اختر متعلماً لعرض ملفه":"Sélectionnez un apprenant pour afficher son dossier","لا يوجد متعلم مطابق للتصفية":"Aucun apprenant ne correspond aux filtres","يشمل البحث التسجيلات الحالية والسابقة":"La recherche inclut les inscriptions actuelles et passées"});
+function emciaStudentFileCandidates(query=window.sfQuery||'',gid=window.sfGroup||''){
+ const words=String(query).trim().toLocaleLowerCase().split(/\s+/).filter(Boolean),ids=gid?new Set(db.e.filter(e=>e.gid===gid).map(e=>e.sid)):null;
+ return db.s.filter(s=>{
+  const name=[s.n,s.nAr,s.nFr].filter(Boolean).join(' ').toLocaleLowerCase();
+  return (!ids||ids.has(s.id))&&words.every(word=>name.includes(word));
+ }).slice().sort((a,b)=>objName(a).localeCompare(objName(b),'ar'));
+}
+function emciaStudentFileOptions(students,sid){
+ return '<option value="">— '+tr(students.length?'اختر متعلماً لعرض ملفه':'لا يوجد متعلم مطابق للتصفية')+' —</option>'+students.map(x=>'<option value="'+esc(x.id)+'" '+(x.id===sid?'selected':'')+'>'+esc(objName(x))+'</option>').join('');
+}
+function emciaStudentFileLookupHTML(students,sid){
+ return '<div class="card" id="sfLookupPanel"><h3>'+tr('البحث عن ملف متعلم')+'</h3><div class="row"><div><label for="sfName">'+tr('البحث باسم المتعلم')+'</label><input id="sfName" value="'+esc(window.sfQuery||'')+'" placeholder="'+tr('اكتب الاسم بالعربية أو الفرنسية')+'" oninput="emciaFilterStudentFiles()"></div><div><label for="sfGroupFilter">'+tr('الفوج')+'</label><select id="sfGroupFilter" onchange="emciaFilterStudentFiles()"><option value="">— '+tr('جميع الأفواج')+' —</option>'+db.g.map(g=>'<option value="'+esc(g.id)+'" '+(g.id===window.sfGroup?'selected':'')+'>'+esc(objName(g))+'</option>').join('')+'</select></div><div><label for="sfStudent">'+tr('المتعلم')+'</label><select id="sfStudent" onchange="window.sfSid=this.value;studentfile()" '+(students.length?'':'disabled')+'>'+emciaStudentFileOptions(students,sid)+'</select></div><button type="button" class="secondary" onclick="window.sfQuery=\'\';window.sfGroup=\'\';studentfile()">'+tr('مسح التصفية')+'</button></div><p class="muted">'+tr('النتائج المطابقة')+': <b id="sfMatchCount">'+students.length+'</b> · '+tr('يشمل البحث التسجيلات الحالية والسابقة')+'</p></div>';
+}
+function emciaStudentFileEmptyHTML(students){
+ return '<div class="card sf-empty-result"><p>'+tr(students.length?'اختر متعلماً لعرض ملفه':'لا يوجد متعلم مطابق للتصفية')+'</p></div>';
+}
+function emciaFilterStudentFiles(){
+ window.sfQuery=$('#sfName')?.value||'';window.sfGroup=$('#sfGroupFilter')?.value||'';
+ const students=emciaStudentFileCandidates(),select=$('#sfStudent'),sid=window.sfSid||'';
+ const keep=students.some(s=>s.id===sid);
+ if(!keep)window.sfSid='';
+ if(select){select.innerHTML=emciaStudentFileOptions(students,window.sfSid||'');select.value=window.sfSid||'';select.disabled=!students.length}
+ const count=$('#sfMatchCount');if(count)count.textContent=String(students.length);
+ if(!keep){
+  const panel=$('#sfLookupPanel');if(panel){while(panel.nextElementSibling)panel.nextElementSibling.remove();panel.insertAdjacentHTML('afterend',emciaStudentFileEmptyHTML(students))}
+ }
+}
+
 function studentfile(){
- let students=db.s.filter(s=>s.active!==false).sort((a,b)=>objName(a).localeCompare(objName(b),"ar")),sid=window.sfSid||"";
- let s=by(db.s,sid);
- if(!s){$("#studentfile").innerHTML=`<div class="card"><select onchange="window.sfSid=this.value;studentfile()"><option value="">— اختر متعلماً —</option>${students.map(x=>`<option value="${x.id}">${esc(objName(x))}</option>`).join("")}</select>${students.length?"":`<p>لا يوجد متعلمون نشطون.</p>`}</div>`;return}
+ const students=emciaStudentFileCandidates();
+ if(!students.some(s=>s.id===(window.sfSid||'')))window.sfSid='';
+ const sid=window.sfSid||'',s=by(db.s,sid),lookup=emciaStudentFileLookupHTML(students,sid);
+ if(!s){$("#studentfile").innerHTML=lookup+emciaStudentFileEmptyHTML(students);applyLang();return}
  let ens=db.e.filter(e=>e.sid===sid),activeEns=ens.filter(emciaBillingHistory),pays=db.p.filter(p=>p.sid===sid||ens.some(e=>e.id===p.eid)).sort((a,b)=>(b.date||"").localeCompare(a.date||"")),att=emciaAttendanceRecords().filter(a=>a.sid===sid).sort((a,b)=>b.date.localeCompare(a.date));
  let due=0,paid=0,debts=[];activeEns.forEach(e=>{if(!e.start)return;monthRange(e.start,nowMonth()).forEach(mm=>{let d=dueForEnrollmentMonth(e,mm),pa=emciaMonthlyPaid(e.sid,e.gid,mm),rem=Math.max(0,d-pa);due+=d;paid+=pa;if(rem>0)debts.push({e,mm,d,pa,rem})})});
  let c={present:0,absent:0,late:0,excused:0,leftEarly:0};att.forEach(a=>{if(c[a.status]!=null)c[a.status]++});
- $("#studentfile").innerHTML=`<div class="card"><select onchange="window.sfSid=this.value;studentfile()"><option value="">— اختر متعلماً —</option>${students.map(x=>`<option value="${x.id}" ${x.id===sid?"selected":""}>${esc(objName(x))}</option>`).join("")}</select></div>
+ $("#studentfile").innerHTML=lookup+`
  <div class="card"><h3>${esc(objName(s))}</h3>${s.studyStatus==="stopped"?`<p>متوقف عن الدراسة منذ ${esc(s.stoppedOn||"")}</p>`:""}${pays.some(p=>+p.creditAmount>0)?`<p class="muted">رصيد يحتاج مراجعة أو إرجاعاً: ${money(pays.reduce((n,p)=>n+(+p.creditAmount||0),0))}</p>`:""}<table><tr><th>الهاتف</th><td>${esc(s.ph||"—")}</td><th>ولي الأمر / الهاتف</th><td>${esc(s.parent||"—")}</td></tr><tr><th>المستوى</th><td>${esc(s.level||"—")}</td><th>تاريخ التسجيل بالمؤسسة</th><td>${esc(s.joined||"—")}</td></tr><tr><th>ملاحظات</th><td colspan="3">${esc(s.note||"—")}</td></tr></table></div>
  <div class="grid"><div class="card"><div class="muted">الأفواج النشطة</div><div class="kpi">${ens.filter(e=>emciaEnrollmentDate(e,today())).length}</div></div><div class="card"><div class="muted">إجمالي الاستحقاق</div><div class="kpi">${money(due)}</div></div><div class="card"><div class="muted">المؤدى</div><div class="kpi">${money(paid)}</div></div><div class="card"><div class="muted">المتبقي</div><div class="kpi">${money(Math.max(0,due-paid))}</div></div><div class="card"><div class="muted">الغياب</div><div class="kpi">${c.absent}</div></div><div class="card"><div class="muted">التأخر</div><div class="kpi">${c.late}</div></div></div>
  <div class="card"><h3>التسجيلات والأفواج</h3>${ens.length?`<table><tr><th>الفوج</th><th>الأستاذ</th><th>بداية الدراسة</th><th>الحالة</th></tr>${ens.map(e=>{let g=by(db.g,e.gid);return`<tr><td>${esc(g?g.n:"—")}</td><td>${esc(g?objName(by(db.t,g.tid)):"—")}</td><td>${esc(e.start||"—")}</td><td>${e.end?"متوقف — "+esc(e.end):e.active?"نشط":"متوقف"}</td></tr>`}).join("")}</table>`:"<p>لا توجد تسجيلات.</p>"}</div>
