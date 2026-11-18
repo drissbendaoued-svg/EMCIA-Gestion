@@ -4081,7 +4081,8 @@ async function flushCloud(){
  }catch(e){blocked=true;dirty=true;cloudStatus('⚠️ تعذر تأكيد الحفظ: '+e.message+' — احتفظ بنسخة محلية');}
  finally{saving=false;if(dirty&&!blocked)flushCloud();}
 }
-let cashQueue=Promise.resolve();
+let cashQueue=Promise.resolve(),cashPending=0;
+window.addEventListener('beforeunload',event=>{if(cashPending>0){event.preventDefault();event.returnValue='';}});
 async function cashWrite(collection,action,record){
  if(canFinance())return; // Director and accountant use the existing atomic financial save.
  if(blocked)throw Error('الحفظ السحابي متوقف بسبب تعارض');
@@ -4093,7 +4094,8 @@ async function cashWrite(collection,action,record){
 window.EMCIA_CLOUD_SYNC={
  saveCash(collection,action,record){
   if(canFinance())return;
-  cashQueue=cashQueue.then(()=>cashWrite(collection,action,record)).catch(e=>{blocked=true;dirty=true;cloudStatus('⚠️ تعذر حفظ العملية المالية: '+e.message+' — لا تغلق الصفحة قبل الاحتفاظ بنسخة احتياطية');});
+  cashPending++;
+  cashQueue=cashQueue.then(()=>cashWrite(collection,action,record)).catch(e=>{blocked=true;dirty=true;cloudStatus('⚠️ تعذر حفظ العملية المالية: '+e.message+' — لا تغلق الصفحة قبل الاحتفاظ بنسخة احتياطية');}).finally(()=>{cashPending--;});
  },
  save(){if(blocked){dirty=true;cloudStatus('⚠️ الحفظ متوقف بسبب تعارض. احتفظ بنسخة محلية.');return;}dirty=true;cloudStatus('☁️ جار حفظ التغييرات...');clearTimeout(debounce);debounce=setTimeout(flushCloud,550);},
  async restore(payload){
