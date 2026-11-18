@@ -4052,8 +4052,9 @@ async function loadCloudSnapshot(){
  return snapshot;
 }
 async function cloudFetch(){
- const snapshot=await loadCloudSnapshot(),op=snapshot.operational,fin=snapshot.financial;
+ const snapshot=await loadCloudSnapshot(),op=snapshot.operational;
  if(!canFinance()){const cash=await request(api+'/rest/v1/rpc/emcia_cash_snapshot_v1',{method:'POST',headers:headers(),body:JSON.stringify({p_id:cloudId})});snapshot.financial={revision:cash.financial_revision,payload:{x:cash.x,oi:cash.oi}};}
+ const fin=snapshot.financial;
  opRevision=Number(op.revision)||0;finRevision=Number(fin?.revision)||0;
  legacyFinancialIds=op.payload?._legacyFinancialIds||Object.fromEntries(['g','e','p','sc'].map(k=>[k,(op.payload?.[k]||[]).map(row=>row.id)]));
  return {payload:joinState(op.payload||{},fin?.payload||{}),revision:opRevision};
