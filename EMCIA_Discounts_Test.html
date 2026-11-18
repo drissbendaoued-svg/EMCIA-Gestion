@@ -3724,6 +3724,25 @@ function reports(){
  <div class="card" id="legacyTeacherSummary"><h3>كشف الأستاذ</h3><p>إجمالي الأداءات المرتبطة بأفواجه: <b>${money(ta)}</b> — <strong>مستحق الأستاذ: ${money(td)}</strong></p><p class="muted">هذا الكشف لا يعرض حصة المؤسسة.</p></div>`;
 }
 
+function emciaTeacherDiscountSchedule(tid,month){
+ const items=[];
+ for(const e of db.e){
+  const g=by(db.g,e.gid);if(!g||g.tid!==tid||e.billingMode==="session"||!emciaEnrollmentMonth(e,month))continue;
+  const d=activeDiscount(e,month);if(!d)continue;
+  const factor=emciaMonthlyTerms(g,e,month).factor;
+  const payments=db.p.filter(p=>(p.sid||by(db.e,p.eid)?.sid)===e.sid&&(p.gid||by(db.e,p.eid)?.gid)===e.gid&&((p.month||p.m||p.date||"").slice(0,7)===month||(Array.isArray(p.allocations)&&p.allocations.some(a=>a.month===month))));
+  items.push({name:name(db.s,e.sid),group:g.n,teacher:Math.round(d.teacher*factor*100)/100,emcia:Math.round(d.emcia*factor*100)/100,bearer:d.bearer,hasPayment:payments.length>0,missingBreakdown:payments.some(p=>p.discountTeacher==null||p.discountEmcia==null)});
+ }
+ return items;
+}
+function emciaTeacherDiscountReport(tid,month){
+ const rows=emciaTeacherDiscountSchedule(tid,month);
+ if(!rows.length)return '<p><b>التخفيضات الشهرية:</b> لا توجد تخفيضات مقررة مسجلة لهذا الأستاذ في هذا الشهر.</p>';
+ const sum=k=>money(rows.reduce((n,r)=>n+r[k],0));
+ const table='<h3>التخفيضات الشهرية المقررة — مستقلة عن المبالغ المحصلة</h3><table><tr><th>المتعلم</th><th>الفوج</th><th>طريقة التوزيع</th><th>حصة الأستاذ من التخفيض</th><th>حصة المؤسسة من التخفيض</th><th>بيانات الأداء</th></tr>'+rows.map(r=>'<tr><td>'+esc(r.name)+'</td><td>'+esc(r.group)+'</td><td>'+esc(({teacher:'الأستاذ',emcia:'المؤسسة',half:'50٪',proportional:'حسب النسبة المئوية',custom:'مخصص'})[r.bearer]||r.bearer)+'</td><td>'+money(r.teacher)+'</td><td>'+money(r.emcia)+'</td><td>'+(r.missingBreakdown?'تفصيل التخفيض غير محفوظ في أداء سابق':r.hasPayment?'يوجد أداء مرتبط':'لا يوجد أداء مرتبط')+'</td></tr>').join('')+'<tr><th colspan="3">المجموع المقرر</th><th>'+sum('teacher')+'</th><th>'+sum('emcia')+'</th><th></th></tr></table>';
+ return table+'<p><b>تنبيه محاسبي:</b> هذه مبالغ تخفيض مقررة لشهر الدراسة، وليست مبالغ مقتطعة فعلياً من أداءات الأستاذ. لا تُضاف إلى مستحقاته ولا تُخصم منها تلقائياً. تحتاج الأداءات القديمة التي تفتقد تفصيل التخفيض إلى مطابقة قبل التسوية.</p>';
+}
+
 function teacherExportData(tid,m){
  const accounts=emciaAccountRows(m,{tid}),groups=db.g.filter(g=>g.tid===tid);
  return {teacher:by(db.t,tid),month:m,groups:groups.map(g=>{
