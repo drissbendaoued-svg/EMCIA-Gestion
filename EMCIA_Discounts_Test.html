@@ -3578,9 +3578,23 @@ function emciaDuplicateAlertsHTML(){
  const duplicates=emciaPotentialDuplicatePayments();
  return '<div class="card"><h3>تنبيهات احتمال تكرار الأداءات ('+duplicates.length+')</h3><p class="muted">تطابق المتعلم والفوج والتاريخ والمبلغ ونظام الأداء لا يعني بالضرورة وجود خطأ. لا تُحذف أي عملية تلقائياً. راجع التوصيلات مع الكاتبة قبل اتخاذ قرار.</p>'+(duplicates.length?'<div style="overflow-x:auto"><table><tr><th>المتعلم</th><th>الفوج</th><th>التاريخ</th><th>المبلغ</th><th>أرقام التوصيلات</th><th>الإجراء</th></tr>'+duplicates.map((x,i)=>'<tr><td>'+esc(objName(x.student))+'</td><td>'+esc(objName(x.group))+'</td><td>'+esc(x.rows[0].date)+'</td><td>'+money(x.rows[0].a)+'</td><td>'+x.rows.map(p=>esc(p.receiptNo||'بدون رقم')).join(' / ')+'</td><td><button type="button" onclick="emciaReviewDuplicatePayment('+i+')">مراجعة</button></td></tr>').join('')+'</table></div>':'<p>لا توجد أداءات متطابقة وفق معايير الفحص.</p>')+'</div>';
 }
-function emciaReviewDuplicatePayment(index){
+async function emciaReviewDuplicatePayment(index){
  const item=emciaPotentialDuplicatePayments()[index];if(!item)return alert('حدّث التنبيهات');
- alert('حالة تحتاج تحققاً من التوصيلات قبل الإلغاء.\\nالمتعلم: '+objName(item.student)+'\\nالتاريخ: '+item.rows[0].date+'\\nالسجلات:\\n'+item.rows.map(p=>'رقم التوصيل: '+(p.receiptNo||'—')+' | '+money(p.a)+' | معرف العملية: '+p.id).join('\\n')+'\\nلم يتم حذف أو تغيير أي سجل.');
+ const details=item.rows.map((p,i)=>(i+1)+'. '+(p.receiptNo||'بدون رقم')+' — '+money(p.a)+' — '+p.id).join('\\n');
+ const choice=prompt('مراجعة أداءات '+objName(item.student)+' بتاريخ '+item.rows[0].date+'\\n'+details+'\\n\\nأدخل رقم العملية (1 إلى '+item.rows.length+') التي تأكدت من تكرارها لإلغائها، أو اترك الحقل فارغاً للمراجعة فقط:');
+ if(choice===null||!choice.trim())return;
+ const n=Number(choice);if(!Number.isInteger(n)||n<1||n>item.rows.length)return alert('رقم العملية غير صحيح');
+ const payment=item.rows[n-1],collection=payment._mode==='بالحصة'?'sp':'p';
+ const reason=prompt('أدخل سبب الإلغاء بعد مراجعة التوصيلات (8 أحرف على الأقل):','أداء مكرر بعد مراجعة التوصيل');
+ if(reason===null)return;
+ if(reason.trim().length<8)return alert('يجب توضيح سبب الإلغاء');
+ if(!confirm('تأكيد نهائي: إلغاء توصيل '+(payment.receiptNo||'—')+' بمبلغ '+money(payment.a)+' للمتعلم '+objName(item.student)+'؟\\nسيُستبعد من الحسابات ويُوثّق في سجل العمليات. لا يمكن التراجع تلقائياً.'))return;
+ try{
+  if(typeof window.EMCIA_CANCEL_DUPLICATE!=='function')throw Error('خدمة الإلغاء غير متاحة. أعد تحميل الصفحة.');
+  await window.EMCIA_CANCEL_DUPLICATE(collection,payment.id,reason.trim());
+  alert('تم الإلغاء وتوثيقه على الخادم. ستُحدّث الصفحة الآن لقراءة الأرصدة الصحيحة.');
+  location.reload();
+ }catch(e){alert('لم يتم الإلغاء: '+e.message)}
 }
 function emciaAdministrativeAlerts(){
  const panel=document.getElementById('alerts');if(!panel)return;
@@ -4175,6 +4189,12 @@ async function cashWrite(collection,action,record){
  finRevision=Number(out.financial_revision);
  cloudStatus('☁️ تم حفظ العملية المالية على الخادم');
 }
+window.EMCIA_CANCEL_DUPLICATE=async function(collection,paymentId,reason){
+ if(!token||blocked||saving||dirty||cashPending)throw Error('انتظر اكتمال المزامنة قبل الإلغاء');
+ const result=await request(api+'/rest/v1/rpc/emcia_cancel_duplicate_payment_v1',{method:'POST',headers:headers(),body:JSON.stringify({p_id:cloudId,p_expected_revision:opRevision,p_collection:collection,p_payment_id:paymentId,p_reason:reason})});
+ opRevision=Number(result.operational_revision);revision=opRevision;
+ return result;
+};
 window.EMCIA_CLOUD_SYNC={
  saveCash(collection,action,record){
   if(canFinance())return;
