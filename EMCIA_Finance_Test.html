@@ -4037,7 +4037,8 @@ async function checkRemoteChanges(){
  try{
   const snapshot=await loadCloudSnapshot();
   const op=snapshot.operational,fin=snapshot.financial;
-  if((op&&Number(op.revision)!==opRevision)||(fin&&Number(fin.revision)!==finRevision)){
+  const cashRevision=!canFinance()?Number((await request(api+'/rest/v1/rpc/emcia_cash_snapshot_v1',{method:'POST',headers:headers(),body:JSON.stringify({p_id:cloudId})})).financial_revision):finRevision;
+  if((op&&Number(op.revision)!==opRevision)||(fin&&Number(fin.revision)!==finRevision)||(!canFinance()&&cashRevision!==finRevision)){
    cloudStatus('🔄 وصلت تغييرات من حساب آخر؛ جار تحديث البيانات...');
    location.reload();
   }
