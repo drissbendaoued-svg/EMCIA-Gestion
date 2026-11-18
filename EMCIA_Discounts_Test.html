@@ -3561,6 +3561,26 @@ window.emciaUpdateAlertCounter=function(){
  badge.style.display='inline-flex';
  badge.title=count+' تنبيهات تستدعي المتابعة';
 };
+function emciaPotentialDuplicatePayments(){
+ const buckets=new Map();
+ for(const p of [...db.p.map(x=>({...x,_mode:'شهري'})),...db.sp.map(x=>({...x,_mode:'بالحصة'}))]){
+  if(p.voidedAt||p.cancelledAt||!p.sid||!p.date)continue;
+  const amount=Number(p.netAfterRefund??p.a);
+  if(!Number.isFinite(amount))continue;
+  const key=[p.sid,p.gid||'',p.date,Math.round(amount*100),p._mode].join('|');
+  if(!buckets.has(key))buckets.set(key,[]);
+  buckets.get(key).push(p);
+ }
+ return [...buckets.values()].filter(rows=>rows.length>1).map(rows=>({rows,student:by(db.s,rows[0].sid),group:by(db.g,rows[0].gid)}));
+}
+function emciaDuplicateAlertsHTML(){
+ const duplicates=emciaPotentialDuplicatePayments();
+ return '<div class="card"><h3>تنبيهات احتمال تكرار الأداءات ('+duplicates.length+')</h3><p class="muted">تطابق المتعلم والفوج والتاريخ والمبلغ ونظام الأداء لا يعني بالضرورة وجود خطأ. لا تُحذف أي عملية تلقائياً. راجع التوصيلات مع الكاتبة قبل اتخاذ قرار.</p>'+(duplicates.length?'<div style="overflow-x:auto"><table><tr><th>المتعلم</th><th>الفوج</th><th>التاريخ</th><th>المبلغ</th><th>أرقام التوصيلات</th><th>الإجراء</th></tr>'+duplicates.map((x,i)=>'<tr><td>'+esc(objName(x.student))+'</td><td>'+esc(objName(x.group))+'</td><td>'+esc(x.rows[0].date)+'</td><td>'+money(x.rows[0].a)+'</td><td>'+x.rows.map(p=>esc(p.receiptNo||'بدون رقم')).join(' / ')+'</td><td><button type="button" onclick="emciaReviewDuplicatePayment('+i+')">مراجعة</button></td></tr>').join('')+'</table></div>':'<p>لا توجد أداءات متطابقة وفق معايير الفحص.</p>')+'</div>';
+}
+function emciaReviewDuplicatePayment(index){
+ const item=emciaPotentialDuplicatePayments()[index];if(!item)return alert('حدّث التنبيهات');
+ alert('حالة تحتاج تحققاً من التوصيلات قبل الإلغاء.\\nالمتعلم: '+objName(item.student)+'\\nالتاريخ: '+item.rows[0].date+'\\nالسجلات:\\n'+item.rows.map(p=>'رقم التوصيل: '+(p.receiptNo||'—')+' | '+money(p.a)+' | معرف العملية: '+p.id).join('\\n')+'\\nلم يتم حذف أو تغيير أي سجل.');
+}
 function emciaAdministrativeAlerts(){
  const existing=document.getElementById('emcia-alerts-panel');if(existing)existing.remove();
  const panel=document.createElement('section');panel.id='emcia-alerts-panel';
@@ -3580,7 +3600,7 @@ function emciaAdministrativeAlerts(){
  const list=document.createElement('div');
  const go=document.createElement('button');go.type='button';go.textContent='فتح متابعة المتأخرات';go.style.margin='8px';go.onclick=()=>{panel.remove();show('arrears')};
  filters.append(monthLabel,typeLabel,allMonths);
- panel.append(close,heading,intro,filters,count,go,list);
+ panel.append(close,heading,intro);panel.insertAdjacentHTML('beforeend',emciaDuplicateAlertsHTML());panel.append(filters,count,go,list);
  const institutional=document.createElement('div');institutional.innerHTML=emciaObligationAlertsHTML();panel.insertBefore(institutional,filters);
  function renderAlerts(){
   const selected=monthInput.value, current=nowMonth(),items=[];
