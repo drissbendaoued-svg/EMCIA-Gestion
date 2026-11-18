@@ -4509,48 +4509,50 @@ resumeAuthSession();
 })();
 </script>
 <script>
-/* EMCIA experimental standalone calculator: read-only, no state or payments writes. */
+/* EMCIA compact draggable calculator — read-only, 28-day reference. */
 (function(){
  window.emciaOpenSessionCalculator=function(){
-  const existing=document.getElementById('emcia-session-calculator');
-  if(existing){existing.style.display='block';existing.style.zIndex='100101';return;}
+  const previous=document.getElementById('emcia-session-calculator');
+  if(previous){previous.style.display='block';return;}
   const panel=document.createElement('section');
-  panel.id='emcia-session-calculator';panel.setAttribute('role','dialog');panel.setAttribute('aria-label','حاسبة الحصص');
-  panel.style.cssText='position:fixed;z-index:100101;top:110px;left:12px;width:min(370px,calc(100vw - 24px));max-height:calc(100dvh - 30px);overflow:auto;background:#fff;color:#102a43;border:1px solid #cbd5e1;border-radius:14px;box-shadow:0 12px 40px #102a4355;direction:rtl;padding:0 14px 14px';
-  panel.innerHTML=`<div data-drag style="position:sticky;top:0;background:#102a43;color:#fff;margin:0 -14px 12px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-radius:13px 13px 0 0;cursor:move;touch-action:none"><strong>▦ حاسبة الحصص</strong><button type="button" data-close aria-label="إغلاق الحاسبة" style="background:#fff;color:#102a43;border:0;border-radius:7px;padding:4px 10px">✕</button></div>
-  <p style="font-size:12px;color:#52677a;margin:0 0 12px">شهر محاسبي مرجعي: 28 يوماً (4 أسابيع). الحساب إرشادي ولا يسجل أداءً.</p>
-  <label style="display:block;margin-bottom:9px">الواجب الشهري (درهم)<input data-field="monthly" type="number" min="0" step="0.01" value="150" style="width:100%"></label>
-  <label style="display:block;margin-bottom:9px">عدد الحصص في الأسبوع<input data-field="weekly" type="number" min="1" step="1" value="2" style="width:100%"></label>
-  <label style="display:block;margin-bottom:9px">الأيام المحاسبية المحتسبة (من 28)<input data-field="days" type="number" min="0" max="28" step="1" value="14" style="width:100%"></label>
-  <label style="display:block;margin-bottom:9px">عدد الحصص المراد معرفة قيمتها<input data-field="sessions" type="number" min="0" step="1" value="4" style="width:100%"></label>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0">
-   <div style="background:#edf4fa;border-radius:9px;padding:10px"><small>قيمة الحصة المرجعية</small><strong data-out="unit" style="display:block;font-size:18px"></strong></div>
-   <div style="background:#edf4fa;border-radius:9px;padding:10px"><small>قيمة الحصص المدخلة</small><strong data-out="sessions" style="display:block;font-size:18px"></strong></div>
-   <div style="background:#edf4fa;border-radius:9px;padding:10px;grid-column:span 2"><small>الواجب عن الفترة المحاسبية</small><strong data-out="period" style="display:block;font-size:18px"></strong></div>
+  panel.id='emcia-session-calculator';
+  panel.setAttribute('role','dialog');panel.setAttribute('aria-label','حاسبة الحصص');
+  panel.style.cssText='position:fixed;z-index:100101;top:105px;left:10px;width:min(420px,calc(100vw - 20px));max-height:calc(100dvh - 20px);overflow:auto;background:white;color:#102a43;border:1px solid #cbd5e1;border-radius:12px;box-shadow:0 10px 32px #102a4344;direction:rtl;padding:0 10px 10px;font-size:12px';
+  panel.innerHTML=`<div data-drag style="position:sticky;top:0;z-index:1;background:#102a43;color:white;margin:0 -10px 9px;padding:6px 10px;display:flex;align-items:center;justify-content:space-between;border-radius:11px 11px 0 0;cursor:move;touch-action:none;min-height:32px"><strong style="font-size:13px">▦ حاسبة الحصص</strong><button type="button" data-close aria-label="إغلاق" title="إغلاق" style="width:24px;height:24px;min-height:24px;padding:0;display:grid;place-items:center;background:transparent;color:white;border:0;border-radius:5px;font-size:17px;line-height:1">×</button></div>
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;align-items:end">
+   <label style="display:block;min-width:0;font-size:11px">الواجب الشهري<input data-field="monthly" type="number" min="0" step="0.01" value="150" inputmode="decimal" style="display:block;width:100%;height:32px;min-height:32px;padding:4px 5px;font-size:13px;margin-top:3px"></label>
+   <label style="display:block;min-width:0;font-size:11px">حصص الشهر (28 يومًا)<input data-field="monthlySessions" type="number" min="1" step="1" value="8" inputmode="numeric" style="display:block;width:100%;height:32px;min-height:32px;padding:4px 5px;font-size:13px;margin-top:3px"></label>
+   <div style="min-width:0"><div style="font-size:11px;margin-bottom:3px">قيمة الحصة</div><output data-out="unit" style="display:flex;align-items:center;justify-content:center;min-height:32px;padding:4px 3px;background:#eef3f8;border-radius:6px;font-weight:700;font-size:13px;text-align:center"></output></div>
+   <label style="display:block;min-width:0;font-size:11px">الحصص المطلوبة<input data-field="sessions" type="number" min="0" step="1" value="4" inputmode="numeric" style="display:block;width:100%;height:32px;min-height:32px;padding:4px 5px;font-size:13px;margin-top:3px"></label>
+   <div style="min-width:0"><div style="font-size:11px;margin-bottom:3px">المبلغ المستحق</div><output data-out="total" style="display:flex;align-items:center;justify-content:center;min-height:32px;padding:4px 3px;background:#e8f5ee;border-radius:6px;font-weight:700;font-size:13px;text-align:center"></output></div>
+   <button type="button" data-copy title="نسخ النتائج" aria-label="نسخ النتائج" style="height:32px;min-height:32px;width:100%;padding:3px 6px;font-size:12px;border-radius:6px">⧉ نسخ</button>
   </div>
-  <p data-error role="status" style="color:#b42318;font-size:12px"></p>
-  <p style="font-size:12px;color:#52677a;margin:6px 0">الواجب عن الفترة = الواجب الشهري × الأيام ÷ 28. قيمة الحصة = الواجب الشهري ÷ (4 × الحصص الأسبوعية). قد تختلف قيمة الحصص الفعلية عن الواجب عن الفترة؛ لا تُضاف حصص الجدول الزائدة تلقائياً إلى الواجب.</p>
-  <button type="button" data-copy style="width:100%">نسخ النتائج</button>`;
+  <div data-error role="status" style="color:#b42318;font-size:11px;margin-top:5px"></div>`;
   document.body.appendChild(panel);
   const field=k=>panel.querySelector('[data-field="'+k+'"]');
   const out=k=>panel.querySelector('[data-out="'+k+'"]');
-  const money=n=>n.toLocaleString('fr-MA',{minimumFractionDigits:2,maximumFractionDigits:2})+' درهم';
+  const format=n=>n.toLocaleString('fr-MA',{minimumFractionDigits:2,maximumFractionDigits:2});
   let summary='';
   function calculate(){
-   const m=Number(field('monthly').value),w=Number(field('weekly').value),d=Number(field('days').value),q=Number(field('sessions').value);
-   const valid=[m,w,d,q].every(Number.isFinite)&&m>=0&&Number.isInteger(w)&&w>0&&Number.isInteger(d)&&d>=0&&d<=28&&Number.isInteger(q)&&q>=0&&[field('monthly'),field('weekly'),field('days'),field('sessions')].every(x=>x.value.trim()!=='');
-   panel.querySelector('[data-error]').textContent=valid?'':'تحقق من المدخلات: الأيام من 0 إلى 28، وعدد الحصص أعداد صحيحة غير سالبة.';
-   if(!valid){['unit','sessions','period'].forEach(k=>out(k).textContent='—');summary='';return;}
-   const unit=m/(4*w),total=unit*q,period=m*d/28;
-   out('unit').textContent=money(unit);out('sessions').textContent=money(total);out('period').textContent=money(period);
-   summary='حاسبة EMCIA للحصص\\nالواجب الشهري: '+money(m)+'\\nالحصص الأسبوعية: '+w+'\\nالأيام المحتسبة: '+d+' من 28\\nقيمة الحصة: '+money(unit)+'\\nقيمة '+q+' حصص: '+money(total)+'\\nالواجب عن الفترة: '+money(period);
+   const m=Number(field('monthly').value),n=Number(field('monthlySessions').value),q=Number(field('sessions').value);
+   const valid=[m,n,q].every(Number.isFinite)&&m>=0&&Number.isInteger(n)&&n>0&&Number.isInteger(q)&&q>=0&&[field('monthly'),field('monthlySessions'),field('sessions')].every(x=>x.value.trim()!=='');
+   panel.querySelector('[data-error]').textContent=valid?'':'أدخل مبلغاً صحيحاً وعدداً صحيحاً للحصص (حصص الشهر أكبر من صفر).';
+   if(!valid){out('unit').textContent='—';out('total').textContent='—';summary='';return;}
+   const unit=m/n,total=unit*q;
+   out('unit').textContent=format(unit)+' د.م';
+   out('total').textContent=format(total)+' د.م';
+   summary='حاسبة EMCIA للحصص\nالواجب الشهري: '+format(m)+' درهم\nحصص الشهر المرجعي (28 يوماً): '+n+'\nقيمة الحصة: '+format(unit)+' درهم\nالحصص المطلوبة: '+q+'\nالمبلغ المستحق: '+format(total)+' درهم';
   }
   panel.querySelectorAll('input').forEach(x=>x.addEventListener('input',calculate));
   panel.querySelector('[data-close]').onclick=()=>panel.remove();
-  panel.querySelector('[data-copy]').onclick=async()=>{if(!summary)return;try{await navigator.clipboard.writeText(summary)}catch(e){const t=document.createElement('textarea');t.value=summary;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();}};
+  panel.querySelector('[data-copy]').onclick=async()=>{
+   if(!summary)return;
+   try{await navigator.clipboard.writeText(summary)}
+   catch(e){const t=document.createElement('textarea');t.value=summary;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();}
+  };
   const handle=panel.querySelector('[data-drag]');let drag=null;
   handle.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;const rect=panel.getBoundingClientRect();drag={x:e.clientX-rect.left,y:e.clientY-rect.top};handle.setPointerCapture(e.pointerId);});
-  handle.addEventListener('pointermove',e=>{if(!drag)return;panel.style.left=Math.max(0,Math.min(innerWidth-panel.offsetWidth,e.clientX-drag.x))+'px';panel.style.top=Math.max(0,Math.min(innerHeight-60,e.clientY-drag.y))+'px';});
+  handle.addEventListener('pointermove',e=>{if(!drag)return;panel.style.left=Math.max(0,Math.min(innerWidth-panel.offsetWidth,e.clientX-drag.x))+'px';panel.style.top=Math.max(0,Math.min(innerHeight-40,e.clientY-drag.y))+'px';});
   handle.addEventListener('pointerup',()=>drag=null);handle.addEventListener('pointercancel',()=>drag=null);
   calculate();
  };
