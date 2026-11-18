@@ -2078,36 +2078,47 @@ function addEnroll(){
  save();window._enrollJustSaved=true;enroll();setTimeout(()=>{let x=$("#enrollSuccess");if(x){x.classList.remove("hidden");window._enrollJustSaved=false}},0)
 }
 function editEnroll(id){
- let o=by(db.e,id);
- if(o?.billingMode==="session"){
-  const value=prompt("ثمن الحصة (درهم)",o.sessionPrice||"");if(value===null)return;
-  const price=Number(value);if(!(price>0&&Number.isFinite(price)))return alert("ثمن الحصة غير صحيح");
-  const reduction=prompt("التخفيض لكل حصة (درهم، 0 = بدون تخفيض)",o.discountAmount||0);if(reduction===null)return;
-  const amount=Number(reduction);if(!(amount>=0&&amount<price&&Number.isFinite(amount)))return alert("التخفيض يجب أن يكون أقل من ثمن الحصة");
-  let bearer=o.discountBearer||"none";
-  if(amount>0){bearer=prompt("من يتحمل التخفيض؟ teacher / emcia / half / proportional / custom",bearer==="none"?"emcia":bearer);if(bearer===null)return;if(!["teacher","emcia","half","proportional","custom"].includes(bearer))return alert("جهة التخفيض غير صحيحة");}
-  let td=0,ed=0;if(amount>0&&bearer==="custom"){
-   const tv=prompt("حصة الأستاذ من التخفيض",o.discountTeacher||0);if(tv===null)return;
-   const ev=prompt("حصة المؤسسة من التخفيض",o.discountEmcia||0);if(ev===null)return;
-   td=Number(tv);ed=Number(ev);if(!(td>=0&&ed>=0&&Math.abs(td+ed-amount)<0.01))return alert("مجموع الحصتين يجب أن يساوي التخفيض");
+ const o=by(db.e,id);if(!o)return;
+ document.activeElement?.blur?.();
+ document.getElementById("emciaEnrollEditDialog")?.remove();
+ const session=o.billingMode==="session";
+ const bearerOptions=[["teacher","الأستاذ"],["emcia","المؤسسة"],["half","50٪"],["proportional","حسب النسبة المئوية"],["custom","توزيع مخصص"]];
+ const terms=[["until_stop","حتى الإيقاف"],["season","نهاية الموسم"],["month","شهر واحد"],["date","إلى شهر محدد"]];
+ const options=(arr,current)=>arr.map(([value,label])=>'<option value="'+value+'"'+(value===current?' selected':'')+'>'+label+'</option>').join("");
+ const modal=document.createElement("div");modal.id="emciaEnrollEditDialog";
+ modal.style.cssText="position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;direction:rtl";
+ modal.innerHTML='<div role="dialog" aria-modal="true" aria-label="تعديل التسجيل والتخفيض" style="background:#fff;color:#142638;border-radius:16px;width:min(100%,480px);max-height:90dvh;overflow:auto;padding:18px;box-sizing:border-box;box-shadow:0 8px 30px #0004"><h3 style="margin:0 0 14px">تعديل التسجيل والتخفيض</h3>'+
+ '<label style="display:block;margin:10px 0 4px">'+(session?'ثمن الحصة':'الواجب الخاص (اتركه فارغاً لاعتماد ثمن الفوج)')+'</label><input id="eeFee" type="number" min="0" step="0.01" value="'+(session?(Number(o.sessionPrice)||0):(o.fee==null?'':Number(o.fee)))+'" style="width:100%;box-sizing:border-box">'+
+ (session?'':'<label style="display:block;margin:10px 0 4px">سبب التعديل</label><input id="eeReason" type="text" value="'+esc(o.reason||"").replace(/"/g,"&quot;")+'" style="width:100%;box-sizing:border-box">')+
+ '<label style="display:block;margin:10px 0 4px">قيمة التخفيض (درهم)</label><input id="eeDiscount" type="number" min="0" step="0.01" value="'+(Number(o.discountAmount)||0)+'" style="width:100%;box-sizing:border-box">'+
+ '<label style="display:block;margin:10px 0 4px">الجهة المتحملة للتخفيض</label><select id="eeBearer" style="width:100%">'+options(bearerOptions,o.discountBearer||"emcia")+'</select>'+
+ (session?'':'<label style="display:block;margin:10px 0 4px">بداية التخفيض</label><input id="eeStart" type="month" value="'+(o.discountStart||o.start?.slice(0,7)||nowMonth())+'" style="width:100%;box-sizing:border-box"><label style="display:block;margin:10px 0 4px">مدة التخفيض</label><select id="eeTerm">'+options(terms,o.discountTerm||"until_stop")+'</select><div id="eeEndWrap"><label style="display:block;margin:10px 0 4px">آخر شهر</label><input id="eeEnd" type="month" value="'+(o.discountEnd||nowMonth())+'"></div>')+
+ '<div id="eeCustomWrap"><label style="display:block;margin:10px 0 4px">حصة الأستاذ</label><input id="eeTeacher" type="number" min="0" step="0.01" value="'+(Number(o.discountTeacher)||0)+'"><label style="display:block;margin:10px 0 4px">حصة المؤسسة</label><input id="eeEmcia" type="number" min="0" step="0.01" value="'+(Number(o.discountEmcia)||0)+'"></div>'+
+ '<p id="eeError" style="color:#a32626;min-height:1em"></p><div style="display:flex;gap:8px"><button type="button" id="eeCancel" style="flex:1">إلغاء</button><button type="button" id="eeSave" style="flex:1">حفظ التعديل</button></div></div>';
+ document.body.appendChild(modal);
+ const $e=id=>modal.querySelector("#"+id);
+ const refresh=()=>{$e("eeCustomWrap").style.display=$e("eeBearer").value==="custom"&&Number($e("eeDiscount").value)>0?"block":"none";if(!session)$e("eeEndWrap").style.display=$e("eeTerm").value==="date"?"block":"none"};
+ $e("eeBearer").onchange=refresh;$e("eeDiscount").oninput=refresh;if(!session)$e("eeTerm").onchange=refresh;refresh();
+ $e("eeCancel").onclick=()=>modal.remove();
+ modal.addEventListener("click",ev=>{if(ev.target===modal)modal.remove()});
+ $e("eeSave").onclick=()=>{
+  const fee=$e("eeFee").value.trim(),d=Number($e("eeDiscount").value),b=$e("eeBearer").value;
+  const err=msg=>{$e("eeError").textContent=msg};
+  if(!Number.isFinite(d)||d<0||!Number.isFinite(Number(fee)))return err("تحقق من المبالغ المدخلة");
+  if(session&&(!(Number(fee)>0)||d>=Number(fee)))return err("يجب أن يكون ثمن الحصة موجباً والتخفيض أقل منه");
+  let td=0,ed=0;
+  if(d>0&&b==="custom"){td=Number($e("eeTeacher").value);ed=Number($e("eeEmcia").value);if(!Number.isFinite(td)||!Number.isFinite(ed)||td<0||ed<0||Math.abs(td+ed-d)>0.01)return err("مجموع حصتي الأستاذ والمؤسسة يجب أن يساوي التخفيض");}
+  const updates={discountAmount:d,discountBearer:d>0?b:"none",discountTeacher:td,discountEmcia:ed};
+  if(session)updates.sessionPrice=Number(fee);
+  else{
+   const st=$e("eeStart").value,tr=$e("eeTerm").value;
+   if(d>0&&!/^\\d{4}-\\d{2}$/.test(st))return err("اختر شهر بداية التخفيض");
+   if(d>0&&tr==="date"&&(!/^\\d{4}-\\d{2}$/.test($e("eeEnd").value)||$e("eeEnd").value<st))return err("اختر شهر نهاية صحيحاً");
+   updates.fee=fee===""?null:Number(fee);updates.reason=$e("eeReason").value;updates.discountStart=st;updates.discountTerm=tr;updates.discountEnd=tr==="date"?$e("eeEnd").value:"";
   }
-  o.sessionPrice=price;o.discountAmount=amount;o.discountBearer=amount?bearer:"none";o.discountTeacher=td;o.discountEmcia=ed;save();enroll();return;
- }
- let f=prompt("الواجب الخاص. اتركه فارغاً لاعتماد ثمن الفوج",o.fee==null?"":o.fee);if(f===null)return;o.fee=f===""?null:+f;
- let r=prompt("سبب التعديل",o.reason||"");if(r!==null)o.reason=r;
- let d=prompt("قيمة التخفيض الشهري (0 = بدون تخفيض)",+o.discountAmount||0);if(d===null)return;d=+d;if(!(d>=0))return alert("قيمة التخفيض غير صحيحة");
- o.discountAmount=d;
- if(d>0){
-  let b=prompt("من يتحمل التخفيض؟ teacher=الأستاذ / emcia=المؤسسة / half=50/50 / proportional=حسب النسبة / custom=مخصص",o.discountBearer||"emcia");if(b===null)return;
-  if(!["teacher","emcia","half","proportional","custom"].includes(b))return alert("اختيار غير صحيح");
-  o.discountBearer=b;
-  let st=prompt("بداية التخفيض YYYY-MM",o.discountStart||nowMonth());if(st===null)return;o.discountStart=st;
-  let tr=prompt("المدة: until_stop=حتى الإيقاف / season=نهاية الموسم / month=شهر / date=إلى شهر محدد",o.discountTerm||"until_stop");if(tr===null)return;
-  if(!["until_stop","season","month","date"].includes(tr))return alert("مدة غير صحيحة");o.discountTerm=tr;
-  if(tr==="date"){let en=prompt("آخر شهر YYYY-MM",o.discountEnd||st);if(en===null)return;o.discountEnd=en}else o.discountEnd="";
-  if(b==="custom"){let td=+prompt("حصة الأستاذ من التخفيض",o.discountTeacher||0),ed=+prompt("حصة المؤسسة من التخفيض",o.discountEmcia||0);if(Math.abs(td+ed-d)>0.01)return alert("مجموع الحصتين يجب أن يساوي التخفيض");o.discountTeacher=td;o.discountEmcia=ed}
- }else{o.discountBearer="none";o.discountTeacher=0;o.discountEmcia=0;o.discountEnd=""}
- save();enroll()
+  Object.assign(o,updates);document.activeElement?.blur?.();modal.remove();save();enroll();
+  if(document.getElementById("rcPreview")&&document.getElementById("rcType")?.value)rcRefreshPreview();
+ };
 }
 function delEnroll(id){let o=by(db.e,id);if([...db.p,...db.sp].some(p=>p.sid===o.sid&&p.gid===o.gid)){if(confirm("توجد أداءات مرتبطة. سيتم إيقاف التسجيل بدل حذفه."))o.active=false}else if(confirm("حذف التسجيل؟"))db.e=db.e.filter(x=>x.id!==id);save();enroll()}
 
