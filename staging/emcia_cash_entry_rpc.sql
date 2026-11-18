@@ -27,7 +27,7 @@ begin
     (jsonb_typeof(p_record) <> 'object' or p_record->>'id' is distinct from p_record_id
      or jsonb_typeof(p_record->'a') <> 'number'
      or (p_record->>'a')::numeric <= 0
-     or coalesce(p_record->>'date','') !~ '^\\d{4}-\\d{2}-\\d{2}$') then
+     or coalesce(p_record->>'date','') !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$') then
    raise exception 'Invalid financial entry' using errcode='22023';
  end if;
  select payload,revision into v_payload,v_revision
