@@ -26,3 +26,16 @@ Date: 2026-11-18. Production branch `main` must remain unchanged until tests pas
 - Compare before/after November 2026 totals on an anonymized backup without mutating production.
 
 Status: investigation and test specification only. No production changes or claims of completed repair.
+
+
+## Authorized role policy — confirmed 2026-11-18
+- Both secretaries may create, edit, delete and durably save expenses and other income, with actor/time audit history.
+- Both secretaries may view comprehensive reports during the correction phase.
+- Budget Management and Financial Analysis remain exclusively for director/accountant.
+- Access restrictions must be enforced server-side, not just by hiding navigation.
+
+## Verified live database cause (read-only inspection)
+The current `public.emcia_save_state_v2` RPC explicitly rejects non-director/non-accountant requests containing `p_financial`. The client only includes `financialKeys=['tp','adj','x','oi','sv','obligations']` when `canFinance()` is true. Consequently secretary edits to `db.x` and `db.oi` can appear locally but are omitted from the cloud write, and are lost from the loaded view after a new session. This is a confirmed authorization/persistence mismatch.
+
+## Safe implementation boundary
+Do NOT simply permit secretaries to overwrite the whole financial JSON: that would grant budget, settlement and other restricted write access. Preferred fix: server-side authorized append/update/delete operations scoped to `x` and `oi`, with immutable actor/time audit entries and stable operation IDs, while preserving financial-state revision checks. A role-specific read projection may expose reports without granting financial-state write. Test with secretary, accountant and director accounts, then deploy after backup and approval.
