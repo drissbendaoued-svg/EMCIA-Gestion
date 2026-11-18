@@ -5,7 +5,7 @@
 create or replace function public.emcia_save_cash_entry_v1(
  p_id text, p_expected_revision bigint, p_collection text,
  p_action text, p_record jsonb, p_record_id text
-) returns jsonb language plpgsql security invoker set search_path = ''
+) returns jsonb language plpgsql security definer set search_path = ''
 as $$
 declare
  v_role text; v_uid uuid := auth.uid(); v_payload jsonb; v_rows jsonb;
@@ -17,6 +17,7 @@ begin
     or v_uid is null then
    raise exception 'Not authorized' using errcode='42501';
  end if;
+ if p_id <> 'emcia-main' then raise exception 'Invalid state id' using errcode='42501'; end if;
  if p_collection not in ('x','oi') or p_action not in ('insert','update','delete') then
    raise exception 'Invalid action' using errcode='22023';
  end if;
