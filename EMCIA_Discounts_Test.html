@@ -538,6 +538,7 @@ try{
 <section id="teacherfile" class="page"></section>
 <section id="studentfile" class="page"></section>
 <section id="daily" class="page"></section>
+<section id="alerts" class="page"></section>
 <section id="schedule" class="page"></section>
 <section id="attendance" class="page"></section>
 <section id="teacheratt" class="page"></section>
@@ -828,7 +829,7 @@ function toggleLangMenu(){document.getElementById("langChoices")?.classList.togg
 
 const NAV_GROUPS=[
  ["academic","الإدارة",[["teachers","إضافة أستاذ"],["students","إضافة متعلم"],["groups","إضافة فوج"],["enroll","تسجيل متعلم"],["waiting","لوائح الانتظار"]]],
- ["dailycat","التدبير اليومي",[["daily","التشغيل اليومي"],["schedule","استعمال الزمن"],["attendance","الحضور والغياب"],["teacheratt","حضور الأساتذة"]]],
+ ["dailycat","التدبير اليومي",[["daily","التشغيل اليومي"],["alerts","التنبيهات"],["schedule","استعمال الزمن"],["attendance","الحضور والغياب"],["teacheratt","حضور الأساتذة"]]],
  ["finance","المالية",[["payments","الأداءات"],["advances","التسبيقات"],["cashbox","الصندوق"],["shifts","المناوبات"],["adjustments","التسوية الاستثنائية"],["teacherpay","تسوية مستحقات الأساتذة"],["expenses","المداخيل والمصاريف"],["budget","تدبير الميزانية"],["analysis","التحليل المالي"],["arrears","متابعة المتأخرات"]]],
  ["filescat","الملفات والمتابعة",[["studentfile","ملف المتعلم"],["teacherfile","ملف الأستاذ"]]],
  ["reportcat","التقارير والأرشفة",[["reportcenter","التقارير"],["backup","النسخ الاحتياطي"]]],
@@ -1179,7 +1180,7 @@ function certification(){
  refresh();
 }
 
-function render(page){({home:home,subjects:subjects,teachers:teachers,students:students,waiting:waiting,groups:groups,enroll:enroll,payments:payments,advances:advances,cashbox:cashbox,shifts:shifts,adjustments:adjustments,teacherpay:teacherpay,expenses:expenses,budget:budget,reportcenter:reportcenter,teacherfile:teacherfile,studentfile:studentfile,daily:daily,schedule:schedule,attendance:attendance,teacheratt:teacheratt,arrears:arrears,analysis:analysis,reports:reports,exports:exports,backup:backup,certification:certification}[page]||home)();applyLang()}
+function render(page){({home:home,subjects:subjects,teachers:teachers,students:students,waiting:waiting,groups:groups,enroll:enroll,payments:payments,advances:advances,cashbox:cashbox,shifts:shifts,adjustments:adjustments,teacherpay:teacherpay,expenses:expenses,budget:budget,reportcenter:reportcenter,teacherfile:teacherfile,studentfile:studentfile,daily:daily,alerts:emciaAdministrativeAlerts,schedule:schedule,attendance:attendance,teacheratt:teacheratt,arrears:arrears,analysis:analysis,reports:reports,exports:exports,backup:backup,certification:certification}[page]||home)();applyLang()}
 function monthShift(m,n){let [y,mo]=m.split("-").map(Number),d=new Date(y,mo-1+n,1);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")}
 function activeEnrollmentsForMonth(m){return db.e.filter(e=>emciaEnrollmentMonth(e,m))}
 function dashboardStats(m){
@@ -3582,10 +3583,8 @@ function emciaReviewDuplicatePayment(index){
  alert('حالة تحتاج تحققاً من التوصيلات قبل الإلغاء.\\nالمتعلم: '+objName(item.student)+'\\nالتاريخ: '+item.rows[0].date+'\\nالسجلات:\\n'+item.rows.map(p=>'رقم التوصيل: '+(p.receiptNo||'—')+' | '+money(p.a)+' | معرف العملية: '+p.id).join('\\n')+'\\nلم يتم حذف أو تغيير أي سجل.');
 }
 function emciaAdministrativeAlerts(){
- const existing=document.getElementById('emcia-alerts-panel');if(existing)existing.remove();
- const panel=document.createElement('section');panel.id='emcia-alerts-panel';
- panel.style.cssText='position:fixed;inset:5vh 4vw;z-index:100002;overflow:auto;background:#fff;color:#102a43;padding:16px;border:2px solid #9fb3c8;border-radius:12px;box-shadow:0 0 0 100vmax #0008;direction:rtl';
- const close=document.createElement('button');close.type='button';close.textContent='إغلاق ×';close.onclick=()=>panel.remove();
+ const panel=document.getElementById('alerts');if(!panel)return;
+ panel.replaceChildren();
  const heading=document.createElement('h2');heading.textContent='التنبيهات الإدارية';
  const intro=document.createElement('p');intro.textContent='متابعة الواجبات المتبقية حسب الشهر ونوع الحالة. لا تُرسل رسائل تلقائية ولا تُعدّل البيانات.';
  const filters=document.createElement('div');filters.style.cssText='display:flex;flex-wrap:wrap;align-items:end;gap:8px;margin:12px 0';
@@ -3598,9 +3597,12 @@ function emciaAdministrativeAlerts(){
  const allMonths=document.createElement('button');allMonths.type='button';allMonths.textContent='جميع الأشهر';
  const count=document.createElement('p');count.style.fontWeight='bold';
  const list=document.createElement('div');
- const go=document.createElement('button');go.type='button';go.textContent='فتح متابعة المتأخرات';go.style.margin='8px';go.onclick=()=>{panel.remove();show('arrears')};
+ const go=document.createElement('button');go.type='button';go.textContent='فتح متابعة المتأخرات';go.style.margin='8px';go.onclick=()=>{show('arrears')};
  filters.append(monthLabel,typeLabel,allMonths);
- panel.append(close,heading,intro);panel.insertAdjacentHTML('beforeend',emciaDuplicateAlertsHTML());panel.append(filters,count,go,list);
+ panel.append(heading,intro);
+ const duplicateSection=document.createElement('details');duplicateSection.className='card';duplicateSection.innerHTML='<summary><strong>الأداءات المكررة المحتملة ('+emciaPotentialDuplicatePayments().length+')</strong></summary>'+emciaDuplicateAlertsHTML();panel.appendChild(duplicateSection);
+ const arrearsSection=document.createElement('details');arrearsSection.className='card';arrearsSection.innerHTML='<summary><strong>المتأخرات والأداءات الجزئية</strong></summary>';
+ arrearsSection.append(filters,count,go,list);panel.appendChild(arrearsSection);
  const institutional=document.createElement('div');institutional.innerHTML=emciaObligationAlertsHTML();panel.insertBefore(institutional,filters);
  function renderAlerts(){
   const selected=monthInput.value, current=nowMonth(),items=[];
@@ -3629,7 +3631,7 @@ function emciaAdministrativeAlerts(){
    const line=document.createElement('div');line.style.cssText='padding:9px 0;border-bottom:1px solid #ddd';
    const description=document.createElement('span');description.textContent=x.student+' — '+x.group+' | '+x.month+' | '+money(x.remaining)+' | '+(x.category==='partial'?'أداء جزئي':'غير مؤدى')+(x.month<current?' (شهر سابق)':'');
    const detail=document.createElement('button');detail.type='button';detail.textContent='متابعة';detail.style.cssText='width:auto;min-height:32px;margin:4px 8px;padding:5px 10px;font:inherit;font-size:12px';
-   detail.onclick=()=>{panel.remove();window.arm=current;window.arq=x.student;show('arrears')};
+   detail.onclick=()=>{window.arm=current;window.arq=x.student;show('arrears')};
    line.append(description,detail);list.appendChild(line);
   });
   if(items.length>100){const note=document.createElement('p');note.textContent='تظهر أول 100 حالة فقط. افتح متابعة المتأخرات للاطلاع على القائمة الكاملة.';list.appendChild(note)}
@@ -3637,7 +3639,7 @@ function emciaAdministrativeAlerts(){
  monthInput.addEventListener('change',renderAlerts);
  typeSelect.addEventListener('change',renderAlerts);
  allMonths.onclick=()=>{monthInput.value='';renderAlerts()};
- document.body.appendChild(panel);renderAlerts();
+ renderAlerts();
 }
 function arrears(resultsOnly=false){
  let m=window.arm||nowMonth(), q=(window.arq||"").trim().toLowerCase(), rows=[], arSubject=window.arSubject||"",arLevel=window.arLevel||"",arGroup=window.arGroup||"";
@@ -4239,7 +4241,7 @@ async function enter(user,accessToken){
  const alertsButton=document.createElement('button');alertsButton.type='button';alertsButton.textContent='♧ التنبيهات';
  const alertsBadge=document.createElement('span');alertsBadge.id='emcia-alert-count';alertsBadge.style.cssText='display:none;align-items:center;justify-content:center;min-width:19px;height:19px;padding:0 4px;margin-inline-start:6px;border-radius:10px;background:#eef2f6;color:#102a43;font-size:11px;font-weight:700';alertsButton.appendChild(alertsBadge);
  alertsButton.style.cssText='width:auto;min-height:34px;padding:6px 10px;border-radius:8px;font:inherit;font-size:13px';
- alertsButton.onclick=()=>{accountActions.style.display='none';if(typeof emciaAdministrativeAlerts==='function')emciaAdministrativeAlerts()};
+ alertsButton.onclick=()=>{accountActions.style.display='none';if(typeof show==='function')show('alerts')};
  controls.appendChild(alertsButton);
  if(typeof window.emciaUpdateAlertCounter==='function')window.emciaUpdateAlertCounter();
  addAction('🔑 تغيير كلمة المرور',()=>{
