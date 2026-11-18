@@ -2112,8 +2112,8 @@ function editEnroll(id){
   if(session)updates.sessionPrice=Number(fee);
   else{
    const st=$e("eeStart").value,tr=$e("eeTerm").value;
-   if(d>0&&!/^\\d{4}-\\d{2}$/.test(st))return err("اختر شهر بداية التخفيض");
-   if(d>0&&tr==="date"&&(!/^\\d{4}-\\d{2}$/.test($e("eeEnd").value)||$e("eeEnd").value<st))return err("اختر شهر نهاية صحيحاً");
+   if(d>0&&!/^\d{4}-\d{2}$/.test(st))return err("اختر شهر بداية التخفيض");
+   if(d>0&&tr==="date"&&(!/^\d{4}-\d{2}$/.test($e("eeEnd").value)||$e("eeEnd").value<st))return err("اختر شهر نهاية صحيحاً");
    updates.fee=fee===""?null:Number(fee);updates.reason=$e("eeReason").value;updates.discountStart=st;updates.discountTerm=tr;updates.discountEnd=tr==="date"?$e("eeEnd").value:"";
   }
   Object.assign(o,updates);document.activeElement?.blur?.();modal.remove();save();enroll();
