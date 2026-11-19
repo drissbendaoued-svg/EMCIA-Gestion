@@ -3059,7 +3059,7 @@ function rcBuildReport(){
  let type=$("#rcType").value,m=$("#rcMonth").value||nowMonth(),teacherEl=$("#rcTeacher"),tid=teacherEl?teacherEl.value:"";
  if(type==="blankAttendance"){
   const gid=$("#rcBlankAttendanceGroup")?.value||"";if(!gid){rcClearPreview("اختر الفوج.");return false}
-  const box=$("#rcPreview");box.innerHTML=\`<div class="rc-paper">\${emciaBlankAttendanceHTML(m,gid)}</div>\`;box.style.display="block";
+  const box=$("#rcPreview");box.innerHTML=`<div class="rc-paper">${emciaBlankAttendanceHTML(m,gid)}</div>`;box.style.display="block";
  }else if(type==="receiptAudit"){
   if(!emciaCanViewManagement()){rcClearPreview("هذا التقرير متاح للمدير والمحاسب فقط.");return false}
   rcSetReport("سجل الأداءات والتسبيقات حسب الفوج — "+m,emciaReceiptAuditHTML(m));
