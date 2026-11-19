@@ -4572,4 +4572,40 @@ resumeAuthSession();
  };
 })();
 </script>
+<script>
+/* EMCIA experimental: retain identity columns while scrolling data tables horizontally. */
+(function(){
+ const names=/^(المتعلم|اسم المتعلم|التلميذ|اسم التلميذ|الأستاذ|اسم الأستاذ|الفوج|اسم الفوج|المادة|المستفيد|الاسم|المصدر|الفئة|النوع)$/;
+ const css=document.createElement('style');
+ css.textContent=`
+ .emcia-sticky-table-scroll{max-width:100%;overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch;position:relative}
+ .emcia-sticky-table-scroll>table{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0}
+ .emcia-sticky-identity{position:sticky!important;right:0!important;left:auto!important;z-index:2!important;background:#fff!important;box-shadow:-2px 0 4px #102a4322;min-width:105px}
+ th.emcia-sticky-identity{z-index:3!important;background:#f1f5fa!important}
+ @media(max-width:500px){.emcia-sticky-identity{min-width:90px;max-width:155px;overflow-wrap:anywhere}}
+ `;
+ document.head.appendChild(css);
+ let scheduled=false;
+ function update(){
+  scheduled=false;
+  document.querySelectorAll('main table').forEach(table=>{
+   if(table.closest('#schedule,[id*="timetable"],.emcia-session-calculator,.emcia-sticky-table-scroll'))return;
+   const header=table.querySelector('tr');
+   if(!header)return;
+   const cells=Array.from(header.children).filter(el=>el.matches('th,td'));
+   const index=cells.findIndex(el=>names.test((el.textContent||'').trim().replace(/\s+/g,' ')));
+   if(index<0||!table.querySelector('tr:nth-child(2)'))return;
+   // Skip complex merged-cell tables to avoid pinning the wrong person's data.
+   if(Array.from(table.rows).some(row=>Array.from(row.cells).some(c=>c.colSpan>1||c.rowSpan>1)))return;
+   const wrapper=document.createElement('div');wrapper.className='emcia-sticky-table-scroll';wrapper.setAttribute('tabindex','0');wrapper.setAttribute('aria-label','جدول قابل للتمرير أفقيًا مع تثبيت عمود التعريف');
+   table.parentNode.insertBefore(wrapper,table);wrapper.appendChild(table);
+   Array.from(table.rows).forEach(row=>{if(row.cells[index])row.cells[index].classList.add('emcia-sticky-identity')});
+  });
+ }
+ function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(update)}
+ const observer=new MutationObserver(schedule);
+ observer.observe(document.body,{childList:true,subtree:true});
+ schedule();
+})();
+</script>
 </body></html>
