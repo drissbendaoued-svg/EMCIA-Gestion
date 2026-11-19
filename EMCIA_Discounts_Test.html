@@ -2194,6 +2194,18 @@ function paymentAllocations(p){
  if(Array.isArray(p.allocations)&&p.allocations.length)return p.allocations;
  return [{month:p.allocMonth||p.receiptMonth||"",amount:+p.a||0}]
 }
+function emciaMonthlyRecognizedParts(p,m){
+ const amount=Number(p.a)||0;
+ if(!(amount>0)||!m)return {teacher:0,emcia:0,discountTeacher:0};
+ const factor=p.netAfterRefund==null?1:Math.max(0,Number(p.netAfterRefund)||0)/amount;
+ const allocated=paymentAllocations(p).filter(x=>x.month===m).reduce((n,x)=>n+(Number(x.amount)||0),0);
+ const share=Math.max(0,allocated)/amount*factor;
+ return {teacher:teacherDueOf(p)*share,emcia:(Number(p.e)||0)*share,discountTeacher:(Number(p.discountTeacher)||0)*share};
+}
+function emciaRecognizedShares(m){
+ const accounts=emciaAccountTotals(emciaAccountRows(m));
+ return {teacher:accounts.teacher,emcia:accounts.emcia};
+}
 function allocatedAmountForMonth(p,m){return paymentAllocations(p).filter(x=>x.month===m).reduce((s,x)=>s+(+x.amount||0),0)}
 function emciaMonthlyPaid(sid,gid,m){return db.p.filter(p=>p.sid===sid&&p.gid===gid).reduce((sum,p)=>sum+allocatedAmountForMonth(p,m)*(p.netAfterRefund==null?1:(+p.a>0?Math.max(0,+p.netAfterRefund)/+p.a:0)),0)}
 
@@ -2369,7 +2381,7 @@ function emciaAccountRows(month="",options={}){
   const r=get(sid,gid,"monthly"),factor=p.netAfterRefund==null?1:(+p.a>0?Math.max(0,+p.netAfterRefund)/+p.a:0);
   if(cashPeriod(p.date))r.cash+=Number(p.netAfterRefund??p.a)||0;
   const allocations=paymentAllocations(p);
-  if(cashPeriod(p.date)){r.teacher+=teacherDueOf(p);r.emcia+=+p.e||0;r.teacherDiscount+=+p.discountTeacher||0}
+  for(const x of allocations){if(inPeriod(x.month)){const part=emciaMonthlyRecognizedParts(p,x.month);const denominator=allocations.filter(y=>y.month===x.month).length||1;r.teacher+=part.teacher/denominator;r.emcia+=part.emcia/denominator;r.teacherDiscount+=part.discountTeacher/denominator;}}
   allocations.forEach(x=>{
    if(inPeriod(x.month)){
     let line=r.details.find(d=>d.mm===x.month);if(!line)r.details.push(line={mm:x.month,due:0,paid:0,rem:0});
@@ -2400,7 +2412,7 @@ function emciaAccountTotals(rows){
 function emciaAccountMode(mode){return mode==="session"?"بالحصة":"شهري"}
 function emciaAccountsHTML(month="",options={}){
  const rows=emciaAccountRows(month,options).filter(r=>!options.debtOnly||r.debt>0),t=emciaAccountTotals(rows),privateShares=!!options.shares;
- return '<div class="card emcia-unified-accounts"><style>@media print{.emcia-unified-accounts>div{overflow:visible!important}.emcia-unified-accounts th,.emcia-unified-accounts td{font-size:10px!important;padding:4px!important}}</style><h3>حسابات المتعلمين — الشهري والحصص'+(month?' — '+esc(month):'')+'</h3><p class="muted">المستحق حسب شهر الدراسة، والمخصص له من الأداءات حتى تاريخ الكشف. المقبوض حسب تاريخ الأداء ويُحتسب مرة واحدة. الرصيد المسبق لا يمحو ديناً في فوج آخر. حصة الأستاذ والمؤسسة عن الحصص تُثبت بعد إنجاز الحصة وتحصيل مقابلها.</p><div style="overflow-x:auto"><table><tr><th>المتعلم</th><th>الفوج</th><th>نظام الأداء</th><th>المستحق</th><th>المخصص للدراسة</th><th>المقبوض في الفترة</th><th>المتبقي</th><th>الرصيد المسبق / الزائد</th>'+(privateShares?'<th>مستحق الأستاذ</th><th>حصة EMCIA</th>':'')+'</tr>'+rows.map(r=>'<tr data-billing-mode="'+r.mode+'"><td>'+esc(name(db.s,r.sid))+'</td><td>'+esc(by(db.g,r.gid)?.n||"—")+'</td><td>'+emciaAccountMode(r.mode)+'</td>'+[r.due,r.paid,r.cash,r.debt,r.credit].map(n=>'<td>'+money(n)+'</td>').join("")+(privateShares?'<td>'+money(r.teacher)+'</td><td>'+money(r.emcia)+'</td>':'')+'</tr>').join("")+'<tr><th colspan="3">المجموع</th>'+[t.due,t.paid,t.cash,t.debt,t.credit].map(n=>'<th>'+money(n)+'</th>').join("")+(privateShares?'<th>'+money(t.teacher)+'</th><th>'+money(t.emcia)+'</th>':'')+'</tr></table></div></div>';
+ return '<div class="card emcia-unified-accounts"><style>@media print{.emcia-unified-accounts>div{overflow:visible!important}.emcia-unified-accounts th,.emcia-unified-accounts td{font-size:10px!important;padding:4px!important}}</style><h3>حسابات المتعلمين — الشهري والحصص'+(month?' — '+esc(month):'')+'</h3><p class="muted">المستحق حسب شهر الدراسة، والمخصص له من الأداءات حتى تاريخ الكشف. المقبوض حسب تاريخ الأداء ويُحتسب مرة واحدة. الرصيد المسبق لا يمحو ديناً في فوج آخر. حصة الأستاذ والمؤسسة عن الأداء الشهري تُنسب لشهر الاستحقاق المحفوظ، وعن الحصص تُثبت بعد إنجاز الحصة وتحصيل مقابلها.</p><div style="overflow-x:auto"><table><tr><th>المتعلم</th><th>الفوج</th><th>نظام الأداء</th><th>المستحق</th><th>المخصص للدراسة</th><th>المقبوض في الفترة</th><th>المتبقي</th><th>الرصيد المسبق / الزائد</th>'+(privateShares?'<th>مستحق الأستاذ</th><th>حصة EMCIA</th>':'')+'</tr>'+rows.map(r=>'<tr data-billing-mode="'+r.mode+'"><td>'+esc(name(db.s,r.sid))+'</td><td>'+esc(by(db.g,r.gid)?.n||"—")+'</td><td>'+emciaAccountMode(r.mode)+'</td>'+[r.due,r.paid,r.cash,r.debt,r.credit].map(n=>'<td>'+money(n)+'</td>').join("")+(privateShares?'<td>'+money(r.teacher)+'</td><td>'+money(r.emcia)+'</td>':'')+'</tr>').join("")+'<tr><th colspan="3">المجموع</th>'+[t.due,t.paid,t.cash,t.debt,t.credit].map(n=>'<th>'+money(n)+'</th>').join("")+(privateShares?'<th>'+money(t.teacher)+'</th><th>'+money(t.emcia)+'</th>':'')+'</tr></table></div></div>';
 }
 function emciaAccountDebtLines(e,m){
  const mode=e.billingMode==="session"?"session":"monthly";
@@ -2676,7 +2688,7 @@ function saveExceptionalAdjustment(){
 
 function teacherCalculatedDue(tid,m){
  let gids=new Set(db.g.filter(g=>g.tid===tid).map(g=>g.id));
- return emciaFinancialPayments().filter(p=>gids.has(p.gid)&&(p.type==="sessionRecognition"?p.allocMonth===m:(p.date||"").slice(0,7)===m)).reduce((s,p)=>s+(teacherDueOf(p)),0)
+ return emciaAccountRows(m,{tid}).reduce((s,r)=>s+r.teacher,0)
 }
 function teacherSettlement(tid,m){return db.tp.find(x=>x.tid===tid&&x.month===m)}
 function teacherSettlementStatus(calc,rec){
@@ -2856,7 +2868,7 @@ function emciaFinancialSetupNotice(){
  return missing.length?'<div class="card" style="border:2px solid #c2410c;padding:12px"><strong>⚠️ تعذر احتساب حصص الأستاذ والمؤسسة</strong><p>توجد أفواج لها أداءات مسجلة لكن نسبة الأستاذ غير محفوظة في البيانات المالية: '+missing.map(g=>esc(g.n||g.id)).join('، ')+'. افتح قسم الأفواج من حساب المدير، وحدد نسبة الأستاذ واحفظها، ثم أعد تحميل التقرير.</p></div>':'';
 }
 function budget(){
- let m=window.bm||nowMonth(), rec=emciaFinancialPayments().filter(p=>p.receiptMonth===m), gross=rec.reduce((s,p)=>s+(+(p.netAfterRefund??p.a)||0),0), prof=rec.reduce((s,p)=>s+teacherDueOf(p),0), em=rec.reduce((s,p)=>s+(+p.e||0),0), other=db.oi.filter(x=>emciaAccountingMonth(x)===m).reduce((s,x)=>s+(+x.a||0),0), fixed=db.x.filter(x=>x.month===m&&x.type==="fixed").reduce((s,x)=>s+(+x.a||0),0), variable=db.x.filter(x=>x.month===m&&x.type!=="fixed").reduce((s,x)=>s+(+x.a||0),0), sav=db.sv.filter(x=>emciaAccountingMonth(x)===m).reduce((s,x)=>s+(+x.a||0),0), operating=em+other-fixed-variable, avail=operating-sav;
+ let m=window.bm||nowMonth(), rec=emciaFinancialPayments().filter(p=>p.receiptMonth===m), gross=rec.reduce((s,p)=>s+(+(p.netAfterRefund??p.a)||0),0), prof=emciaRecognizedShares(m).teacher, em=emciaRecognizedShares(m).emcia, other=db.oi.filter(x=>emciaAccountingMonth(x)===m).reduce((s,x)=>s+(+x.a||0),0), fixed=db.x.filter(x=>x.month===m&&x.type==="fixed").reduce((s,x)=>s+(+x.a||0),0), variable=db.x.filter(x=>x.month===m&&x.type!=="fixed").reduce((s,x)=>s+(+x.a||0),0), sav=db.sv.filter(x=>emciaAccountingMonth(x)===m).reduce((s,x)=>s+(+x.a||0),0), operating=em+other-fixed-variable, avail=operating-sav;
  let low=db.sv.filter(x=>x.fund==="low").reduce((s,x)=>s+(+x.a||0),0), dev=db.sv.filter(x=>x.fund==="dev").reduce((s,x)=>s+(+x.a||0),0);
  $("#budget").innerHTML=emciaFinancialSetupNotice()+`<div class="card"><h3>تدبير الميزانية / Gestion du budget</h3><input type="month" value="${m}" onchange="window.bm=this.value;budget()"></div>
  <div class="grid budget-kpi-strip"><div class="card"><div class="muted">إجمالي المقبوضات الدراسية</div><div class="kpi">${money(gross)}</div></div><div class="card"><div class="muted">مستحقات الأساتذة</div><div class="kpi">${money(prof)}</div></div><div class="card"><div class="muted">حصة EMCIA</div><div class="kpi">${money(em)}</div></div><div class="card"><div class="muted">مداخيل أخرى</div><div class="kpi">${money(other)}</div></div><div class="card"><div class="muted">المصاريف الثابتة</div><div class="kpi">${money(fixed)}</div></div><div class="card"><div class="muted">المصاريف المتغيرة</div><div class="kpi">${money(variable)}</div></div><div class="card"><div class="muted">صافي التشغيل قبل الادخار</div><div class="kpi">${money(operating)}</div></div><div class="card"><div class="muted">الرصيد المتاح بعد الادخار</div><div class="kpi">${money(avail)}</div></div></div>
