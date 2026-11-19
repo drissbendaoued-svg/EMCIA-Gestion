@@ -3949,6 +3949,18 @@ function emciaTeacherLateCashHTML(tid,m){
  const rows=items.map(x=>'<tr><td>'+esc(name(db.s,x.sid))+'</td><td>'+esc(by(db.g,x.gid)?.n||"—")+'</td><td>'+esc(x.receipt)+'</td><td>'+esc(x.date)+'</td><td>'+esc(x.month)+'</td><td>'+money(x.amount)+'</td><td>'+money(x.teacher)+'</td></tr>').join("");
  return '<div class="emcia-late-cash-audit"><h3>أداءات متأخرة قُبضت خلال '+esc(m)+'</h3><p>بيان مستقل حسب تاريخ القبض وشهر الاستحقاق الأصلي. تُضاف حصة الأستاذ إلى مستحقات الصرف لشهر القبض، ولا تُضاف إلى مستحقات شهر الدراسة الأصلي مرة ثانية. راجع أي تسويات تاريخية قبل الاعتماد.</p><table><tr><th>المتعلم</th><th>الفوج</th><th>التوصيل</th><th>تاريخ القبض</th><th>شهر الاستحقاق</th><th>المقبوض</th><th>حصة الأستاذ المسجلة</th></tr>'+rows+'<tr><th colspan="5">المجموع (بيان مستقل)</th><th>'+money(items.reduce((s,x)=>s+x.amount,0))+'</th><th>'+money(items.reduce((s,x)=>s+x.teacher,0))+'</th></tr></table></div>';
 }
+function emciaTeacherLateCashShortHTML(tid,m){
+ const rows=emciaTeacherLateCashRows(tid,m);
+ if(!rows.length)return "";
+ const grouped=new Map();
+ rows.forEach(x=>{
+  const key=JSON.stringify([x.sid,x.month]);
+  if(!grouped.has(key))grouped.set(key,{name:name(db.s,x.sid),month:x.month,amount:0});
+  grouped.get(key).amount+=x.teacher;
+ });
+ const items=[...grouped.values()];
+ return '<div class="teacher-late-short"><h3>مستحقات متأخرة قُبضت هذا الشهر</h3><table class="teacher-learner-table" style="width:100%;max-width:100%"><tr><th>المتعلم</th><th>شهر الاستحقاق</th><th>مستحق الأستاذ</th></tr>'+items.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(x.month)+'</td><td>'+money(x.amount)+'</td></tr>').join("")+'<tr><th colspan="2">مجموع المتأخرات</th><th>'+money(items.reduce((sum,x)=>sum+x.amount,0))+'</th></tr></table></div>';
+}
 function teacherShortReportHTML(tid,m){
  const d=teacherExportData(tid,m);if(!d.teacher)return "";
  const groups=d.groups.filter(g=>g.rows.length);
@@ -3984,7 +3996,7 @@ function teacherShortReportHTML(tid,m){
   halves[1].unshift({kind:"heading",label:current+" (تابع)"});
  }
  const studyTotal=d.groups.reduce((v,g)=>v+g.teacherDue,0),lateTotal=emciaTeacherLateCashTotal(tid,m),total=studyTotal+lateTotal;
- return emciaTeacherShortPrintCSS()+'<div class="emcia-teacher-short"><h1>EMCIA — كشف مستحقات الأستاذ</h1><p class="teacher-meta"><b>الأستاذ:</b> '+esc(objName(d.teacher))+' &nbsp; | &nbsp; <b>شهر الدراسة:</b> '+esc(m)+'</p><div class="teacher-two-columns">'+renderHalf(halves[0])+renderHalf(halves[1])+'</div><div class="teacher-total"><b>إجمالي مستحق الأستاذ للصرف: '+money(total)+'</b></div><div class="teacher-signature"><b>توقيع الأستاذ</b><div class="teacher-signature-space"></div></div></div>'+emciaTeacherLateCashHTML(tid,m);
+ return emciaTeacherShortPrintCSS()+'<div class="emcia-teacher-short"><h1>EMCIA — كشف مستحقات الأستاذ</h1><p class="teacher-meta"><b>الأستاذ:</b> '+esc(objName(d.teacher))+' &nbsp; | &nbsp; <b>شهر الدراسة:</b> '+esc(m)+'</p><div class="teacher-two-columns">'+renderHalf(halves[0])+renderHalf(halves[1])+'</div>'+emciaTeacherLateCashShortHTML(tid,m)+'<div class="teacher-total"><b>إجمالي مستحق الأستاذ للصرف: '+money(total)+'</b></div><div class="teacher-signature"><b>توقيع الأستاذ</b><div class="teacher-signature-space"></div></div></div>';
 }
 function teacherReportHTML(tid,m){
  let d=teacherExportData(tid,m); if(!d.teacher)return "";
