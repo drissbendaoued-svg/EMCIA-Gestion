@@ -3008,23 +3008,30 @@ function emciaBlankAttendanceHTML(m,gid,tid){
  const groupBlocks=groups.map(g=>{
   const students=enrollments.filter(e=>e.gid===g.id).map(e=>by(db.s,e.sid)).filter(Boolean).filter((x,i,a)=>a.findIndex(y=>y.id===x.id)===i).sort((x,y)=>objName(x).localeCompare(objName(y),'ar'));
   return {g,students};
- }).filter(x=>x.students.length);
+ });
  const parts=[];let current=[],used=0;
  // Keep compact groups together when possible; split large groups across pages.
  const maxRows=18;
  groupBlocks.forEach(({g,students})=>{
-  for(let i=0;i<students.length;){
+  for(let i=0;i<Math.max(1,students.length);){
    let available=maxRows-used;
    if(available<3&&current.length){parts.push(current);current=[];used=0;available=maxRows}
-   const count=Math.min(available,students.length-i);
+   const count=Math.min(available,Math.max(1,students.length)-i);
    current.push({g,students:students.slice(i,i+count),continued:i>0});
    used+=count+1;i+=count;
    if(used>=maxRows){parts.push(current);current=[];used=0}
   }
  });
  if(current.length)parts.push(current);
- const row=st=>'<tr><td></td><td class="student">'+esc(objName(st))+'</td>'+Array.from({length:31},(_,i)=>'<td'+(i>=days?' class="unused"':'')+'></td>').join('')+'</tr>';
- const pages=parts.map((blocks,index)=>'<section class="blank-page"><h2>EMCIA — سجل الغياب الشهري الفارغ</h2><div class="meta"><b>الأستاذ:</b> '+esc(objName(teacher)||'—')+' &nbsp; <b>الشهر والسنة:</b> '+esc(m)+'</div>'+blocks.map(block=>'<div class="group-block"><h3>الفوج: '+esc(block.g.n)+(block.continued?' (تابع)':'')+'</h3><table>'+head+'<tbody>'+block.students.map(row).join('')+'</tbody></table></div>').join('')+'</section>').join('');
+ // Fill remaining writable rows on each sheet, distributed among its groups.
+ parts.forEach(blocks=>{
+  const occupied=blocks.reduce((n,block)=>n+block.students.length+1,0);
+  let remaining=Math.max(0,maxRows-occupied);
+  let index=0;
+  while(remaining>0&&blocks.length){blocks[index%blocks.length].extra=(blocks[index%blocks.length].extra||0)+1;remaining--;index++}
+ });
+ const row=st=>'<tr><td></td><td class="student">'+(st?esc(objName(st)):'&nbsp;')+'</td>'+Array.from({length:31},(_,i)=>'<td'+(i>=days?' class="unused"':'')+'></td>').join('')+'</tr>';
+ const pages=parts.map((blocks,index)=>'<section class="blank-page"><h2>EMCIA — سجل الغياب الشهري الفارغ</h2><div class="meta"><b>الأستاذ:</b> '+esc(objName(teacher)||'—')+' &nbsp; <b>الشهر والسنة:</b> '+esc(m)+'</div>'+blocks.map(block=>'<div class="group-block"><h3>الفوج: '+esc(block.g.n)+(block.continued?' (تابع)':'')+'</h3><table>'+head+'<tbody>'+block.students.map(row).join('')+Array.from({length:block.extra||0},()=>row(null)).join('')+'</tbody></table></div>').join('')+'</section>').join('');
  return '<style>@page{size:A4 landscape;margin:7mm}.blank-attendance{direction:rtl;font-family:Arial,Tahoma,sans-serif;color:#111}.blank-attendance .blank-page{break-after:page;page-break-after:always}.blank-attendance .blank-page:last-child{break-after:auto;page-break-after:auto}.blank-attendance h2{text-align:center;font-size:15px;margin:0 0 5px}.blank-attendance h3{font-size:11px;margin:7px 0 3px}.blank-attendance .meta{font-size:11px;margin-bottom:5px}.blank-attendance .group-block{break-inside:avoid;page-break-inside:avoid}.blank-attendance table{border-collapse:collapse;width:100%;table-layout:fixed;margin:0 0 5px}.blank-attendance th,.blank-attendance td{border:1px solid #555;text-align:center;font-size:8px;padding:2px 0;height:19px}.blank-attendance .student{width:22%;text-align:right;padding:2px 4px;font-size:10px;white-space:nowrap}.blank-attendance .unused{background:#eee}.blank-attendance tr{break-inside:avoid}@media print{.blank-attendance .blank-page{margin:0;padding:0}}</style><div class="blank-attendance">'+(pages||'<p>لا توجد تسجيلات لهذا الاختيار في الشهر المحدد.</p>')+'</div>';
 }
 function monthlyTeacherAttendanceHTML(m){
