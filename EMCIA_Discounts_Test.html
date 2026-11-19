@@ -4274,12 +4274,14 @@ async function enter(user,accessToken){
  const compactTopStyle=document.createElement('style');
  compactTopStyle.id='emcia-compact-top-actions';
  compactTopStyle.textContent=`
- #emcia-top-controls{display:flex!important;flex-wrap:wrap!important;justify-content:flex-start!important;align-items:center!important;column-gap:6px!important;row-gap:6px!important;padding:8px!important;box-sizing:border-box!important}
- #emcia-top-controls #emcia-account-menu{margin:0!important;max-width:none!important;flex:0 1 auto!important}
- #emcia-top-controls #emcia-account-menu>button{min-height:34px!important;padding:6px 9px!important;font-size:13px!important}
- #emcia-top-controls #mobileNavToggle{min-width:0!important;max-width:none!important;min-height:34px!important;padding:6px 9px!important;font-size:13px!important}
- #emcia-top-controls>button{flex:0 0 auto!important;width:auto!important;min-width:0!important;min-height:34px!important;padding:6px 8px!important;font-size:12px!important;white-space:nowrap!important}
- @media(max-width:480px){#emcia-top-controls{gap:5px!important;padding:6px!important}#emcia-top-controls #emcia-account-menu>button,#emcia-top-controls #mobileNavToggle{font-size:12px!important;padding:6px!important}#emcia-top-controls>button{font-size:11px!important;padding:6px!important}}
+ #emcia-top-controls{display:grid!important;grid-template-columns:minmax(0,auto) minmax(0,1fr) minmax(0,auto) minmax(0,auto)!important;direction:rtl!important;align-items:center!important;justify-content:stretch!important;gap:5px!important;padding:7px 12px!important;width:100%!important;max-width:100%!important;box-sizing:border-box!important;overflow:visible!important}
+ #emcia-top-controls #mobileNavToggle{grid-column:1!important;display:flex!important;position:static!important;width:auto!important;min-width:0!important;max-width:100%!important;min-height:34px!important;padding:5px 7px!important;margin:0!important;font-size:12px!important;white-space:nowrap!important}
+ #emcia-top-controls #emcia-account-menu{grid-column:2!important;min-width:0!important;max-width:100%!important;width:100%!important;margin:0!important;flex:none!important}
+ #emcia-top-controls #emcia-account-menu>button{width:100%!important;min-width:0!important;max-width:100%!important;min-height:34px!important;padding:5px 5px!important;font-size:clamp(10px,2.8vw,13px)!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+ #emcia-top-controls>button{width:auto!important;min-width:0!important;max-width:100%!important;min-height:34px!important;padding:5px 6px!important;margin:0!important;font-size:clamp(10px,2.7vw,12px)!important;line-height:1.2!important;white-space:normal!important;text-align:center!important}
+ #emcia-top-controls>button:nth-last-of-type(2){grid-column:3!important}
+ #emcia-top-controls>button:last-of-type{grid-column:4!important}
+ @media(max-width:390px){#emcia-top-controls{gap:3px!important;padding-inline:8px!important}#emcia-top-controls #mobileNavToggle{font-size:11px!important;padding-inline:5px!important}#emcia-top-controls>button{font-size:10px!important;padding-inline:4px!important}}
  `;
  document.head.appendChild(compactTopStyle);
  if(typeof window.emciaUpdateAlertCounter==='function')window.emciaUpdateAlertCounter();
