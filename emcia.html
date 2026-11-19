@@ -2611,7 +2611,7 @@ function editPayment(id){
  Object.assign(p,{receiptNo,method,paymentRef,allocations,a,date,receiptMonth:date.slice(0,7),allocMonth:am,d:split.teacher,e:split.emcia,discount:split.discount,discountTeacher:split.discountTeacher,discountEmcia:split.discountEmcia,dueAfterDiscount:split.due});save();payments();
 }
 
-const expenseCats=["المحاسبة","السكرتارية","رواتب المستخدمين","الكراء","كهرباء الطابق الأول","كهرباء الطابق الثاني","الهاتف والإنترنت","النظافة","النسخ","الماء","إشهار","معدات","إصلاحات","أخرى"];
+const expenseCats=["المحاسبة","السكرتارية","رواتب المستخدمين","الكراء","كهرباء الطابق الأول","كهرباء الطابق الثاني","الهاتف والإنترنت","النظافة","النسخ","الماء","إشهار","معدات","إصلاحات","أمسية","المنزل","أخرى"];
 
 
 function adjustmentForPayment(pid){return db.adj.find(x=>x.pid===pid)}
