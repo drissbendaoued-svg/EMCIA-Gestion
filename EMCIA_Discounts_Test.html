@@ -2973,7 +2973,7 @@ function rcRefreshPreview(){
 }
 function rcToggleFields(){
  let type=$("#rcType")?$("#rcType").value:"",b=$("#rcTeacherBox");
- if(b)b.style.display=type==="teacher"?"block":"none";let df=$("#rcDiscountFilters");if(df)df.style.display=type==="discounts"?"flex":"none";
+ if(b)b.style.display=type==="teacher"?"block":"none";let df=$("#rcDiscountFilters");if(df)df.style.display=type==="discounts"?"flex":"none";let af=$("#rcAuditFilters");if(af)af.style.display=type==="receiptAudit"?"flex":"none";
  if(!type){rcClearPreview("اختر نوع التقرير من القائمة.");return}
  if(type==="teacher"){
    let s=$("#rcTeacher");if(s)s.value="";
@@ -3004,11 +3004,38 @@ function emciaDiscountReportHTML(m){
  '<h3>تفاصيل المستفيدين</h3>'+(details.length?rcTable(["المتعلم","الفوج","الأستاذ","الواجب الأصلي","التخفيض","الواجب النهائي","الجهة","حصة الأستاذ","حصة المؤسسة","بداية التخفيض","المدة"],details):"<p>لا توجد تخفيضات سارية وفق الاختيارات.</p>")+
  '<p class="muted">الأرقام تعبر عن التخفيضات المقررة وليست التحصيل الفعلي. تقييم القدرة على تقديم تخفيضات إضافية يتطلب بيانات التكاليف.</p>';
 }
+function emciaReceiptAuditHTML(m){
+ if(!emciaCanViewManagement())return '<p>هذا التقرير مخصص للمدير والمحاسب.</p>';
+ const gid=$("#rcAuditGroup")?.value||"";
+ const all=db.p.filter(p=>(p.receiptMonth||(p.date||"").slice(0,7))===m&&(!gid||(p.gid||by(db.e,p.eid)?.gid)===gid));
+ const rows=all.flatMap(p=>{
+  const sid=p.sid||by(db.e,p.eid)?.sid,g=p.gid||by(db.e,p.eid)?.gid;
+  const alloc=paymentAllocations(p),gross=Number(p.a)||0;
+  const group=by(db.g,g),student=by(db.s,sid);
+  const monthly=Number(group?.fee??group?.a??group?.price??group?.monthlyFee??0);
+  const totalAlloc=alloc.reduce((z,x)=>z+(Number(x.amount)||0),0);
+  const warnings=[];
+  if(Math.abs(totalAlloc-gross)>.02)warnings.push("مجموع التوزيع لا يطابق التوصيل");
+  if(alloc.some(x=>!x.month))warnings.push("شهر الاستحقاق غير محدد");
+  if(monthly>0&&gross>monthly&&alloc.length===1)warnings.push("مبلغ يتجاوز الواجب دون توزيع متعدد");
+  if(alloc.some(x=>x.month>m))warnings.push("تسبيق لأشهر مقبلة");
+  if(alloc.some(x=>x.month<m))warnings.push("أداء عن شهر سابق");
+  return [[esc(name(db.s,sid)||objName(student)||"—"),esc(group?.n||"—"),esc(p.receiptNo||p.receipt||p.number||"—"),esc(p.date||"—"),money(gross),esc(alloc.map(x=>x.month+": "+(Number(x.amount)||0).toFixed(2)).join(" | ")),money(totalAlloc),esc(p.method||"—"),esc(p.createdByName||p.createdBy||p.userName||p.actor||"غير محفوظ"),esc(warnings.join("؛ ")||"لا تنبيه آلي")]];
+ });
+ const gross=all.reduce((z,p)=>z+(Number(p.a)||0),0);
+ const advances=all.reduce((z,p)=>z+paymentAllocations(p).filter(x=>x.month>m).reduce((a,x)=>a+(Number(x.amount)||0),0),0);
+ return '<p>تقرير افتحاص للقراءة فقط حسب تاريخ قبض التوصيل. التوزيع حسب أشهر الدراسة كما هو محفوظ، دون تعديل السجلات. هوية المدخل تظهر فقط إذا كانت محفوظة في التوصيل.</p>'+
+ rcTable(["المؤشر","القيمة"],[["عدد التوصيلات",String(all.length)],["المقبوض خلال الشهر",money(gross)],["المخصص لأشهر لاحقة",money(advances)]])+
+ (rows.length?rcTable(["المتعلم","الفوج","رقم التوصيل","تاريخ القبض","المبلغ المقبوض","توزيع الأشهر","مجموع التوزيع","طريقة الأداء","المسجل","ملاحظات الافتحاص"],rows):'<p>لا توجد توصيلات في الشهر والفوج المختارين.</p>');
+}
 function rcBuildReport(){
  if(!emciaGuardReport($("#rcType")?.value))return false;
  let ok=true;
  let type=$("#rcType").value,m=$("#rcMonth").value||nowMonth(),teacherEl=$("#rcTeacher"),tid=teacherEl?teacherEl.value:"";
- if(type==="discounts"){
+ if(type==="receiptAudit"){
+  if(!emciaCanViewManagement()){rcClearPreview("هذا التقرير متاح للمدير والمحاسب فقط.");return false}
+  rcSetReport("سجل الأداءات والتسبيقات حسب الفوج — "+m,emciaReceiptAuditHTML(m));
+ }else if(type==="discounts"){
   if(!emciaCanViewManagement()){rcClearPreview("هذا التقرير متاح للمدير والمحاسب فقط.");return false}
   rcSetReport(`تقرير التخفيضات — ${m}`,emciaDiscountReportHTML(m));
  }else if(type==="executive"){
@@ -3073,13 +3100,13 @@ function rcBuildReport(){
 }
 function reportcenter(){
  let teachers=db.t.filter(x=>x.active!==false);
- $("#reportcenter").innerHTML=`<div class="card"><p class="muted">اختر نوع التقرير من القائمة. يُقترح الشهر الحالي تلقائياً ويمكن تغييره، ثم تظهر المعاينة قبل الطباعة أو التصدير.</p><div class="row"><div><label>نوع التقرير</label><select id="rcType" onchange="rcToggleFields()"><option value="">— اختر من القائمة —</option>${emciaCanViewManagement()?`<option value="executive">التقرير الإداري والمالي الموحد للمدير</option>`:""}${emciaCanViewManagement()?`<option value="monthly">التقرير الشهري الشامل للمؤسسة</option>`:""}<option value="teacher">كشف الأستاذ</option><option value="attendance">تقرير الحضور والغياب</option><option value="arrears">تقرير المتأخرات</option>${emciaCanViewManagement()?`<option value="financial">التقرير المالي</option><option value="discounts">تقرير التخفيضات</option>`:""}</select></div><div><label>الشهر</label><input id="rcMonth" type="month" value="${nowMonth()}" onchange="rcRefreshPreview()"></div></div><div id="rcDiscountFilters" style="display:none" class="row"><div><label>الفوج</label><select id="rcDiscountGroup" onchange="rcRefreshPreview()"><option value="">جميع الأفواج</option>${db.g.map(g=>`<option value="${esc(g.id)}">${esc(g.n)}</option>`).join("")}</select></div><div><label>الأستاذ</label><select id="rcDiscountTeacher" onchange="rcRefreshPreview()"><option value="">جميع الأساتذة</option>${db.t.map(t=>`<option value="${esc(t.id)}">${esc(objName(t))}</option>`).join("")}</select></div><div><label>الجهة المتحملة</label><select id="rcDiscountBearer" onchange="rcRefreshPreview()"><option value="">جميع الأنواع</option><option value="teacher">الأستاذ</option><option value="emcia">المؤسسة</option><option value="half">مشترك 50/50</option><option value="custom">توزيع مخصص</option></select></div></div><div id="rcTeacherBox" style="display:none"><label>الأستاذ</label><select id="rcTeacher" oninput="rcRefreshPreview()" onchange="rcRefreshPreview()"><option value="">— اختر الأستاذ —</option>${teachers.map(x=>`<option value="${x.id}">${esc(objName(x))}</option>`).join("")}</select></div><div class="report-action-row" style="margin-top:12px">
+ $("#reportcenter").innerHTML=`<div class="card"><p class="muted">اختر نوع التقرير من القائمة. يُقترح الشهر الحالي تلقائياً ويمكن تغييره، ثم تظهر المعاينة قبل الطباعة أو التصدير.</p><div class="row"><div><label>نوع التقرير</label><select id="rcType" onchange="rcToggleFields()"><option value="">— اختر من القائمة —</option>${emciaCanViewManagement()?`<option value="executive">التقرير الإداري والمالي الموحد للمدير</option>`:""}${emciaCanViewManagement()?`<option value="monthly">التقرير الشهري الشامل للمؤسسة</option>`:""}${emciaCanViewManagement()?`<option value="receiptAudit">سجل الأداءات والتسبيقات حسب الفوج</option>`:""}<option value="teacher">كشف الأستاذ</option><option value="attendance">تقرير الحضور والغياب</option><option value="arrears">تقرير المتأخرات</option>${emciaCanViewManagement()?`<option value="financial">التقرير المالي</option><option value="discounts">تقرير التخفيضات</option>`:""}</select></div><div><label>الشهر</label><input id="rcMonth" type="month" value="${nowMonth()}" onchange="rcRefreshPreview()"></div></div><div id="rcAuditFilters" style="display:none" class="row"><div><label>الفوج</label><select id="rcAuditGroup" onchange="rcRefreshPreview()"><option value="">جميع الأفواج</option>${db.g.map(g=>`<option value="${esc(g.id)}">${esc(g.n)}</option>`).join("")}</select></div></div><div id="rcDiscountFilters" style="display:none" class="row"><div><label>الفوج</label><select id="rcDiscountGroup" onchange="rcRefreshPreview()"><option value="">جميع الأفواج</option>${db.g.map(g=>`<option value="${esc(g.id)}">${esc(g.n)}</option>`).join("")}</select></div><div><label>الأستاذ</label><select id="rcDiscountTeacher" onchange="rcRefreshPreview()"><option value="">جميع الأساتذة</option>${db.t.map(t=>`<option value="${esc(t.id)}">${esc(objName(t))}</option>`).join("")}</select></div><div><label>الجهة المتحملة</label><select id="rcDiscountBearer" onchange="rcRefreshPreview()"><option value="">جميع الأنواع</option><option value="teacher">الأستاذ</option><option value="emcia">المؤسسة</option><option value="half">مشترك 50/50</option><option value="custom">توزيع مخصص</option></select></div></div><div id="rcTeacherBox" style="display:none"><label>الأستاذ</label><select id="rcTeacher" oninput="rcRefreshPreview()" onchange="rcRefreshPreview()"><option value="">— اختر الأستاذ —</option>${teachers.map(x=>`<option value="${x.id}">${esc(objName(x))}</option>`).join("")}</select></div><div class="report-action-row" style="margin-top:12px">
 <button type="button" onclick="rcDirectPrint()">🖨️ طباعة</button>
 <button type="button" onclick="rcExportPDF()">📄 PDF</button>
 <button type="button" onclick="rcExportExcel()">📊 Excel</button>
 </div>
 <p class="muted">اختر نوع التقرير من القائمة. يُقترح الشهر الحالي تلقائياً ويمكن تغييره، ثم تظهر المعاينة قبل الطباعة أو التصدير. يُنشأ التقرير تلقائياً وفق الاختيارات الحالية.</p></div><div id="rcPreview" class="card" style="display:none"></div>
- <div class="card"><h3>التقارير المتاحة</h3><table><tr><th>التقرير</th><th>محتواه</th></tr><tr><td>الموحد للمدير</td><td>المؤشرات الإدارية، الاستحقاقات والتحصيل، المقارنة الشهرية، الاتجاه لستة أشهر والحركة المالية</td></tr><tr><td>الشهري الشامل</td><td>المتعلمون، الحضور، التحصيل، مستحقات الأساتذة، حصة المؤسسة، المصاريف والرصيد</td></tr><tr><td>كشف الأستاذ</td><td>الأفواج، المتعلمون، المبلغ المؤدى، التخفيض الذي يتحمله الأستاذ، ومستحق الأستاذ</td></tr><tr><td>الحضور والغياب</td><td>ملخص شهري حسب الفوج</td></tr><tr><td>المتأخرات</td><td>المتعلمون المتأخرون مع الهاتف والمبالغ</td></tr><tr><td>المالي</td><td>التحصيل، مستحقات الأساتذة، حصة EMCIA، المصاريف، الادخار والرصيد</td></tr></table></div>`;applyLang();rcToggleFields()
+ <div class="card"><h3>التقارير المتاحة</h3><table><tr><th>التقرير</th><th>محتواه</th></tr><tr><td>الموحد للمدير</td><td>المؤشرات الإدارية، الاستحقاقات والتحصيل، المقارنة الشهرية، الاتجاه لستة أشهر والحركة المالية</td></tr><tr><td>الشهري الشامل</td><td>المتعلمون، الحضور، التحصيل، مستحقات الأساتذة، حصة المؤسسة، المصاريف والرصيد</td></tr><tr><td>سجل الأداءات والتسبيقات حسب الفوج</td><td>التوصيلات، أشهر الاستحقاق، التسبيقات وتنبيهات الافتحاص</td></tr><tr><td>كشف الأستاذ</td><td>الأفواج، المتعلمون، المبلغ المؤدى، التخفيض الذي يتحمله الأستاذ، ومستحق الأستاذ</td></tr><tr><td>الحضور والغياب</td><td>ملخص شهري حسب الفوج</td></tr><tr><td>المتأخرات</td><td>المتعلمون المتأخرون مع الهاتف والمبالغ</td></tr><tr><td>المالي</td><td>التحصيل، مستحقات الأساتذة، حصة EMCIA، المصاريف، الادخار والرصيد</td></tr></table></div>`;applyLang();rcToggleFields()
 }
 
 
