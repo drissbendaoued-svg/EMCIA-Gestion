@@ -2092,13 +2092,13 @@ function editEnroll(id){
  '<label style="display:block;margin:10px 0 4px">'+(session?'ثمن الحصة':'الواجب الخاص (اتركه فارغاً لاعتماد ثمن الفوج)')+'</label><input id="eeFee" type="number" min="0" step="0.01" value="'+(session?(Number(o.sessionPrice)||0):(o.fee==null?'':Number(o.fee)))+'" style="width:100%;box-sizing:border-box">'+
  (session?'':'<label style="display:block;margin:10px 0 4px">سبب التعديل</label><input id="eeReason" type="text" value="'+esc(o.reason||"").replace(/"/g,"&quot;")+'" style="width:100%;box-sizing:border-box">')+
  '<label style="display:block;margin:10px 0 4px">قيمة التخفيض (درهم)</label><input id="eeDiscount" type="number" min="0" step="0.01" value="'+(Number(o.discountAmount)||0)+'" style="width:100%;box-sizing:border-box">'+
- '<label style="display:block;margin:10px 0 4px">الجهة المتحملة للتخفيض</label><select id="eeBearer" style="width:100%">'+options(bearerOptions,o.discountBearer||"emcia")+'</select>'+
- (session?'':'<label style="display:block;margin:10px 0 4px">بداية التخفيض</label><input id="eeStart" type="month" value="'+(o.discountStart||o.start?.slice(0,7)||nowMonth())+'" style="width:100%;box-sizing:border-box"><label style="display:block;margin:10px 0 4px">مدة التخفيض</label><select id="eeTerm">'+options(terms,o.discountTerm||"until_stop")+'</select><div id="eeEndWrap"><label style="display:block;margin:10px 0 4px">آخر شهر</label><input id="eeEnd" type="month" value="'+(o.discountEnd||nowMonth())+'"></div>')+
+ '<label style="display:block;margin:10px 0 4px">الجهة المتحملة للتخفيض</label><select id="eeBearer" style="width:100%">'+'<option value="">اختر جهة</option>'+options(bearerOptions,Number(o.discountAmount)>0?(o.discountBearer||""):"")+'</select>'+
+ (session?'':'<label style="display:block;margin:10px 0 4px">بداية التخفيض</label><input id="eeStart" type="month" value="'+(Number(o.discountAmount)>0?(o.discountStart||""):"")+'" style="width:100%;box-sizing:border-box"><label style="display:block;margin:10px 0 4px">مدة التخفيض</label><select id="eeTerm">'+'<option value="">اختر مدة</option>'+options(terms,Number(o.discountAmount)>0?(o.discountTerm||""):"")+'</select><div id="eeEndWrap"><label style="display:block;margin:10px 0 4px">آخر شهر</label><input id="eeEnd" type="month" value="'+(o.discountEnd||nowMonth())+'"></div>')+
  '<div id="eeCustomWrap"><label style="display:block;margin:10px 0 4px">حصة الأستاذ</label><input id="eeTeacher" type="number" min="0" step="0.01" value="'+(Number(o.discountTeacher)||0)+'"><label style="display:block;margin:10px 0 4px">حصة المؤسسة</label><input id="eeEmcia" type="number" min="0" step="0.01" value="'+(Number(o.discountEmcia)||0)+'"></div>'+
  '<p id="eeError" style="color:#a32626;min-height:1em"></p><div style="display:flex;gap:8px"><button type="button" id="eeCancel" style="flex:1">إلغاء</button><button type="button" id="eeSave" style="flex:1">حفظ التعديل</button></div></div>';
  document.body.appendChild(modal);
  const $e=id=>modal.querySelector("#"+id);
- const refresh=()=>{$e("eeCustomWrap").style.display=$e("eeBearer").value==="custom"&&Number($e("eeDiscount").value)>0?"block":"none";if(!session)$e("eeEndWrap").style.display=$e("eeTerm").value==="date"?"block":"none"};
+ const refresh=()=>{const enabled=Number($e("eeDiscount").value)>0;for(const id of ["eeBearer",...(!session?["eeStart","eeTerm"]:[])]){$e(id).disabled=!enabled;}if(!enabled){$e("eeBearer").value="";if(!session){$e("eeStart").value="";$e("eeTerm").value="";}}$e("eeCustomWrap").style.display=enabled&&$e("eeBearer").value==="custom"?"block":"none";if(!session)$e("eeEndWrap").style.display=enabled&&$e("eeTerm").value==="date"?"block":"none"};
  $e("eeBearer").onchange=refresh;$e("eeDiscount").oninput=refresh;if(!session)$e("eeTerm").onchange=refresh;refresh();
  $e("eeCancel").onclick=()=>modal.remove();
  modal.addEventListener("click",ev=>{if(ev.target===modal)modal.remove()});
@@ -2106,7 +2106,7 @@ function editEnroll(id){
   const fee=$e("eeFee").value.trim(),d=Number($e("eeDiscount").value),b=$e("eeBearer").value;
   const err=msg=>{$e("eeError").textContent=msg};
   if(!Number.isFinite(d)||d<0||!Number.isFinite(Number(fee)))return err("تحقق من المبالغ المدخلة");
-  if(session&&(!(Number(fee)>0)||d>=Number(fee)))return err("يجب أن يكون ثمن الحصة موجباً والتخفيض أقل منه");
+  if(session&&(!(Number(fee)>0)||d>=Number(fee)))return err("يجب أن يكون ثمن الحصة موجباً والتخفيض أقل منه");if(d>0&&!b)return err("اختر الجهة المتحملة للتخفيض");if(d>0&&!session&&!$e("eeTerm").value)return err("اختر مدة التخفيض");
   let td=0,ed=0;
   if(d>0&&b==="custom"){td=Number($e("eeTeacher").value);ed=Number($e("eeEmcia").value);if(!Number.isFinite(td)||!Number.isFinite(ed)||td<0||ed<0||Math.abs(td+ed-d)>0.01)return err("مجموع حصتي الأستاذ والمؤسسة يجب أن يساوي التخفيض");}
   const updates={discountAmount:d,discountBearer:d>0?b:"none",discountTeacher:td,discountEmcia:ed};
@@ -2115,7 +2115,7 @@ function editEnroll(id){
    const st=$e("eeStart").value,tr=$e("eeTerm").value;
    if(d>0&&!/^\d{4}-\d{2}$/.test(st))return err("اختر شهر بداية التخفيض");
    if(d>0&&tr==="date"&&(!/^\d{4}-\d{2}$/.test($e("eeEnd").value)||$e("eeEnd").value<st))return err("اختر شهر نهاية صحيحاً");
-   updates.fee=fee===""?null:Number(fee);updates.reason=$e("eeReason").value;updates.discountStart=st;updates.discountTerm=tr;updates.discountEnd=tr==="date"?$e("eeEnd").value:"";
+   updates.fee=fee===""?null:Number(fee);updates.reason=$e("eeReason").value;updates.discountStart=d>0?st:"";updates.discountTerm=d>0?tr:"";updates.discountEnd=d>0&&tr==="date"?$e("eeEnd").value:"";
   }
   Object.assign(o,updates);document.activeElement?.blur?.();modal.remove();save();enroll();
   if(document.getElementById("rcPreview")&&document.getElementById("rcType")?.value)rcRefreshPreview();
