@@ -2910,7 +2910,7 @@ function rcFileCode(){
 }
 function rcFileBase(){
  let m=$("#rcMonth")?$("#rcMonth").value:nowMonth(),code=rcFileCode(),type=$("#rcType")?$("#rcType").value:"";
- if(type==="blankAttendance")return `EMCIA_${code}_${$("#rcBlankGroup")?.value||"Groupe"}_${m}`;
+ if(type==="blankAttendance")return `EMCIA_${code}_${$("#rcBlankGroup")?.value||$("#rcBlankTeacher")?.value||"Groupe"}_${m}`;
  if(type==="teacher"){
    let el=$("#rcTeacher"),tr=el?by(db.t,el.value):null,n=tr?objName(tr):"Professeur";
    n=String(n).replace(/[\\/:*?"<>|]+/g,"_").replace(/\s+/g,"_");
@@ -2982,7 +2982,7 @@ function rcRefreshPreview(){
  let type=$("#rcType")?.value||"";
  if(!type){rcClearPreview("اختر نوع التقرير من القائمة.");return}
  if((type==="teacher"||type==="teacherDetailed")&&!($("#rcTeacher")?.value)){rcClearPreview("اختر اسم الأستاذ لعرض كشفه.");return}
- if(type==="blankAttendance"&&!$("#rcBlankGroup")?.value){rcClearPreview("اختر الفوج لعرض السجل.");return}
+ if(type==="blankAttendance"&&!($("#rcBlankGroup")?.value||$("#rcBlankTeacher")?.value)){rcClearPreview("اختر الفوج لعرض السجل.");return}
  try{rcBuildReport()}catch(error){console.error("EMCIA report preview error",error);rcClearPreview("تعذر إنشاء معاينة التقرير: "+String(error?.message||error));}
 }
 function rcToggleFields(){
@@ -2997,14 +2997,35 @@ function rcToggleFields(){
 }
 function rcTable(headers,rows){return `<table><tr>${headers.map(x=>`<th>${x}</th>`).join("")}</tr>${rows.map(r=>`<tr>${r.map(x=>`<td>${x}</td>`).join("")}</tr>`).join("")}</table>`}
 
-function emciaBlankAttendanceHTML(m,gid){
- const g=by(db.g,gid);if(!g)return '<p>اختر الفوج.</p>';
- const t=by(db.t,g.tid),days=new Date(Number(m.slice(0,4)),Number(m.slice(5,7)),0).getDate();
- const students=activeEnrollmentsForMonth(m).filter(e=>e.gid===gid).map(e=>by(db.s,e.sid)).filter(Boolean).filter((x,i,a)=>a.findIndex(y=>y.id===x.id)===i).sort((a,b)=>objName(a).localeCompare(objName(b),'ar'));
+function emciaBlankAttendanceHTML(m,gid,tid){
+ const days=new Date(Number(m.slice(0,4)),Number(m.slice(5,7)),0).getDate();
+ const groups=tid?db.g.filter(g=>g.tid===tid):[by(db.g,gid)].filter(Boolean);
+ const teacher=tid?by(db.t,tid):by(db.t,groups[0]?.tid);
+ const enrollments=activeEnrollmentsForMonth(m);
  const weeks=[1,2,3,4].map(n=>'<th colspan="7">الأسبوع '+n+'</th>').join('')+'<th colspan="3"></th>';
  const dates=Array.from({length:31},(_,i)=>'<th>'+(i+1)+'</th>').join('');
- const rows=students.map(st=>'<tr><td></td><td class="student">'+esc(objName(st))+'</td>'+Array.from({length:31},(_,i)=>'<td'+(i>=days?' class="unused"':'')+'></td>').join('')+'</tr>').join('');
- return '<style>@page{size:A4 landscape;margin:7mm}.blank-attendance{direction:rtl;font-family:Arial,Tahoma,sans-serif}.blank-attendance h2{text-align:center;font-size:15px;margin:0 0 6px}.blank-attendance .meta{font-size:11px;margin-bottom:7px}.blank-attendance table{border-collapse:collapse;width:100%;table-layout:fixed}.blank-attendance th,.blank-attendance td{border:1px solid #555;text-align:center;font-size:8px;padding:2px 0;height:19px}.blank-attendance .student{width:22%;text-align:right;padding:2px 4px;font-size:10px;white-space:nowrap}.blank-attendance .unused{background:#eee}.blank-attendance tr{break-inside:avoid}</style><div class="blank-attendance"><h2>EMCIA — سجل الغياب الشهري الفارغ</h2><div class="meta"><b>الأستاذ:</b> '+esc(objName(t)||'—')+' &nbsp; <b>الفوج:</b> '+esc(g.n)+' &nbsp; <b>الشهر والسنة:</b> '+esc(m)+'</div><table><thead><tr><th rowspan="2" style="width:20px">أداء</th><th rowspan="2" style="width:22%">اسم المتعلم</th>'+weeks+'</tr><tr>'+dates+'</tr></thead><tbody>'+rows+'</tbody></table></div>';
+ const head='<thead><tr><th rowspan="2" style="width:20px">أداء</th><th rowspan="2" style="width:22%">اسم المتعلم</th>'+weeks+'</tr><tr>'+dates+'</tr></thead>';
+ const groupBlocks=groups.map(g=>{
+  const students=enrollments.filter(e=>e.gid===g.id).map(e=>by(db.s,e.sid)).filter(Boolean).filter((x,i,a)=>a.findIndex(y=>y.id===x.id)===i).sort((x,y)=>objName(x).localeCompare(objName(y),'ar'));
+  return {g,students};
+ }).filter(x=>x.students.length);
+ const parts=[];let current=[],used=0;
+ // Keep compact groups together when possible; split large groups across pages.
+ const maxRows=18;
+ groupBlocks.forEach(({g,students})=>{
+  for(let i=0;i<students.length;){
+   let available=maxRows-used;
+   if(available<3&&current.length){parts.push(current);current=[];used=0;available=maxRows}
+   const count=Math.min(available,students.length-i);
+   current.push({g,students:students.slice(i,i+count),continued:i>0});
+   used+=count+1;i+=count;
+   if(used>=maxRows){parts.push(current);current=[];used=0}
+  }
+ });
+ if(current.length)parts.push(current);
+ const row=st=>'<tr><td></td><td class="student">'+esc(objName(st))+'</td>'+Array.from({length:31},(_,i)=>'<td'+(i>=days?' class="unused"':'')+'></td>').join('')+'</tr>';
+ const pages=parts.map((blocks,index)=>'<section class="blank-page"><h2>EMCIA — سجل الغياب الشهري الفارغ</h2><div class="meta"><b>الأستاذ:</b> '+esc(objName(teacher)||'—')+' &nbsp; <b>الشهر والسنة:</b> '+esc(m)+'</div>'+blocks.map(block=>'<div class="group-block"><h3>الفوج: '+esc(block.g.n)+(block.continued?' (تابع)':'')+'</h3><table>'+head+'<tbody>'+block.students.map(row).join('')+'</tbody></table></div>').join('')+'</section>').join('');
+ return '<style>@page{size:A4 landscape;margin:7mm}.blank-attendance{direction:rtl;font-family:Arial,Tahoma,sans-serif;color:#111}.blank-attendance .blank-page{break-after:page;page-break-after:always}.blank-attendance .blank-page:last-child{break-after:auto;page-break-after:auto}.blank-attendance h2{text-align:center;font-size:15px;margin:0 0 5px}.blank-attendance h3{font-size:11px;margin:7px 0 3px}.blank-attendance .meta{font-size:11px;margin-bottom:5px}.blank-attendance .group-block{break-inside:avoid;page-break-inside:avoid}.blank-attendance table{border-collapse:collapse;width:100%;table-layout:fixed;margin:0 0 5px}.blank-attendance th,.blank-attendance td{border:1px solid #555;text-align:center;font-size:8px;padding:2px 0;height:19px}.blank-attendance .student{width:22%;text-align:right;padding:2px 4px;font-size:10px;white-space:nowrap}.blank-attendance .unused{background:#eee}.blank-attendance tr{break-inside:avoid}@media print{.blank-attendance .blank-page{margin:0;padding:0}}</style><div class="blank-attendance">'+(pages||'<p>لا توجد تسجيلات لهذا الاختيار في الشهر المحدد.</p>')+'</div>';
 }
 function monthlyTeacherAttendanceHTML(m){
  let rows=db.tatt.filter(r=>r.status==="absent"&&r.date.slice(0,7)===m).sort((a,b)=>b.date.localeCompare(a.date));
@@ -3057,8 +3078,8 @@ function rcBuildReport(){
  let ok=true;
  let type=$("#rcType").value,m=$("#rcMonth").value||nowMonth(),teacherEl=$("#rcTeacher"),tid=teacherEl?teacherEl.value:"";
  if(type==="blankAttendance"){
-  let gid=$("#rcBlankGroup")?.value||"";if(!gid)return false;
-  let box=$("#rcPreview");box.innerHTML=`<div class="rc-paper">${emciaBlankAttendanceHTML(m,gid)}</div>`;box.style.display="block";
+  let gid=$("#rcBlankGroup")?.value||"",teacherId=$("#rcBlankTeacher")?.value||"";if(!gid&&!teacherId)return false;
+  let box=$("#rcPreview");box.innerHTML=`<div class="rc-paper">${emciaBlankAttendanceHTML(m,gid,teacherId&&!gid?teacherId:null)}</div>`;box.style.display="block";
  }else if(type==="receiptAudit"){
   if(!emciaCanViewManagement()){rcClearPreview("هذا التقرير متاح للمدير والمحاسب فقط.");return false}
   rcSetReport("سجل الأداءات والتسبيقات حسب الفوج — "+m,emciaReceiptAuditHTML(m));
@@ -3127,7 +3148,7 @@ function rcBuildReport(){
 }
 function reportcenter(){
  let teachers=db.t.filter(x=>x.active!==false);
- $("#reportcenter").innerHTML=`<div class="card"><p class="muted">اختر نوع التقرير من القائمة. يُقترح الشهر الحالي تلقائياً ويمكن تغييره، ثم تظهر المعاينة قبل الطباعة أو التصدير.</p><div class="row"><div><label>نوع التقرير</label><select id="rcType" onchange="rcToggleFields()"><option value="">— اختر من القائمة —</option>${emciaCanViewManagement()?`<option value="executive">التقرير الإداري والمالي الموحد للمدير</option>`:""}${emciaCanViewManagement()?`<option value="monthly">التقرير الشهري الشامل للمؤسسة</option>`:""}${emciaCanViewManagement()?`<option value="receiptAudit">سجل الأداءات والتسبيقات حسب الفوج</option>`:""}<option value="teacher">كشف الأستاذ المختصر — للتسليم</option>${emciaCanViewManagement()?`<option value="teacherDetailed">الكشف التفصيلي للأستاذ — للمؤسسة</option>`:""}<option value="attendance">تقرير الحضور والغياب</option><option value="blankAttendance">سجل الغياب الشهري الفارغ</option><option value="arrears">تقرير المتأخرات</option>${emciaCanViewManagement()?`<option value="financial">التقرير المالي</option><option value="discounts">تقرير التخفيضات</option>`:""}</select></div><div><label>الشهر</label><input id="rcMonth" type="month" value="${nowMonth()}" onchange="rcRefreshPreview()"></div></div><div id="rcAuditFilters" style="display:none" class="row"><div><label>الفوج</label><select id="rcAuditGroup" onchange="rcRefreshPreview()"><option value="">جميع الأفواج</option>${db.g.map(g=>`<option value="${esc(g.id)}">${esc(g.n)}</option>`).join("")}</select></div></div><div id="rcDiscountFilters" style="display:none" class="row"><div><label>الفوج</label><select id="rcDiscountGroup" onchange="rcRefreshPreview()"><option value="">جميع الأفواج</option>${db.g.map(g=>`<option value="${esc(g.id)}">${esc(g.n)}</option>`).join("")}</select></div><div><label>الأستاذ</label><select id="rcDiscountTeacher" onchange="rcRefreshPreview()"><option value="">جميع الأساتذة</option>${db.t.map(t=>`<option value="${esc(t.id)}">${esc(objName(t))}</option>`).join("")}</select></div><div><label>الجهة المتحملة</label><select id="rcDiscountBearer" onchange="rcRefreshPreview()"><option value="">جميع الأنواع</option><option value="teacher">الأستاذ</option><option value="emcia">المؤسسة</option><option value="half">مشترك 50/50</option><option value="custom">توزيع مخصص</option></select></div></div><div id="rcBlankGroupBox" style="display:none"><label>الفوج</label><select id="rcBlankGroup" onchange="rcRefreshPreview()"><option value="">— اختر الفوج —</option>${db.g.map(g=>`<option value="${esc(g.id)}">${esc(g.n)}</option>`).join("")}</select></div><div id="rcTeacherBox" style="display:none"><label>الأستاذ</label><select id="rcTeacher" oninput="rcRefreshPreview()" onchange="rcRefreshPreview()"><option value="">— اختر الأستاذ —</option>${teachers.map(x=>`<option value="${x.id}">${esc(objName(x))}</option>`).join("")}</select></div><div class="report-action-row" style="margin-top:12px">
+ $("#reportcenter").innerHTML=`<div class="card"><p class="muted">اختر نوع التقرير من القائمة. يُقترح الشهر الحالي تلقائياً ويمكن تغييره، ثم تظهر المعاينة قبل الطباعة أو التصدير.</p><div class="row"><div><label>نوع التقرير</label><select id="rcType" onchange="rcToggleFields()"><option value="">— اختر من القائمة —</option>${emciaCanViewManagement()?`<option value="executive">التقرير الإداري والمالي الموحد للمدير</option>`:""}${emciaCanViewManagement()?`<option value="monthly">التقرير الشهري الشامل للمؤسسة</option>`:""}${emciaCanViewManagement()?`<option value="receiptAudit">سجل الأداءات والتسبيقات حسب الفوج</option>`:""}<option value="teacher">كشف الأستاذ المختصر — للتسليم</option>${emciaCanViewManagement()?`<option value="teacherDetailed">الكشف التفصيلي للأستاذ — للمؤسسة</option>`:""}<option value="attendance">تقرير الحضور والغياب</option><option value="blankAttendance">سجل الغياب الشهري الفارغ</option><option value="arrears">تقرير المتأخرات</option>${emciaCanViewManagement()?`<option value="financial">التقرير المالي</option><option value="discounts">تقرير التخفيضات</option>`:""}</select></div><div><label>الشهر</label><input id="rcMonth" type="month" value="${nowMonth()}" onchange="rcRefreshPreview()"></div></div><div id="rcAuditFilters" style="display:none" class="row"><div><label>الفوج</label><select id="rcAuditGroup" onchange="rcRefreshPreview()"><option value="">جميع الأفواج</option>${db.g.map(g=>`<option value="${esc(g.id)}">${esc(g.n)}</option>`).join("")}</select></div></div><div id="rcDiscountFilters" style="display:none" class="row"><div><label>الفوج</label><select id="rcDiscountGroup" onchange="rcRefreshPreview()"><option value="">جميع الأفواج</option>${db.g.map(g=>`<option value="${esc(g.id)}">${esc(g.n)}</option>`).join("")}</select></div><div><label>الأستاذ</label><select id="rcDiscountTeacher" onchange="rcRefreshPreview()"><option value="">جميع الأساتذة</option>${db.t.map(t=>`<option value="${esc(t.id)}">${esc(objName(t))}</option>`).join("")}</select></div><div><label>الجهة المتحملة</label><select id="rcDiscountBearer" onchange="rcRefreshPreview()"><option value="">جميع الأنواع</option><option value="teacher">الأستاذ</option><option value="emcia">المؤسسة</option><option value="half">مشترك 50/50</option><option value="custom">توزيع مخصص</option></select></div></div><div id="rcBlankGroupBox" style="display:none"><label>الأستاذ (جميع أفواجه)</label><select id="rcBlankTeacher" onchange="rcRefreshPreview()"><option value="">— اختر الأستاذ أو اختر فوجًا أسفله —</option>${db.t.map(t=>`<option value="${esc(t.id)}">${esc(objName(t))}</option>`).join("")}</select><label>فوج واحد (اختياري)</label><select id="rcBlankGroup" onchange="rcRefreshPreview()"><option value="">— جميع أفواج الأستاذ —</option>${db.g.map(g=>`<option value="${esc(g.id)}">${esc(g.n)}</option>`).join("")}</select></div><div id="rcTeacherBox" style="display:none"><label>الأستاذ</label><select id="rcTeacher" oninput="rcRefreshPreview()" onchange="rcRefreshPreview()"><option value="">— اختر الأستاذ —</option>${teachers.map(x=>`<option value="${x.id}">${esc(objName(x))}</option>`).join("")}</select></div><div class="report-action-row" style="margin-top:12px">
 <button type="button" onclick="rcDirectPrint()">🖨️ طباعة</button>
 <button type="button" onclick="rcExportPDF()">📄 PDF</button>
 <button type="button" onclick="rcExportExcel()">📊 Excel</button>
