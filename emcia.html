@@ -2689,9 +2689,24 @@ function saveExceptionalAdjustment(){
  save();alert("تم اعتماد التسوية الاستثنائية وتحديث مستحق الأستاذ وحصة المؤسسة.");adjustments()
 }
 
+function emciaTeacherLateCashRows(tid,m){
+ const rows=[];
+ (db.p||[]).forEach(p=>{
+  if((p.date||"").slice(0,7)!==m||by(db.g,p.gid)?.tid!==tid)return;
+  const total=Number(p.a)||0;if(!(total>0))return;
+  const factor=p.netAfterRefund==null?1:Math.max(0,Number(p.netAfterRefund)||0)/total;
+  paymentAllocations(p).filter(a=>a.month&&a.month<m&&Number(a.amount)>0).forEach(a=>{
+   const ratio=Number(a.amount)/total*factor;
+   rows.push({sid:p.sid,gid:p.gid,receipt:p.receiptNo||p.receipt||p.number||"—",date:p.date,month:a.month,amount:Number(a.amount)*factor,teacher:teacherDueOf(p)*ratio});
+  });
+ });
+ return rows;
+}
+function emciaTeacherLateCashTotal(tid,m){return Math.round(emciaTeacherLateCashRows(tid,m).reduce((sum,x)=>sum+x.teacher,0)*100)/100}
+function emciaTeacherSettlementDue(tid,m){return Math.round((emciaAccountRows(m,{tid}).reduce((sum,r)=>sum+r.teacher,0)+emciaTeacherLateCashTotal(tid,m))*100)/100}
 function teacherCalculatedDue(tid,m){
  let gids=new Set(db.g.filter(g=>g.tid===tid).map(g=>g.id));
- return emciaAccountRows(m,{tid}).reduce((s,r)=>s+r.teacher,0)
+ return emciaTeacherSettlementDue(tid,m)
 }
 function teacherSettlement(tid,m){return db.tp.find(x=>x.tid===tid&&x.month===m)}
 function teacherSettlementStatus(calc,rec){
@@ -2702,7 +2717,7 @@ function teacherSettlementStatus(calc,rec){
 function teacherpay(){
  let teachers=db.t.filter(x=>x.active!==false).sort((a,b)=>objName(a).localeCompare(objName(b),"ar"));
  let tid=window.tpTid||"",m=window.tpMonth||nowMonth(),calc=tid?teacherCalculatedDue(tid,m):0,rec=tid?teacherSettlement(tid,m):null,st=teacherSettlementStatus(calc,rec);
- $("#teacherpay").innerHTML=`<div class="card"><h3>تسوية مستحقات الأساتذة</h3><p class="muted">المستحق المحسوب يأتي من أداءات المتعلمين. لا يعتبر مؤدى للأستاذ إلا بعد تسجيل المبلغ المستلم فعلياً.</p><div class="row"><div><label>الأستاذ</label><select onchange="window.tpTid=this.value;teacherpay()"><option value="">— اختر الأستاذ —</option>${teachers.map(x=>`<option value="${x.id}" ${x.id===tid?"selected":""}>${esc(objName(x))}</option>`).join("")}</select></div><div><label>الشهر المستحق عنه</label><input type="month" value="${m}" onchange="window.tpMonth=this.value;teacherpay()"></div></div></div>
+ $("#teacherpay").innerHTML=`<div class="card"><h3>تسوية مستحقات الأساتذة</h3><p class="muted">المستحق المحسوب يشمل حصص أداءات شهر الدراسة وحصص المتأخرات المقبوضة خلال الشهر. راجع التسويات السابقة لتفادي الصرف المكرر. لا يعتبر مؤدى للأستاذ إلا بعد تسجيل الاستلام فعلياً.</p><div class="row"><div><label>الأستاذ</label><select onchange="window.tpTid=this.value;teacherpay()"><option value="">— اختر الأستاذ —</option>${teachers.map(x=>`<option value="${x.id}" ${x.id===tid?"selected":""}>${esc(objName(x))}</option>`).join("")}</select></div><div><label>الشهر المستحق عنه</label><input type="month" value="${m}" onchange="window.tpMonth=this.value;teacherpay()"></div></div></div>
  ${!tid?`<div class="card"><p class="muted">اختر الأستاذ لعرض مستحقه الشهري وتسويته.</p></div>`:`<div class="grid"><div class="card"><div class="muted">المستحق المحسوب</div><div class="kpi">${money(calc)}</div></div><div class="card"><div class="muted">المبلغ المستلم فعلياً</div><div class="kpi">${money(st.paid)}</div></div><div class="card"><div class="muted">المتبقي</div><div class="kpi">${money(st.remain)}</div></div></div><div class="metric-status-bar" role="status"><span>${tr("الحالة")}</span><strong>${tr(st.label)}</strong></div>
  <div class="card"><h3>تأكيد التسوية</h3><div class="row"><div><label>المستحق المعتمد</label><input id="tpDue" type="number" min="0" step="0.01" value="${rec?+rec.confirmedDue||0:calc.toFixed(2)}"></div><div><label>المبلغ المستلم فعلياً</label><input id="tpAmount" type="number" min="0" step="0.01" value="${rec?+rec.amount||0:""}"></div><div><label>تاريخ الاستلام</label><input id="tpDate" type="date" value="${rec?.date||today()}"></div><div><label>طريقة الأداء</label><select id="tpMethod"><option value="cash" ${rec?.method==="cash"?"selected":""}>نقداً</option><option value="bank" ${rec?.method==="bank"?"selected":""}>تحويل بنكي</option><option value="cheque" ${rec?.method==="cheque"?"selected":""}>شيك</option><option value="other" ${rec?.method==="other"?"selected":""}>أخرى</option></select></div></div><label>ملاحظة</label><input id="tpNote" value="${esc(rec?.note||"")}" placeholder="اختياري"><div class="row" style="margin-top:12px"><button onclick="tpConfirmCalculated()">✓ اعتماد المبلغ المحسوب</button><button onclick="saveTeacherSettlement()">💾 تسجيل / تحديث التسوية</button></div><p class="muted">زر «اعتماد المبلغ المحسوب» يضع قيمة المستحق المحسوبة في خانة المستحق المعتمد. أدخل في خانة المبلغ المستلم ما قبضه الأستاذ فعلياً.</p></div>`}
  ${tid&&rec?`<div class="card"><h3>آخر تسوية مسجلة</h3><table><tr><th>الشهر</th><th>المستحق المعتمد</th><th>المستلم</th><th>المتبقي</th><th>التاريخ</th><th>الحالة</th></tr><tr><td>${m}</td><td>${money(rec.confirmedDue)}</td><td>${money(rec.amount)}</td><td>${money(Math.max(0,(+rec.confirmedDue||0)-(+rec.amount||0)))}</td><td>${esc(rec.date)}</td><td>${teacherSettlementStatus(+rec.confirmedDue||0,rec).label}</td></tr></table></div>`:""}`;applyLang()
@@ -3928,6 +3943,24 @@ function emciaTeacherReceiptSourceHTML(sid,gid,m){
 function emciaTeacherShortPrintCSS(){
  return '<style>@page{size:A4 portrait;margin:11mm}.emcia-teacher-short{max-width:190mm;margin:0 auto;font-family:Arial,Tahoma,sans-serif;color:#111}.emcia-teacher-short h1{text-align:center;font-size:17px;margin:0 0 7px}.emcia-teacher-short .teacher-meta{font-size:11px;margin:5px 0 12px}.emcia-teacher-short .teacher-two-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0;align-items:start;direction:rtl}.emcia-teacher-short .teacher-half{min-width:0;padding:0 10px}.emcia-teacher-short .teacher-half:first-child{border-left:1px solid #777}.emcia-teacher-short .teacher-half h3{font-size:11px;margin:9px 0 3px}.emcia-teacher-short .teacher-learner-table{width:auto;max-width:100%;table-layout:auto;border-collapse:collapse;margin:0 0 8px;display:table}.emcia-teacher-short .teacher-learner-table th,.emcia-teacher-short .teacher-learner-table td{border:1px solid #888;padding:3px 6px;font-size:10.5px;line-height:1.35;vertical-align:middle}.emcia-teacher-short .teacher-learner-table th:first-child,.emcia-teacher-short .teacher-learner-table td:first-child{width:auto;text-align:right;white-space:nowrap}.emcia-teacher-short .teacher-learner-table th:last-child,.emcia-teacher-short .teacher-learner-table td:last-child{width:1%;white-space:nowrap;text-align:center}.emcia-teacher-short .teacher-total{font-size:14px;text-align:center;border-top:1px solid #777;padding-top:10px;margin:12px 0 8px}.emcia-teacher-short .teacher-signature{text-align:center;margin:15px 0 0;font-size:12px;break-inside:avoid}.emcia-teacher-short .teacher-signature-space{height:45px}.emcia-teacher-short tr{break-inside:avoid;page-break-inside:avoid}@media print{.emcia-teacher-short{max-width:none}.emcia-teacher-short .teacher-two-columns{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}.emcia-teacher-short .teacher-half{padding:0 8px}}</style>';
 }
+function emciaTeacherLateCashHTML(tid,m){
+ const items=emciaTeacherLateCashRows(tid,m);
+ if(!items.length)return "";
+ const rows=items.map(x=>'<tr><td>'+esc(name(db.s,x.sid))+'</td><td>'+esc(by(db.g,x.gid)?.n||"—")+'</td><td>'+esc(x.receipt)+'</td><td>'+esc(x.date)+'</td><td>'+esc(x.month)+'</td><td>'+money(x.amount)+'</td><td>'+money(x.teacher)+'</td></tr>').join("");
+ return '<div class="emcia-late-cash-audit"><h3>أداءات متأخرة قُبضت خلال '+esc(m)+'</h3><p>بيان مستقل حسب تاريخ القبض وشهر الاستحقاق الأصلي. تُضاف حصة الأستاذ إلى مستحقات الصرف لشهر القبض، ولا تُضاف إلى مستحقات شهر الدراسة الأصلي مرة ثانية. راجع أي تسويات تاريخية قبل الاعتماد.</p><table><tr><th>المتعلم</th><th>الفوج</th><th>التوصيل</th><th>تاريخ القبض</th><th>شهر الاستحقاق</th><th>المقبوض</th><th>حصة الأستاذ المسجلة</th></tr>'+rows+'<tr><th colspan="5">المجموع (بيان مستقل)</th><th>'+money(items.reduce((s,x)=>s+x.amount,0))+'</th><th>'+money(items.reduce((s,x)=>s+x.teacher,0))+'</th></tr></table></div>';
+}
+function emciaTeacherLateCashShortHTML(tid,m){
+ const rows=emciaTeacherLateCashRows(tid,m);
+ if(!rows.length)return "";
+ const grouped=new Map();
+ rows.forEach(x=>{
+  const key=JSON.stringify([x.sid,x.month]);
+  if(!grouped.has(key))grouped.set(key,{name:name(db.s,x.sid),month:x.month,amount:0});
+  grouped.get(key).amount+=x.teacher;
+ });
+ const items=[...grouped.values()];
+ return '<div class="teacher-late-short"><h3>مستحقات متأخرة قُبضت هذا الشهر</h3><table class="teacher-learner-table" style="width:100%;max-width:100%"><tr><th>المتعلم</th><th>شهر الاستحقاق</th><th>مستحق الأستاذ</th></tr>'+items.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(x.month)+'</td><td>'+money(x.amount)+'</td></tr>').join("")+'<tr><th colspan="2">مجموع المتأخرات</th><th>'+money(items.reduce((sum,x)=>sum+x.amount,0))+'</th></tr></table></div>';
+}
 function teacherShortReportHTML(tid,m){
  const d=teacherExportData(tid,m);if(!d.teacher)return "";
  const groups=d.groups.filter(g=>g.rows.length);
@@ -3962,17 +3995,17 @@ function teacherShortReportHTML(tid,m){
   for(let i=0;i<split;i++)if(items[i].kind==="heading")current=items[i].label;
   halves[1].unshift({kind:"heading",label:current+" (تابع)"});
  }
- const total=d.groups.reduce((v,g)=>v+g.teacherDue,0);
- return emciaTeacherShortPrintCSS()+'<div class="emcia-teacher-short"><h1>EMCIA — كشف مستحقات الأستاذ</h1><p class="teacher-meta"><b>الأستاذ:</b> '+esc(objName(d.teacher))+' &nbsp; | &nbsp; <b>شهر الدراسة:</b> '+esc(m)+'</p><div class="teacher-two-columns">'+renderHalf(halves[0])+renderHalf(halves[1])+'</div><div class="teacher-total"><b>إجمالي مستحق الأستاذ: '+money(total)+'</b></div><div class="teacher-signature"><b>توقيع الأستاذ</b><div class="teacher-signature-space"></div></div></div>';
+ const studyTotal=d.groups.reduce((v,g)=>v+g.teacherDue,0),lateTotal=emciaTeacherLateCashTotal(tid,m),total=studyTotal+lateTotal;
+ return emciaTeacherShortPrintCSS()+'<div class="emcia-teacher-short"><h1>EMCIA — كشف مستحقات الأستاذ</h1><p class="teacher-meta"><b>الأستاذ:</b> '+esc(objName(d.teacher))+' &nbsp; | &nbsp; <b>شهر الدراسة:</b> '+esc(m)+'</p><div class="teacher-two-columns">'+renderHalf(halves[0])+renderHalf(halves[1])+'</div>'+emciaTeacherLateCashShortHTML(tid,m)+'<div class="teacher-total"><b>إجمالي مستحق الأستاذ للصرف: '+money(total)+'</b></div><div class="teacher-signature"><b>توقيع الأستاذ</b><div class="teacher-signature-space"></div></div></div>';
 }
 function teacherReportHTML(tid,m){
  let d=teacherExportData(tid,m); if(!d.teacher)return "";
  let body=d.groups.map(x=>'<h3>الفوج: '+esc(x.group.n)+'</h3><table><tr><th>المتعلم</th><th>نظام الأداء</th><th>المستحق الدراسي</th><th>المخصص لشهر الدراسة</th><th>المقبوض خلال الشهر</th><th>مصدر الأداء المخصص (رقم التوصيل — التاريخ — المبلغ)</th><th>المتبقي</th><th>الرصيد المسبق / الزائد</th><th>حصة الأستاذ قبل التخفيض (مقررة)</th><th>التخفيض الذي يتحمله الأستاذ (مقرر)</th><th>صافي حصة الأستاذ (مقرر)</th><th>التخفيض المسجل عند الأداء</th><th>مستحق الأستاذ عن أداءات شهر الدراسة</th></tr>'+x.rows.map(r=>'<tr><td>'+esc(r.name)+'</td><td>'+emciaAccountMode(r.mode)+'</td>'+[r.studyDue,r.paid,r.cash].map(n=>'<td>'+money(n)+'</td>').join("")+'<td>'+emciaTeacherReceiptSourceHTML(r.sid,x.group.id,m)+'</td>'+[r.debt,r.credit,r.plannedGross,r.plannedDiscount,r.plannedNet,r.teacherDiscount,r.due].map(n=>'<td>'+money(n)+'</td>').join("")+'</tr>').join("")+'<tr><th colspan="3">مجموع الفوج</th><th>'+money(x.paid)+'</th><th>'+money(x.rows.reduce((s,r)=>s+r.cash,0))+'</th><th></th><th colspan="2"></th><th>'+money(x.rows.reduce((s,r)=>s+r.plannedGross,0))+'</th><th>'+money(x.rows.reduce((s,r)=>s+r.plannedDiscount,0))+'</th><th>'+money(x.rows.reduce((s,r)=>s+r.plannedNet,0))+'</th><th>'+money(x.teacherDiscount)+'</th><th>'+money(x.teacherDue)+'</th></tr></table>').join("");
  const discrepancies=d.groups.flatMap(x=>x.rows.filter(r=>r.mode==="monthly"&&r.cash>0&&r.plannedNet>0&&Math.abs(r.due-r.plannedNet)>0.009).map(r=>({name:r.name,group:x.group.n,actual:r.due,expected:r.plannedNet,difference:Math.round((r.plannedNet-r.due)*100)/100})));
  const reconciliationHTML=discrepancies.length?'<h3>مطابقة مستحقات الأستاذ — فروق تحتاج مراجعة</h3><p>المبالغ أدناه للمراجعة فقط؛ لا تُعدّل الأداءات أو التسويات المحفوظة.</p><table><tr><th>المتعلم</th><th>الفوج</th><th>المسجل من المقبوضات</th><th>الصافي المقرر</th><th>الفرق</th></tr>'+discrepancies.map(r=>'<tr><td>'+esc(r.name)+'</td><td>'+esc(r.group)+'</td><td>'+money(r.actual)+'</td><td>'+money(r.expected)+'</td><td>'+money(r.difference)+'</td></tr>').join('')+'</table>':'';
- let total=d.groups.reduce((s,x)=>s+x.teacherDue,0),disc=d.groups.reduce((s,x)=>s+x.teacherDiscount,0),rec=teacherSettlement(tid,m),approved=rec?(+rec.confirmedDue||0):total,st=teacherSettlementStatus(approved,rec);
+ let studyTotal=d.groups.reduce((s,x)=>s+x.teacherDue,0),lateTotal=emciaTeacherLateCashTotal(tid,m),total=studyTotal+lateTotal,disc=d.groups.reduce((s,x)=>s+x.teacherDiscount,0),rec=teacherSettlement(tid,m),approved=rec?(+rec.confirmedDue||0):total,st=teacherSettlementStatus(approved,rec);
  let settlement=`<div style="margin-top:28px;border-top:2px solid #222;padding-top:14px"><h3>بيان التسوية والاستلام</h3><table><tr><th>المستحق المعتمد</th><th>المبلغ المستلم فعلياً</th><th>المتبقي</th><th>حالة الأداء</th><th>تاريخ الاستلام</th></tr><tr><td>${money(approved)}</td><td>${money(st.paid)}</td><td>${money(st.remain)}</td><td>${st.label}</td><td>${rec?esc(rec.date):"—"}</td></tr></table>${rec?.note?`<p><b>ملاحظة التسوية:</b> ${esc(rec.note)}</p>`:""}<p style="margin-top:24px"><b>إقرار بالاستلام:</b> أقر أنا الأستاذ(ة) المذكور(ة) أعلاه أنني استلمت من مؤسسة EMCIA مبلغ <b>${money(st.paid)}</b> المبين في هذا الكشف عن الشهر المذكور أعلاه.</p><table style="margin-top:22px"><tr><th style="width:50%">الأستاذ(ة)</th><th style="width:50%">المؤسسة</th></tr><tr><td style="height:90px;vertical-align:top">الاسم: ${esc(objName(d.teacher))}<br><br>التوقيع:</td><td style="height:90px;vertical-align:top">توقيع وخاتم المؤسسة:</td></tr></table></div>`;
- return `<h1>EMCIA — كشف الأستاذ الشهري</h1><p><b>الأستاذ:</b> ${esc(objName(d.teacher))} &nbsp; | &nbsp; <b>الشهر:</b> ${m}</p>${body}${reconciliationHTML}${emciaTeacherDiscountReport(tid,m)}${disc>0?`<p><b>إجمالي التخفيضات التي يتحملها الأستاذ:</b> ${money(disc)}</p>`:""}<p>المقبوضات حسب تاريخ التحصيل، والمخصص للدراسة حسب شهر الاستحقاق الأصلي. تُحتسب حصة الأستاذ عن شهر الدراسة من الأداءات المخصصة له، ولو قُبضت في شهر سابق، دون احتسابها مرتين. ويعرض عمود مصدر الأداء رقم التوصيل وتاريخه والمبلغ المخصص.</p><h2>إجمالي مستحق الأستاذ: ${money(total)}</h2>${settlement}`;
+ return `<h1>EMCIA — كشف الأستاذ الشهري</h1><p><b>الأستاذ:</b> ${esc(objName(d.teacher))} &nbsp; | &nbsp; <b>الشهر:</b> ${m}</p>${body}${reconciliationHTML}${emciaTeacherDiscountReport(tid,m)}${disc>0?`<p><b>إجمالي التخفيضات التي يتحملها الأستاذ:</b> ${money(disc)}</p>`:""}<p>المقبوضات حسب تاريخ التحصيل، والمخصص للدراسة حسب شهر الاستحقاق الأصلي. تُحتسب حصة الأستاذ عن شهر الدراسة من الأداءات المخصصة له، ولو قُبضت في شهر سابق، دون احتسابها مرتين. ويعرض عمود مصدر الأداء رقم التوصيل وتاريخه والمبلغ المخصص.</p><h2>إجمالي مستحق الأستاذ للصرف: ${money(total)}</h2><p><b>مستحقات الدراسة:</b> ${money(studyTotal)} | <b>حصة متأخرات مقبوضة:</b> ${money(lateTotal)}</p>${emciaTeacherLateCashHTML(tid,m)}${settlement}`;
 }
 function adminReportHTML(m){
  let rows=adminExportData(m), paid=rows.reduce((s,r)=>s+r.paid,0), td=rows.reduce((s,r)=>s+r.teacherDue,0), em=rows.reduce((s,r)=>s+r.emcia,0);
