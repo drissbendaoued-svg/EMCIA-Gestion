@@ -4590,16 +4590,28 @@ resumeAuthSession();
   scheduled=false;
   document.querySelectorAll('main table').forEach(table=>{
    if(table.closest('#schedule,[id*="timetable"],.emcia-session-calculator,.emcia-sticky-table-scroll'))return;
-   const header=table.querySelector('tr');
-   if(!header)return;
-   const cells=Array.from(header.children).filter(el=>el.matches('th,td'));
-   const index=cells.findIndex(el=>names.test((el.textContent||'').trim().replace(/\s+/g,' ')));
-   if(index<0||!table.querySelector('tr:nth-child(2)'))return;
-   // Skip complex merged-cell tables to avoid pinning the wrong person's data.
-   if(Array.from(table.rows).some(row=>Array.from(row.cells).some(c=>c.colSpan>1||c.rowSpan>1)))return;
+   const rows=Array.from(table.rows);
+   if(rows.length<2)return;
+   // Find a descriptive header, including reports with a grouped title or total row.
+   let header=null,index=-1;
+   for(const row of rows.slice(0,4)){
+    let col=0;
+    for(const cell of row.cells){
+     if(cell.matches('th')&&cell.colSpan===1&&names.test((cell.textContent||'').trim().replace(/\\s+/g,' '))){header=row;index=col;break}
+     col+=cell.colSpan;
+    }
+    if(header)break;
+   }
+   if(index<0)return;
    const wrapper=document.createElement('div');wrapper.className='emcia-sticky-table-scroll';wrapper.setAttribute('tabindex','0');wrapper.setAttribute('aria-label','جدول قابل للتمرير أفقيًا مع تثبيت عمود التعريف');
    table.parentNode.insertBefore(wrapper,table);wrapper.appendChild(table);
-   Array.from(table.rows).forEach(row=>{if(row.cells[index])row.cells[index].classList.add('emcia-sticky-identity')});
+   rows.forEach(row=>{
+    let col=0;
+    for(const cell of row.cells){
+     if(col===index&&cell.colSpan===1){cell.classList.add('emcia-sticky-identity');break}
+     col+=cell.colSpan;
+    }
+   });
   });
  }
  function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(update)}
