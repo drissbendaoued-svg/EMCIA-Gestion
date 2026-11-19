@@ -1534,9 +1534,9 @@ function emciaSaveStudy(id){
  if(!ar&&!fr)return alert('أدخل اسم المتعلم');
  if(status==='active'&&o.studyStatus==='stopped')return alert('للعودة إلى الدراسة، سجّل المتعلم مجدداً في الفوج بتاريخ بداية جديد. تبقى الفترة السابقة محفوظة.');
  if(status==='stopped'){
+  const selected=$('#studyStopGroup')?.value||'all';
   if(!emciaValidDate(end)||o.joined&&end<o.joined)return alert('حدد تاريخ توقف صحيحاً لا يسبق التسجيل بالمؤسسة');
   if(o.studyStatus==='stopped'&&selected==='all'&&end!==o.stoppedOn)return alert('تاريخ التوقف محفوظ. لتصحيح فترة سبق إغلاقها، راجع التسوية أولاً.');
-  const selected=$('#studyStopGroup')?.value||'all';
   const affected=db.e.filter(e=>e.sid===id&&e.active!==false&&(selected==='all'||e.id===selected));
   if(!affected.length)return alert('لا يوجد تسجيل نشيط في الفوج المحدد.');
   if(affected.some(e=>e.start&&end<e.start))return alert('تاريخ التوقف يسبق بداية التسجيل في الفوج.');
