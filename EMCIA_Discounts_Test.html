@@ -4270,6 +4270,18 @@ async function enter(user,accessToken){
  calculatorButton.style.cssText='width:auto;min-height:34px;padding:6px 10px;border-radius:8px;font:inherit;font-size:13px';
  calculatorButton.onclick=()=>window.emciaOpenSessionCalculator();
  controls.appendChild(calculatorButton);
+ // Keep all four top actions visible on narrow mobile screens.
+ const compactTopStyle=document.createElement('style');
+ compactTopStyle.id='emcia-compact-top-actions';
+ compactTopStyle.textContent=`
+ #emcia-top-controls{display:flex!important;flex-wrap:wrap!important;justify-content:flex-start!important;align-items:center!important;column-gap:6px!important;row-gap:6px!important;padding:8px!important;box-sizing:border-box!important}
+ #emcia-top-controls #emcia-account-menu{margin:0!important;max-width:none!important;flex:0 1 auto!important}
+ #emcia-top-controls #emcia-account-menu>button{min-height:34px!important;padding:6px 9px!important;font-size:13px!important}
+ #emcia-top-controls #mobileNavToggle{min-width:0!important;max-width:none!important;min-height:34px!important;padding:6px 9px!important;font-size:13px!important}
+ #emcia-top-controls>button{flex:0 0 auto!important;width:auto!important;min-width:0!important;min-height:34px!important;padding:6px 8px!important;font-size:12px!important;white-space:nowrap!important}
+ @media(max-width:480px){#emcia-top-controls{gap:5px!important;padding:6px!important}#emcia-top-controls #emcia-account-menu>button,#emcia-top-controls #mobileNavToggle{font-size:12px!important;padding:6px!important}#emcia-top-controls>button{font-size:11px!important;padding:6px!important}}
+ `;
+ document.head.appendChild(compactTopStyle);
  if(typeof window.emciaUpdateAlertCounter==='function')window.emciaUpdateAlertCounter();
  addAction('🔑 تغيير كلمة المرور',()=>{
   const overlay=document.createElement('div');overlay.style.cssText='position:fixed;inset:0;z-index:100020;background:#0008;display:grid;place-items:center;direction:rtl;padding:14px';
