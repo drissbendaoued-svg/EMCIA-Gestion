@@ -507,8 +507,23 @@ try{
   document.documentElement.classList.add('emcia-early-resume');
  }
 }catch(e){}
-</script></head>
-<body><div id="authGate"><div class="panel"><h1>EMCIA | تسجيل الدخول</h1><p>تسجيل دخول المدير والموظفين المفعّلين</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label for="authPassword">كلمة المرور</label><div class="emcia-password-field"><div class="emcia-eye-wrap"><input id="authPassword" type="password" required autocomplete="current-password"><input id="authPasswordVisible" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" style="display:none" oninput="document.getElementById('authPassword').value=this.value"><button class="emcia-eye-button" id="authPasswordEye" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false" onclick="emciaLoginEyeClick()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><small>البيانات محفوظة بأمان في النظام السحابي للمؤسسة.</small></div></div>
+</script><style id="emcia-login-refresh">
+#authGate{background:radial-gradient(circle at 15% 8%,#dbeaf4 0,transparent 42%),linear-gradient(160deg,#f3f7fb,#e9f0f7);padding:20px 0;min-height:100svh}
+#authGate .panel{width:min(440px,calc(100% - 32px));max-width:440px;border-radius:24px;padding:clamp(20px,5vw,32px);box-shadow:0 16px 55px rgba(16,42,67,.11);border:1px solid #e6edf4}
+#authGate .emcia-login-brand{text-align:center;margin:0 0 22px}
+#authGate .emcia-login-logo{display:block;max-width:min(100%,250px);max-height:115px;object-fit:contain;margin:0 auto 12px}
+#authGate .emcia-login-brand h1{font-size:clamp(22px,5vw,28px);line-height:1.4;margin:4px 0 3px;color:#102a43;font-weight:800}
+#authGate .emcia-login-brand p{font-size:14px;color:#627d98;margin:0}
+#authGate form>label{display:block;font-size:14px;font-weight:650;color:#334e68}
+#authGate #authEmail,#authGate .emcia-password-field input{border:1px solid #cbd7e2;border-radius:12px;background:#fbfdff;min-height:49px;font-size:15px;transition:border-color .2s,box-shadow .2s}
+#authGate #authEmail:focus,#authGate .emcia-password-field input:focus{outline:none;border-color:#2776aa;box-shadow:0 0 0 3px #2776aa22}
+#authGate #emcia-login-submit{background:#175d8d;border-radius:12px;min-height:50px;font-weight:700;margin-top:5px}
+#authGate #emcia-forgot{border-radius:12px;min-height:44px;font-size:14px!important;background:#edf4f9!important;color:#175d8d!important}
+#authGate .emcia-login-footer{text-align:center;font-size:12px;font-weight:650;color:#627d98;border-top:1px solid #e6edf4;padding-top:18px;margin-top:26px}
+#authGate .panel>small{display:block;text-align:center;font-size:11px;line-height:1.7;color:#7b8fa2;margin-top:10px}
+@media(max-width:420px){#authGate .panel{padding:22px 19px}#authGate .emcia-login-logo{max-height:94px}#authGate .emcia-login-brand{margin-bottom:16px}}
+</style></head>
+<body><div id="authGate"><div class="panel"><div class="emcia-login-brand"><img src="./EMCIA_Official_Logo-1.jpg" alt="الشعار الرسمي لمؤسسة EMCIA" class="emcia-login-logo" onerror="this.style.display=\'none\'"><h1>مرحبًا بكم في EMCIA</h1><p>نظام تدبير المؤسسة</p></div><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label for="authPassword">كلمة المرور</label><div class="emcia-password-field"><div class="emcia-eye-wrap"><input id="authPassword" type="password" required autocomplete="current-password"><input id="authPasswordVisible" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" style="display:none" oninput="document.getElementById('authPassword').value=this.value"><button class="emcia-eye-button" id="authPasswordEye" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false" onclick="emciaLoginEyeClick()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><div class="emcia-login-footer">الموسم الدراسي 2026–2027</div><small>البيانات محفوظة بأمان في النظام السحابي للمؤسسة.</small></div></div>
 <header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.17.2</small></header>
 <div id="langMenu" class="lang-menu">
 <button id="langMenuBtn" type="button" onclick="toggleLangMenu()" aria-label="اختيار اللغة">🌐</button>
@@ -2611,7 +2626,7 @@ function editPayment(id){
  Object.assign(p,{receiptNo,method,paymentRef,allocations,a,date,receiptMonth:date.slice(0,7),allocMonth:am,d:split.teacher,e:split.emcia,discount:split.discount,discountTeacher:split.discountTeacher,discountEmcia:split.discountEmcia,dueAfterDiscount:split.due});save();payments();
 }
 
-const expenseCats=["المحاسبة","السكرتارية","رواتب المستخدمين","الكراء","كهرباء الطابق الأول","كهرباء الطابق الثاني","الهاتف والإنترنت","النظافة","النسخ","الماء","إشهار","معدات","إصلاحات","أخرى"];
+const expenseCats=["المدير","المحاسبة","الكاتبة الصباحية","الكاتبة المسائية","المنظفة","الكراء","كهرباء الطابق الأول","كهرباء الطابق الثاني","الهاتف والإنترنت","النظافة","النسخ","الماء","إشهار","معدات","إصلاحات","أمسية","المنزل","أخرى"];
 
 
 function adjustmentForPayment(pid){return db.adj.find(x=>x.pid===pid)}
@@ -2799,7 +2814,7 @@ function emciaObligationsHTML(){
  const selected=rule?.cat||'الكراء',rows=emciaObligationRows(emciaLocalDay(),month);
  const pending=window.pendingObligation;
  const link=pending?'<div class="card" style="border:2px solid #b45309"><strong>تسجيل أداء: '+esc(pending.label)+' — '+pending.month+'</strong><p>أدخل المبلغ المدفوع فعلياً كتسجيل مصروف، أو اربط مصروفاً سبق تسجيله أدناه.</p><select id="obligationExisting"><option value="">— اختر مصروفاً مسجلاً —</option>'+db.x.filter(x=>!x.obligationId).slice().reverse().map(x=>'<option value="'+x.id+'">'+esc(x.date||x.month)+' — '+esc(x.cat)+' — '+money(x.a)+' — '+esc(x.note||'')+'</option>').join('')+'</select><button type="button" onclick="emciaLinkObligationExpense()">ربط المصروف المحدد</button><button type="button" class="secondary" onclick="window.pendingObligation=null;expenses()">إلغاء الربط</button></div>':'';
- return link+'<details class="card" id="obligationsManager" '+(rule?'open':'')+'><summary style="cursor:pointer;font-weight:750">تذكير بالالتزامات المالية</summary><p class="muted">تظهر التنبيهات داخل التطبيق للمدير والمحاسب. لا تُسجّل مصاريف تلقائياً. اترك المبلغ فارغاً للفواتير المتغيرة؛ يختفي تذكيرها بعد تسجيل المصروف وربطه.</p><details id="obligationForm" '+(rule?'open':'')+'><summary>＋ '+(rule?'تعديل التزام':'إضافة موعد شهري')+'</summary><div class="row"><div><label>النوع</label><select id="obCat">'+expenseCats.map(c=>'<option '+(c===selected?'selected':'')+'>'+esc(c)+'</option>').join('')+'</select></div><div><label>الاسم / اسم المستخدم</label><input id="obName" value="'+esc(rule?.n||'')+'" placeholder="مثال: راتب المستخدم — الاسم"></div><div><label>المبلغ المستحق (اختياري)</label><input id="obAmount" type="number" min="0" step="0.01" value="'+(terms?.amount||'')+'"></div><div><label>يوم الاستحقاق من الشهر</label><input id="obDay" type="number" min="1" max="31" value="'+(terms?.day||'')+'"></div><div><label>التذكير قبل الموعد بالأيام</label><input id="obLead" type="number" min="0" max="31" value="'+(terms?.lead??3)+'"></div><div><label>'+(rule?'شهر تطبيق التعديل':'بداية التذكير')+'</label><input id="obStart" type="month" value="'+(rule?month:nowMonth())+'"></div></div><p class="muted">اليوم 29 أو 30 أو 31 يصبح آخر يوم في الشهر الأقصر. التعديل يطبق من الشهر المختار؛ تبقى شروط الأشهر الأقدم محفوظة.</p><button type="button" onclick="emciaSaveObligation()">حفظ الموعد</button>'+(rule?'<button type="button" class="secondary" onclick="window.obligationEditId=\'\';expenses()">إلغاء التعديل</button>':'')+'</details><label>شهر المتابعة</label><input type="month" value="'+month+'" onchange="window.obligationMonth=this.value;expenses()"><div style="overflow-x:auto"><table><tr><th>الالتزام</th><th>الموعد</th><th>المستحق</th><th>المؤدى</th><th>الحالة</th><th></th></tr>'+rows.map(x=>'<tr><td>'+esc(x.rule.n)+'</td><td>'+x.dueDate+'</td><td>'+(x.amount?money(x.amount):'غير محدد')+'</td><td>'+money(x.paid)+'</td><td>'+({paid:'مؤدى',overdue:'متأخر',today:'مستحق اليوم',soon:'اقترب الموعد',future:'قادم'}[x.status])+(x.rule.end?' — يتوقف بعد '+x.rule.end:'')+'</td><td><button type="button" onclick="window.obligationEditId=\''+x.rule.id+'\';expenses()">تعديل</button>'+(x.status!=='paid'?'<button type="button" onclick="emciaPayObligation(\''+x.rule.id+'\',\''+x.month+'\')">تسجيل المصروف</button>':'')+(!x.rule.end?'<button type="button" class="secondary" onclick="emciaStopObligation(\''+x.rule.id+'\')">إيقاف من الشهر المقبل</button>':'')+'</td></tr>').join('')+'</table></div>'+(rows.length?'':'<p>لا توجد مواعيد مسجلة لهذا الشهر.</p>')+'</details>'+emciaObligationAlertsHTML();
+ return link+'<details class="card" id="obligationsManager" '+(rule?'open':'')+'><summary style="cursor:pointer;font-weight:750">تذكير بالالتزامات المالية</summary><p class="muted">تظهر التنبيهات داخل التطبيق للمدير والمحاسب. لا تُسجّل مصاريف تلقائياً. اترك المبلغ فارغاً للفواتير المتغيرة؛ يختفي تذكيرها بعد تسجيل المصروف وربطه.</p><details id="obligationForm" '+(rule?'open':'')+'><summary>＋ '+(rule?'تعديل التزام':'إضافة موعد شهري')+'</summary><div class="row"><div><label>النوع</label><select id="obCat">'+[...new Set([...expenseCats,...(selected&&!expenseCats.includes(selected)?[selected]:[])])].map(c=>'<option '+(c===selected?'selected':'')+'>'+esc(c)+'</option>').join('')+'</select></div><div><label>الاسم / اسم المستخدم</label><input id="obName" value="'+esc(rule?.n||'')+'" placeholder="مثال: راتب المستخدم — الاسم"></div><div><label>المبلغ المستحق (اختياري)</label><input id="obAmount" type="number" min="0" step="0.01" value="'+(terms?.amount||'')+'"></div><div><label>يوم الاستحقاق من الشهر</label><input id="obDay" type="number" min="1" max="31" value="'+(terms?.day||'')+'"></div><div><label>التذكير قبل الموعد بالأيام</label><input id="obLead" type="number" min="0" max="31" value="'+(terms?.lead??3)+'"></div><div><label>'+(rule?'شهر تطبيق التعديل':'بداية التذكير')+'</label><input id="obStart" type="month" value="'+(rule?month:nowMonth())+'"></div></div><p class="muted">اليوم 29 أو 30 أو 31 يصبح آخر يوم في الشهر الأقصر. التعديل يطبق من الشهر المختار؛ تبقى شروط الأشهر الأقدم محفوظة.</p><button type="button" onclick="emciaSaveObligation()">حفظ الموعد</button>'+(rule?'<button type="button" class="secondary" onclick="window.obligationEditId=\'\';expenses()">إلغاء التعديل</button>':'')+'</details><label>شهر المتابعة</label><input type="month" value="'+month+'" onchange="window.obligationMonth=this.value;expenses()"><div style="overflow-x:auto"><table><tr><th>الالتزام</th><th>الموعد</th><th>المستحق</th><th>المؤدى</th><th>الحالة</th><th></th></tr>'+rows.map(x=>'<tr><td>'+esc(x.rule.n)+'</td><td>'+x.dueDate+'</td><td>'+(x.amount?money(x.amount):'غير محدد')+'</td><td>'+money(x.paid)+'</td><td>'+({paid:'مؤدى',overdue:'متأخر',today:'مستحق اليوم',soon:'اقترب الموعد',future:'قادم'}[x.status])+(x.rule.end?' — يتوقف بعد '+x.rule.end:'')+'</td><td><button type="button" onclick="window.obligationEditId=\''+x.rule.id+'\';expenses()">تعديل</button>'+(x.status!=='paid'?'<button type="button" onclick="emciaPayObligation(\''+x.rule.id+'\',\''+x.month+'\')">تسجيل المصروف</button>':'')+(!x.rule.end?'<button type="button" class="secondary" onclick="emciaStopObligation(\''+x.rule.id+'\')">إيقاف من الشهر المقبل</button>':'')+'</td></tr>').join('')+'</table></div>'+(rows.length?'':'<p>لا توجد مواعيد مسجلة لهذا الشهر.</p>')+'</details>'+emciaObligationAlertsHTML();
 }
 function emciaSaveObligation(){
  if(!emciaCanViewManagement())return;
@@ -3964,21 +3979,36 @@ function emciaTeacherLateCashShortHTML(tid,m){
 function teacherShortReportHTML(tid,m){
  const d=teacherExportData(tid,m);if(!d.teacher)return "";
  const groups=d.groups.filter(g=>g.rows.length);
- // Keep each group and its subtotal together; distribute whole groups between columns.
- const halves=[[],[]],loads=[0,0];
- groups.forEach((g,i)=>{
-  const weight=g.rows.length+2;
-  const side=i===0?0:(loads[0]<=loads[1]?0:1);
-  halves[side].push(g);loads[side]+=weight;
+ const items=[];
+ groups.forEach(g=>{
+  items.push({kind:"heading",label:g.group.n});
+  g.rows.forEach(r=>items.push({kind:"student",name:r.name,due:r.due}));
+  items.push({kind:"subtotal",due:g.teacherDue});
  });
- function renderHalf(list){
-  return '<div class="teacher-half">'+list.map(g=>
-   '<section class="teacher-group" style="break-inside:avoid;page-break-inside:avoid">'+
-   '<h3>الفوج: '+esc(g.group.n)+'</h3>'+
-   '<table class="teacher-learner-table"><tr><th>اسم المتعلم</th><th>مستحق الأستاذ</th></tr>'+
-   g.rows.map(r=>'<tr><td>'+esc(r.name)+'</td><td>'+money(r.due)+'</td></tr>').join('')+
-   '<tr><th>مجموع الفوج</th><th>'+money(g.teacherDue)+'</th></tr></table></section>'
-  ).join('')+'</div>';
+ const studentCount=items.filter(x=>x.kind==="student").length;
+ let seen=0,split=items.length;
+ for(let i=0;i<items.length;i++){
+  if(items[i].kind==="student")seen++;
+  if(seen>=Math.ceil(studentCount/2)){split=i+1;break}
+ }
+ const halves=[items.slice(0,split),items.slice(split)];
+ function renderHalf(list,offset){
+  let out="",tableOpen=false,groupName="";
+  const close=()=>{if(tableOpen){out+="</table>";tableOpen=false}};
+  for(let i=0;i<list.length;i++){
+   const item=list[i];
+   if(item.kind==="heading"){close();groupName=item.label;out+='<h3>الفوج: '+esc(groupName)+'</h3>';continue}
+   if(!tableOpen){out+='<table class="teacher-learner-table"><tr><th>اسم المتعلم</th><th>مستحق الأستاذ</th></tr>';tableOpen=true}
+   if(item.kind==="student")out+='<tr><td>'+esc(item.name)+'</td><td>'+money(item.due)+'</td></tr>';
+   else if(item.kind==="subtotal")out+='<tr><th>مجموع الفوج</th><th>'+money(item.due)+'</th></tr>';
+  }
+  close();return '<div class="teacher-half">'+out+'</div>';
+ }
+ // If a group continues in the second column, repeat its heading there.
+ if(halves[1].length&&halves[1][0].kind!=="heading"){
+  let current="";
+  for(let i=0;i<split;i++)if(items[i].kind==="heading")current=items[i].label;
+  halves[1].unshift({kind:"heading",label:current+" (تابع)"});
  }
  const studyTotal=d.groups.reduce((v,g)=>v+g.teacherDue,0),lateTotal=emciaTeacherLateCashTotal(tid,m),total=studyTotal+lateTotal;
  return emciaTeacherShortPrintCSS()+'<div class="emcia-teacher-short"><h1>EMCIA — كشف مستحقات الأستاذ</h1><p class="teacher-meta"><b>الأستاذ:</b> '+esc(objName(d.teacher))+' &nbsp; | &nbsp; <b>شهر الدراسة:</b> '+esc(m)+'</p><div class="teacher-two-columns">'+renderHalf(halves[0])+renderHalf(halves[1])+'</div>'+emciaTeacherLateCashShortHTML(tid,m)+'<div class="teacher-total"><b>إجمالي مستحق الأستاذ للصرف: '+money(total)+'</b></div><div class="teacher-signature"><b>توقيع الأستاذ</b><div class="teacher-signature-space"></div></div></div>';
