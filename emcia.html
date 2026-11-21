@@ -530,6 +530,28 @@ try{
 #students .emcia-student-subject-grid>div>input{width:100%;box-sizing:border-box}
 #students .emcia-student-registration>div.row:last-child>button{width:100%;min-height:44px}
 @media(max-width:390px){#students .emcia-student-subject-grid{gap:7px}}
+</style><style id="emcia-student-font-balance">
+/* Match registration typography to the compact finance entry form. */
+#students .emcia-student-registration{font-size:13px}
+#students .emcia-student-registration input,
+#students .emcia-student-registration select,
+#students .emcia-student-registration textarea,
+#students .emcia-student-registration button{font-size:13px!important;line-height:1.45}
+#students .emcia-student-registration label{font-size:12px;line-height:1.4}
+#students .emcia-student-registration .muted{font-size:12px}
+#students .emcia-student-registration .emcia-student-fields,
+#students .emcia-student-registration .emcia-student-subject-grid{gap:8px}
+@media(max-width:390px){#students .emcia-student-registration input,#students .emcia-student-registration select,#students .emcia-student-registration textarea,#students .emcia-student-registration button{font-size:12.5px!important}}
+</style><style id="emcia-student-select-label-size">
+/* Keep native dropdown captions and selected options visually consistent with finance. */
+#students .emcia-student-registration select,
+#students .emcia-student-registration select option,
+#students .emcia-student-registration select optgroup{
+ font-size:12px!important;
+ font-weight:400!important;
+ letter-spacing:0!important;
+}
+#students .emcia-student-registration select{min-width:0;text-overflow:ellipsis}
 </style></head>
 <body><div id="authGate"><div class="panel"><div class="emcia-login-brand"><img src="./EMCIA_Official_Logo-1.jpg" alt="الشعار الرسمي لمؤسسة EMCIA" class="emcia-login-logo" onerror="this.style.display=\'none\'"><h1>مرحبًا بكم في EMCIA</h1><p>نظام تدبير المؤسسة</p></div><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label for="authPassword">كلمة المرور</label><div class="emcia-password-field"><div class="emcia-eye-wrap"><input id="authPassword" type="password" required autocomplete="current-password"><input id="authPasswordVisible" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" style="display:none" oninput="document.getElementById('authPassword').value=this.value"><button class="emcia-eye-button" id="authPasswordEye" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false" onclick="emciaLoginEyeClick()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><div class="emcia-login-footer">الموسم الدراسي 2026–2027</div><small>البيانات محفوظة بأمان في النظام السحابي للمؤسسة.</small></div></div>
 <header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.17.2</small></header>
