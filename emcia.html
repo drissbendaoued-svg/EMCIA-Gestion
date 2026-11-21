@@ -3745,7 +3745,7 @@ function emciaAdministrativeAlerts(){
  const duplicateSection=document.createElement('details');duplicateSection.className='card';duplicateSection.innerHTML='<summary><strong>الأداءات المكررة المحتملة ('+emciaPotentialDuplicatePayments().length+')</strong></summary>'+emciaDuplicateAlertsHTML();panel.appendChild(duplicateSection);
  const arrearsSection=document.createElement('details');arrearsSection.className='card';arrearsSection.innerHTML='<summary><strong>المتأخرات والأداءات الجزئية</strong></summary>';
  arrearsSection.append(filters,count,go,list);panel.appendChild(arrearsSection);
- const institutional=document.createElement('details');institutional.className='card';institutional.innerHTML='<summary><strong>التنبيهات والالتزامات الإدارية</strong></summary>'+(emciaCanViewManagement()?emciaObligationAlertsHTML():'<p class="muted">التنبيهات المالية الخاصة بالالتزامات متاحة للمدير والمحاسب فقط.</p>');panel.appendChild(institutional);
+ const institutional=document.createElement('details');institutional.className='card';institutional.innerHTML='<summary><strong>التنبيهات والالتزامات الإدارية</strong></summary>'+(emciaCanViewManagement()?emciaObligationAlertsHTML():'<p class="muted">التنبيهات المالية الخاصة بالالتزامات متاحة للمدير والمحاسب فقط.</p>');if(emciaCanViewManagement())panel.appendChild(institutional);
  function renderAlerts(){
   const selected=monthInput.value, current=nowMonth(),items=[];
   // Reuse the same reconciled ledger as Arrears, rather than calculating alerts separately.
