@@ -2036,7 +2036,7 @@ function emciaWaitPrepareGroup(index){
  updateSuggestedGroupName();
 }
 
-function emciaFilterGroupList(){let q=($("#groupListQuery")?.value||"").toLocaleLowerCase(),sub=$("#groupListSubject")?.value||"",lev=($("#groupListLevel")?.value||"").toLocaleLowerCase();document.querySelectorAll("#groupListTable tr[data-group-id]").forEach(tr=>{let g=by(db.g,tr.dataset.groupId);tr.style.display=g&&(!sub||g.subject===sub)&&(!lev||(g.level||"").toLocaleLowerCase().includes(lev))&&(!gid||g.id===gid)&&tr.textContent.toLocaleLowerCase().includes(q)?"":"none"})}
+function emciaFilterGroupList(){let q=($("#groupListQuery")?.value||"").toLocaleLowerCase(),sub=$("#groupListSubject")?.value||"",lev=($("#groupListLevel")?.value||"").toLocaleLowerCase();document.querySelectorAll("#groupListTable tr[data-group-id]").forEach(tr=>{let g=by(db.g,tr.dataset.groupId);tr.style.display=g&&(!sub||g.subject===sub)&&(!lev||(g.level||"").toLocaleLowerCase().includes(lev))&&tr.textContent.toLocaleLowerCase().includes(q)?"":"none"})}
 function groups(){
  $("#groups").innerHTML=`<div class="card">
  <div class="row">
@@ -2147,7 +2147,7 @@ function enroll(){
    if(e.target.closest("button,select,input,label") && !e.target.closest("#enrollSuccess")) hideEnrollSuccess()
  },{capture:true,once:false});
 }
-function emciaFilterEnrollmentList(){let q=($("#enrollListQuery")?.value||"").toLocaleLowerCase(),sub=$("#enrollListSubject")?.value||"",lev=($("#enrollListLevel")?.value||"").toLocaleLowerCase(),mode=$("#enrollListMode")?.value||"",gid=$("#enrollListGroup")?.value||"",groupQuery=($("#enrollListGroupQuery")?.value||"").trim().toLocaleLowerCase();document.querySelectorAll("#enrollListTable tr[data-enrollment-id]").forEach(tr=>{let e=by(db.e,tr.dataset.enrollmentId),g=e?by(db.g,e.gid):null;tr.style.display=g&&(!sub||g.subject===sub)&&(!lev||(g.level||"").toLocaleLowerCase().includes(lev))&&(!gid||g.id===gid)&&(!groupQuery||groupCompactName(g).toLocaleLowerCase().includes(groupQuery))&&tr.textContent.toLocaleLowerCase().includes(q)?"":"none"})}
+function emciaFilterEnrollmentList(){let q=($("#enrollListQuery")?.value||"").toLocaleLowerCase(),sub=$("#enrollListSubject")?.value||"",lev=($("#enrollListLevel")?.value||"").toLocaleLowerCase(),mode=$("#enrollListMode")?.value||"",gid=$("#enrollListGroup")?.value||"",groupQuery=($("#enrollListGroupQuery")?.value||"").trim().toLocaleLowerCase();document.querySelectorAll("#enrollListTable tr[data-enrollment-id]").forEach(tr=>{let e=by(db.e,tr.dataset.enrollmentId),g=e?by(db.g,e.gid):null;tr.style.display=g&&(!sub||g.subject===sub)&&(!lev||(g.level||"").toLocaleLowerCase().includes(lev))&&(!mode||(e.billingMode||"monthly")===mode)&&(!gid||g.id===gid)&&(!groupQuery||groupCompactName(g).toLocaleLowerCase().includes(groupQuery))&&tr.textContent.toLocaleLowerCase().includes(q)?"":"none"})}
 function emciaToggleEnrollmentBilling(){
  const isSession=$("#eBillingMode")?.value==="session";
  $("#eSessionPriceBox")?.classList.toggle("hidden",!isSession);
