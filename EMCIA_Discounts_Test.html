@@ -593,6 +593,24 @@ main .page:not(#workspace):not(#home) textarea:focus-visible{outline:2px solid #
 #students .emcia-student-list-filters>input,
 #students .emcia-student-list-filters>select{min-width:0;width:100%;box-sizing:border-box;font-size:11px!important;padding-inline:5px!important;text-overflow:ellipsis}
 @media(max-width:390px){#students .emcia-student-list-filters{gap:4px!important}#students .emcia-student-list-filters>input,#students .emcia-student-list-filters>select{font-size:10px!important;padding-inline:3px!important}}
+</style><style id="emcia-teachers-groups-compact-test">
+/* Experimental visual harmonization: teacher and group forms only. */
+#teachers>.card:first-child>.row,
+#groups>.card:first-child>.row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-items:center}
+#teachers>.card:first-child>.row>*,
+#groups>.card:first-child>.row>*{min-width:0;width:100%;box-sizing:border-box;margin:0}
+#teachers>.card:first-child input,#teachers>.card:first-child select,#teachers>.card:first-child textarea,#teachers>.card:first-child button,
+#groups>.card:first-child input,#groups>.card:first-child select,#groups>.card:first-child button{font-size:12px!important;line-height:1.45}
+#teachers>.card:first-child label,#groups>.card:first-child label{font-size:12px}
+#teachers>.card:first-child select option,#groups>.card:first-child select option{font-size:12px!important}
+#teachers>.card:first-child textarea{min-height:70px}
+#teachers>.card:first-child .row>button,
+#groups>.card:first-child .row>button{min-height:40px}
+#teachers>.card:first-child .row>button:last-child,
+#groups>.card:first-child>.row>button:last-child{grid-column:1/-1}
+#teachers>.card:first-child .hide,#groups>.card:first-child .hide{display:none!important}
+#teachers>.card:first-child #gtinfo,#groups>.card:first-child #gtinfo{font-size:11px}
+@media(max-width:390px){#teachers>.card:first-child>.row,#groups>.card:first-child>.row{gap:6px}}
 </style></head>
 <body><div id="authGate"><div class="panel"><div class="emcia-login-brand"><img src="./EMCIA_Official_Logo-1.jpg" alt="الشعار الرسمي لمؤسسة EMCIA" class="emcia-login-logo" onerror="this.style.display=\'none\'"><h1>مرحبًا بكم في EMCIA</h1><p>نظام تدبير المؤسسة</p></div><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label for="authPassword">كلمة المرور</label><div class="emcia-password-field"><div class="emcia-eye-wrap"><input id="authPassword" type="password" required autocomplete="current-password"><input id="authPasswordVisible" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" style="display:none" oninput="document.getElementById('authPassword').value=this.value"><button class="emcia-eye-button" id="authPasswordEye" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false" onclick="emciaLoginEyeClick()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><div class="emcia-login-footer">الموسم الدراسي 2026–2027</div><small>البيانات محفوظة بأمان في النظام السحابي للمؤسسة.</small></div></div>
 <header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.17.2</small></header>
