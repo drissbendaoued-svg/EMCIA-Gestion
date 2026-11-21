@@ -642,6 +642,33 @@ main .page:not(#workspace):not(#home) textarea:focus-visible{outline:2px solid #
 #students #studyEditor .emcia-study-editor-actions label{font-size:11px}
 #students #studyEditor .emcia-study-editor-actions select,#students #studyEditor .emcia-study-editor-actions button{font-size:12px!important;min-height:40px;padding:6px 5px}
 #students #studyEditor .emcia-study-editor-actions select{text-overflow:ellipsis}
+</style><style id="emcia-enrollment-compact-layout-test">
+/* Visual-only: enrollment entry and list. Preserve original field IDs and behavior. */
+#enroll>.card:first-child{font-size:12px}
+#enroll>.card:first-child h3{font-size:17px;margin-bottom:8px}
+#enroll>.card:first-child h4{font-size:14px;margin:8px 0}
+#enroll>.card:first-child label,#enroll>.card:first-child .muted{font-size:11px;line-height:1.45}
+#enroll>.card:first-child input,#enroll>.card:first-child select,#enroll>.card:first-child button{font-size:12px!important;line-height:1.4;min-width:0;box-sizing:border-box}
+#enroll>.card:first-child select option{font-size:12px}
+#enroll>.card:first-child .enroll-select-row{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;align-items:center}
+#enroll>.card:first-child .enroll-select-row>*{min-width:0;width:100%;box-sizing:border-box;margin:0}
+#enroll>.card:first-child .enroll-select-row #eg{order:1}
+#enroll>.card:first-child .enroll-select-row #es{order:2}
+#enroll>.card:first-child .enroll-select-row #esearch{order:3}
+#enroll>.card:first-child .enroll-select-row .show-all-learners{order:4;display:flex;align-items:center;gap:5px}
+#enroll>.card:first-child .enroll-select-row .show-all-learners input{width:auto;flex:none}
+#enroll>.card:first-child>.row:not(.enroll-select-row),#enroll>.card:first-child>.card>.row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-items:end}
+#enroll>.card:first-child>.row:not(.enroll-select-row)>*,#enroll>.card:first-child>.card>.row>*{min-width:0;width:100%;box-sizing:border-box}
+#enroll>.card:first-child>.row:not(.enroll-select-row)>button{grid-column:1/-1}
+#enroll>.card:first-child .hidden{display:none!important}
+#enroll>.card:nth-child(2) h3{font-size:17px}
+#enroll>.card:nth-child(2)>div.row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+#enroll>.card:nth-child(2)>div.row>*{min-width:0;width:100%;font-size:12px!important;box-sizing:border-box}
+#enroll>.card:nth-child(2){font-size:12px}
+#enroll>.card:nth-child(2) table{font-size:12px;min-width:880px}
+#enroll>.card:nth-child(2) table th,#enroll>.card:nth-child(2) table td{font-size:12px;padding:7px 6px}
+#enroll>.card:nth-child(2){overflow-x:auto;-webkit-overflow-scrolling:touch}
+@media(max-width:390px){#enroll>.card:first-child .enroll-select-row,#enroll>.card:first-child>.row:not(.enroll-select-row){gap:5px}}
 </style></head>
 <body><div id="authGate"><div class="panel"><div class="emcia-login-brand"><img src="./EMCIA_Official_Logo-1.jpg" alt="الشعار الرسمي لمؤسسة EMCIA" class="emcia-login-logo" onerror="this.style.display=\'none\'"><h1>مرحبًا بكم في EMCIA</h1><p>نظام تدبير المؤسسة</p></div><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label for="authPassword">كلمة المرور</label><div class="emcia-password-field"><div class="emcia-eye-wrap"><input id="authPassword" type="password" required autocomplete="current-password"><input id="authPasswordVisible" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" style="display:none" oninput="document.getElementById('authPassword').value=this.value"><button class="emcia-eye-button" id="authPasswordEye" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false" onclick="emciaLoginEyeClick()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><div class="emcia-login-footer">الموسم الدراسي 2026–2027</div><small>البيانات محفوظة بأمان في النظام السحابي للمؤسسة.</small></div></div>
 <header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.17.2</small></header>
