@@ -853,7 +853,7 @@ const NAV_GROUPS=[
 function emciaRole(){return window.EMCIA_CURRENT_ROLE||"secretary_morning"}
 function emciaIsSecretary(){return emciaRole()==="secretary_morning"||emciaRole()==="secretary_evening"}
 function emciaCanViewManagement(){return emciaRole()==="director"||emciaRole()==="accountant"}
-function emciaCanOpenPage(id){return !emciaIsSecretary()||!["budget","analysis"].includes(id)}
+function emciaCanOpenPage(id){return !emciaIsSecretary()||!["budget","analysis","alerts"].includes(id)}
 let navCategory=window.navCategory||"";
 function nav(){
  let active=document.querySelector(".page.active")?.id;
@@ -3683,6 +3683,7 @@ function emciaPendingAlertCount(){
  return count;
 }
 window.emciaUpdateAlertCounter=function(){
+ if(!emciaCanViewManagement())return;
  const badge=document.getElementById('emcia-alert-count');
  if(!badge)return;
  const count=emciaPendingAlertCount()+emciaObligationRows().filter(x=>['overdue','today','soon'].includes(x.status)).length;
@@ -4465,7 +4466,7 @@ async function enter(user,accessToken){
  const alertsBadge=document.createElement('span');alertsBadge.id='emcia-alert-count';alertsBadge.style.cssText='display:none;align-items:center;justify-content:center;min-width:19px;height:19px;padding:0 4px;margin-inline-start:6px;border-radius:10px;background:#eef2f6;color:#102a43;font-size:11px;font-weight:700';alertsButton.appendChild(alertsBadge);
  alertsButton.style.cssText='width:auto;min-height:34px;padding:6px 10px;border-radius:8px;font:inherit;font-size:13px';
  alertsButton.onclick=()=>{accountActions.style.display='none';if(typeof show==='function')show('alerts')};
- controls.appendChild(alertsButton);
+ if(emciaCanViewManagement())controls.appendChild(alertsButton);
  const calculatorButton=document.createElement('button');
  calculatorButton.type='button';calculatorButton.textContent='▦ حاسبة الحصص';
  calculatorButton.style.cssText='width:auto;min-height:34px;padding:6px 10px;border-radius:8px;font:inherit;font-size:13px';
