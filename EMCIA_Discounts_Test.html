@@ -1170,7 +1170,7 @@ function emciaFinanceReviewPlaceholder(){
  '<div class="emcia-review-filters"><div><label>شهر التحصيل</label><input id="reviewMonth" type="month" value="'+emciaReviewEsc(m)+'" onchange="emciaReviewFilter()"></div><div><label>الأستاذ</label>'+select("reviewTeacher",teachers,tid,"جميع الأساتذة")+'</div><div><label>الفوج</label>'+select("reviewGroup",groups,gid,"جميع الأفواج")+'</div><div><label>حالة المراجعة</label><select id="reviewStatus" onchange="emciaReviewFilter()"><option value="all">الكل</option><option value="pending" '+(state==="pending"?"selected":"")+'>غير مراجع</option><option value="confirmed" '+(state==="confirmed"?"selected":"")+'>مؤكد</option><option value="changed" '+(state==="changed"?"selected":"")+'>يحتاج إعادة مراجعة</option><option value="returned" '+(state==="returned"?"selected":"")+'>أُرجع للتصحيح</option><option value="corrected" '+(state==="corrected"?"selected":"")+'>بانتظار إعادة المراجعة</option></select></div></div>'+
  '<div class="emcia-review-search"><input id="reviewQuery" type="search" placeholder="بحث باسم المتعلم أو رقم التوصيل" value="'+emciaReviewEsc(window.emciaReviewQuery||"")+'" oninput="emciaReviewLiveSearch(this.value)"><button type="button" onclick="emciaReviewReset()">إعادة ضبط</button></div>'+
  '<div class="emcia-review-table"><table><thead><tr><th>رقم التوصيل</th><th>التاريخ</th><th>المتعلم</th><th>المبلغ</th><th>الحالة</th><th>الإجراءات</th></tr></thead><tbody>'+
- rows.map(x=>'<tr data-review-search="'+emciaReviewEsc((String(x.p.receiptNo||x.p.id)+" "+name(db.s,x.p.sid)).toLocaleLowerCase())+'"><td>'+emciaReviewEsc(x.p.receiptNo||x.p.id)+'</td><td>'+emciaReviewEsc(x.p.date||"—")+'</td><td>'+emciaReviewEsc(name(db.s,x.p.sid))+'</td><td>'+money(x.amount)+'</td><td><span class="emcia-review-status '+status(x)+'">'+stat(x)+'</span></td><td><div class="emcia-review-actions"><button type="button" title="عرض التفاصيل" aria-label="عرض التفاصيل" onclick="emciaReviewDetails(\''+x.kind+'\',\''+emciaReviewEsc(x.p.id)+'\')">◉</button><button type="button" title="تأكيد المراجعة" aria-label="تأكيد المراجعة" '+(status(x)==="confirmed"?'disabled':'')+' onclick="emciaConfirmReceiptReview(\''+x.kind+'\',\''+emciaReviewEsc(x.p.id)+'\')">✓</button><button type="button" title="إرجاع للتصحيح مع ملاحظة" aria-label="إرجاع للتصحيح" onclick="emciaReturnReceiptReview(\'+x.kind+\',\'+emciaReviewEsc(x.p.id)+\')">↩</button></div></td></tr>').join("")+
+ rows.map(x=>'<tr data-review-search="'+emciaReviewEsc((String(x.p.receiptNo||x.p.id)+" "+name(db.s,x.p.sid)).toLocaleLowerCase())+'"><td>'+emciaReviewEsc(x.p.receiptNo||x.p.id)+'</td><td>'+emciaReviewEsc(x.p.date||"—")+'</td><td>'+emciaReviewEsc(name(db.s,x.p.sid))+'</td><td>'+money(x.amount)+'</td><td><span class="emcia-review-status '+status(x)+'">'+stat(x)+'</span></td><td><div class="emcia-review-actions"><button type="button" title="عرض التفاصيل" aria-label="عرض التفاصيل" onclick="emciaReviewDetails(\''+x.kind+'\',\''+emciaReviewEsc(x.p.id)+'\')">◉</button><button type="button" title="تأكيد المراجعة" aria-label="تأكيد المراجعة" '+(status(x)==="confirmed"?'disabled':'')+' onclick="emciaConfirmReceiptReview(\''+x.kind+'\',\''+emciaReviewEsc(x.p.id)+'\')">✓</button><button type="button" title="إرجاع للتصحيح مع ملاحظة" aria-label="إرجاع للتصحيح" onclick="emciaReturnReceiptReview(\''+x.kind+'\',\''+emciaReviewEsc(x.p.id)+'\')">↩</button></div></td></tr>').join("")+
  '</tbody></table></div><p id="emciaReviewNoMatches" class="muted" style="display:none">لا توجد تواصيل مطابقة للبحث.</p></div>';
  if(!document.getElementById("emcia-review-css")){
   const style=document.createElement("style");style.id="emcia-review-css";style.textContent=
@@ -1299,7 +1299,14 @@ function show(id){
  if(id==="home"){enterApp();return}
  if(id==='attendance'&&!document.getElementById('attendance')?.classList.contains('active'))document.querySelectorAll('#attendance details[data-att-disclosure]').forEach(panel=>panel.open=false);
  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
- $("#"+id).classList.add("active");if(id==="receiptreview")emciaFinanceReviewPlaceholder();else if(id==="financeoperations")emciaFinanceOperationsPlaceholder();else render(id);nav();
+ $("#"+id).classList.add("active");if(id==="receiptreview")emciaFinanceReviewPlaceholder();else if(id==="financeoperations")emciaFinanceOperationsPlaceholder();else render(id);
+ if(id==="payments"&&emciaIsSecretary()){
+  const page=document.getElementById("payments");if(page){
+   page.querySelector("#emciaSecretaryReviewPanel")?.remove();
+   const panel=document.createElement("div");panel.id="emciaSecretaryReviewPanel";panel.innerHTML=emciaSecretaryReturnedReceipts();page.prepend(panel);
+  }
+ }
+ nav();
  if(id!=="home")autoCollapseMobileNav()
 }
 function opts(a,sel="",filter=()=>true){return a.filter(filter).map(x=>`<option value="${x.id}" ${x.id===sel?"selected":""}>${esc(x.n)}</option>`).join("")}
