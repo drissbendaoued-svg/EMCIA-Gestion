@@ -1117,7 +1117,32 @@ function enterApp(){
  applyLang();
 }
 
-function emciaFinanceReviewPlaceholder(){document.getElementById("receiptreview").innerHTML='<div class="card"><h3>مراجعة المحاسبة والتوصيلات</h3><p class="muted">تم إنشاء القسم في النسخة التجريبية. سيضاف جدول التوصيلات مع التصفية حسب الأستاذ والفوج، وتأكيد المراجعة في المرحلة التالية. لا توجد عمليات مراجعة مفترضة أو تعديلات على التوصيلات.</p></div>'}
+function emciaReviewEsc(v){return esc(v==null?"":String(v))}
+function emciaReviewRows(){
+ return [...db.p.map(p=>({p,kind:"monthly"})),...db.sp.map(p=>({p,kind:"session"}))]
+ .filter(x=>x.p&&!x.p.voidedAt&&!x.p.cancelledAt)
+ .map(x=>{let p=x.p,month=(p.receiptMonth||(p.date||"").slice(0,7)||"");let allocations=x.kind==="session"?[]:paymentAllocations(p);let types=[...new Set(allocations.map(a=>a.month<month?"دين سابق":a.month>month?"تسبيق":"أداء الشهر"))];if(x.kind==="session")types=["بالحصة"];return {...x,month,teacher:by(db.g,p.gid)?.tid||"",types,allocations,amount:Number(p.netAfterRefund??p.a)||0,fingerprint:JSON.stringify([x.kind,p.id,p.sid,p.gid,p.date,p.receiptMonth,p.receiptNo,p.a,p.netAfterRefund,p.allocMonth,p.type,p.allocations,p.voidedAt,p.cancelledAt])}})
+}
+function emciaFinanceReviewPlaceholder(){
+ if(!emciaCanViewManagement())return;
+ let el=document.getElementById("receiptreview"),m=window.emciaReviewMonth||nowMonth(),tid=window.emciaReviewTeacher||"",gid=window.emciaReviewGroup||"",state=window.emciaReviewStatus||"all";
+ let all=emciaReviewRows(),rows=all.filter(x=>x.month===m&&(!tid||x.teacher===tid)&&(!gid||x.p.gid===gid));
+ const reviewed=x=>db.receiptReviews?.[x.kind+":"+x.p.id],valid=x=>{let v=reviewed(x);return !!v&&v.fingerprint===x.fingerprint};
+ const status=x=>valid(x)?"confirmed":reviewed(x)?"changed":"pending";
+ if(state!=="all")rows=rows.filter(x=>status(x)===state);
+ rows.sort((a,b)=>(a.p.date||"").localeCompare(b.p.date||"")||String(a.p.receiptNo||"").localeCompare(String(b.p.receiptNo||"")));
+ const total=rows.reduce((n,x)=>n+x.amount,0),confirmed=rows.filter(valid).length;
+ const select=(id,items,value,label)=>'<select id="'+id+'" onchange="emciaReviewFilter()"><option value="">'+label+'</option>'+items.map(x=>'<option value="'+emciaReviewEsc(x.id)+'" '+(value===x.id?'selected':'')+'>'+emciaReviewEsc(x.n)+'</option>').join("")+'</select>';
+ const teachers=db.t.map(t=>({id:t.id,n:objName(t)})),groups=db.g.filter(g=>!tid||g.tid===tid).map(g=>({id:g.id,n:objName(g)}));
+ el.innerHTML='<div class="card"><h3>مراجعة المحاسبة والتوصيلات</h3><p class="muted">تظهر التوصيلات حسب شهر التحصيل الفعلي. التصنيف يعتمد على شهر الاستحقاق، وليس تاريخ القبض. التأكيد لا يغير مبالغ التوصيلات.</p><div class="row"><div><label>شهر التحصيل</label><input id="reviewMonth" type="month" value="'+emciaReviewEsc(m)+'" onchange="emciaReviewFilter()"></div><div><label>الأستاذ</label>'+select("reviewTeacher",teachers,tid,"جميع الأساتذة")+'</div><div><label>الفوج</label>'+select("reviewGroup",groups,gid,"جميع الأفواج")+'</div><div><label>حالة المراجعة</label><select id="reviewStatus" onchange="emciaReviewFilter()"><option value="all">الكل</option><option value="pending" '+(state==="pending"?"selected":"")+'>غير مراجع</option><option value="confirmed" '+(state==="confirmed"?"selected":"")+'>مؤكد</option><option value="changed" '+(state==="changed"?"selected":"")+'>تغير بعد المراجعة</option></select></div></div><p><b>التوصيلات: '+rows.length+' | المؤكدة: '+confirmed+' | مجموع المقبوضات المعروضة: '+money(total)+'</b></p><div style="overflow-x:auto"><table><thead><tr><th>رقم التوصيل</th><th>التاريخ</th><th>المتعلم</th><th>الأستاذ / الفوج</th><th>المبلغ</th><th>التصنيف والتوزيع</th><th>المراجعة</th></tr></thead><tbody>'+rows.map(x=>{let p=x.p,v=reviewed(x),st=status(x),allocation=x.allocations.map(a=>emciaReviewEsc(a.month)+': '+money(Number(a.amount)||0)).join(" / ");return '<tr><td>'+emciaReviewEsc(p.receiptNo||p.id)+'</td><td>'+emciaReviewEsc(p.date)+'</td><td>'+emciaReviewEsc(name(db.s,p.sid))+'</td><td>'+emciaReviewEsc(name(db.t,x.teacher))+' / '+emciaReviewEsc(name(db.g,p.gid))+'</td><td>'+money(x.amount)+'</td><td>'+emciaReviewEsc(x.types.join(" + "))+(allocation?'<div class="muted">'+allocation+'</div>':'')+'</td><td>'+(st==="confirmed"?'مؤكد':st==="changed"?'تغير بعد التأكيد':'غير مراجع')+(v?'<div class="muted">'+emciaReviewEsc(v.role)+' — '+emciaReviewEsc(v.at?.slice(0,16).replace("T"," "))+'</div>':'')+'<div><button type="button" onclick="emciaConfirmReceiptReview(\''+x.kind+'\',\''+emciaReviewEsc(p.id)+'\')">'+(st==="confirmed"?'إعادة التأكيد':'تأكيد المراجعة')+'</button></div></td></tr>'}).join("")+'</tbody></table></div></div>';
+}
+function emciaReviewFilter(){window.emciaReviewMonth=document.getElementById("reviewMonth").value;window.emciaReviewTeacher=document.getElementById("reviewTeacher").value;window.emciaReviewGroup=document.getElementById("reviewGroup").value;window.emciaReviewStatus=document.getElementById("reviewStatus").value;emciaFinanceReviewPlaceholder()}
+function emciaConfirmReceiptReview(kind,id){
+ if(!emciaCanViewManagement())return alert("هذه العملية مخصصة للمدير والمحاسب");
+ const row=emciaReviewRows().find(x=>x.kind===kind&&x.p.id===id);if(!row)return alert("لم يعد التوصيل موجودًا");
+ if(!confirm("هل راجعت التوصيل رقم "+(row.p.receiptNo||row.p.id)+" وتأكدت من صحة بياناته وتوزيع مبلغه؟"))return;
+ db.receiptReviews=db.receiptReviews||{};db.receiptReviews[kind+":"+id]={fingerprint:row.fingerprint,role:emciaRole(),at:new Date().toISOString()};save();emciaFinanceReviewPlaceholder()
+}
 function emciaFinanceOperationsPlaceholder(){document.getElementById("financeoperations").innerHTML='<div class="card"><h3>الشاشة التشغيلية المالية</h3><p class="muted">تم إنشاء القسم في النسخة التجريبية. ستربط الشاشة لاحقًا المداخيل الفعلية ومستحقات الأساتذة والمصاريف والاحتياطيات بعد التحقق من قواعد الحساب.</p></div>'}
 function show(id){
  if(!emciaCanOpenPage(id)){alert("هذه الصفحة مخصصة للمدير والمحاسب.");return}
