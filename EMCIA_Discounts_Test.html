@@ -742,7 +742,31 @@ main .page:not(#workspace):not(#home) textarea:focus-visible{outline:2px solid #
 #attendance .emcia-timed-attendance td select{width:100%;min-width:0;max-width:100%;font-size:12px;padding:6px 3px;box-sizing:border-box}
 #attendance .emcia-timed-attendance .emcia-att-session{margin:6px 0}
 </style>
-<style id="emcia-attendance-lesson-types">#attendance .emcia-lesson-type{display:inline-block;padding:2px 7px;border-radius:12px;background:#e8eef7;color:#234a72;font-size:11px;font-weight:700;margin-inline:4px}#attendance .emcia-att-session summary{line-height:1.8}</style></head>
+<style id="emcia-attendance-lesson-types">#attendance .emcia-lesson-type{display:inline-block;padding:2px 7px;border-radius:12px;background:#e8eef7;color:#234a72;font-size:11px;font-weight:700;margin-inline:4px}#attendance .emcia-att-session summary{line-height:1.8}</style><style id="emcia-finance-mobile-compact">
+#financeoperations{font-size:13px;line-height:1.5}
+#financeoperations .card{min-width:0!important;overflow-wrap:anywhere;padding:12px!important}
+#financeoperations h3{font-size:16px!important;line-height:1.4;margin:5px 0 10px}
+#financeoperations h4{font-size:14px!important}
+#financeoperations p,#financeoperations label,#financeoperations td,#financeoperations th{font-size:12px!important;line-height:1.6}
+#financeoperations .muted,#financeoperations small{font-size:11px!important}
+#financeoperations input,#financeoperations select,#financeoperations button{font-size:13px!important;max-width:100%;min-width:0}
+#financeoperations .row{min-width:0}
+@media(max-width:650px){
+#financeoperations{font-size:12px}
+#financeoperations .card{padding:10px!important;border-radius:12px}
+#financeoperations h3{font-size:14px!important}
+#financeoperations .row{gap:8px!important}
+#financeoperations .row>.card{flex:1 1 calc(50% - 8px)!important;min-width:0!important}
+#financeoperations .row>.card h3{font-size:clamp(12px,3.4vw,15px)!important;overflow-wrap:anywhere}
+#financeoperations .row>.card p{font-size:11px!important}
+#financeoperations .row>.card .muted{font-size:10px!important}
+#financeoperations table{font-size:11px}
+#financeoperations th,#financeoperations td{padding:6px 4px!important}
+#financeoperations input[type=number]{width:100%}
+}
+@media(max-width:370px){#financeoperations .row>.card{flex-basis:100%!important}}
+</style>
+</head>
 <body><div id="authGate"><div class="panel"><div class="emcia-login-brand"><img src="./EMCIA_Official_Logo-1.jpg" alt="الشعار الرسمي لمؤسسة EMCIA" class="emcia-login-logo" onerror="this.style.display=\'none\'"><h1>مرحبًا بكم في EMCIA</h1><p>نظام تدبير المؤسسة</p></div><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" required autocomplete="username" ></label><label for="authPassword">كلمة المرور</label><div class="emcia-password-field"><div class="emcia-eye-wrap"><input id="authPassword" type="password" required autocomplete="current-password"><input id="authPasswordVisible" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" style="display:none" oninput="document.getElementById('authPassword').value=this.value"><button class="emcia-eye-button" id="authPasswordEye" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false" onclick="emciaLoginEyeClick()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><button id="emcia-login-submit" type="submit">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p>أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" required><button type="submit">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p>اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور"><button type="submit">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><div class="emcia-login-footer">الموسم الدراسي 2026–2027</div><small>البيانات محفوظة بأمان في النظام السحابي للمؤسسة.</small></div></div>
 <header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.17.2</small></header>
 <div id="langMenu" class="lang-menu">
