@@ -796,7 +796,7 @@ let raw={}; try{raw=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){}
 let db={
  subj:Array.isArray(raw.subj)?raw.subj:[], t:Array.isArray(raw.t)?raw.t:[], s:Array.isArray(raw.s)?raw.s:[], g:Array.isArray(raw.g)?raw.g:[],
  e:Array.isArray(raw.e)?raw.e:[], p:Array.isArray(raw.p)?raw.p:[], sp:Array.isArray(raw.sp)?raw.sp:[], sc:Array.isArray(raw.sc)?raw.sc:[], at2:Array.isArray(raw.at2)?raw.at2:[], tp:Array.isArray(raw.tp)?raw.tp:[], adj:Array.isArray(raw.adj)?raw.adj:[], cash:Array.isArray(raw.cash)?raw.cash:[], shifts:Array.isArray(raw.shifts)?raw.shifts:[], tatt:Array.isArray(raw.tatt)?raw.tatt:[], wait:Array.isArray(raw.wait)?raw.wait:[], wls:Array.isArray(raw.wls)?raw.wls:[],
- obligations:Array.isArray(raw.obligations)?raw.obligations:[], x:Array.isArray(raw.x)?raw.x:[], oi:Array.isArray(raw.oi)?raw.oi:[], sv:Array.isArray(raw.sv)?raw.sv:[], att:Array.isArray(raw.att)?raw.att:[], sch:Array.isArray(raw.sch)?raw.sch:[], rooms:Array.isArray(raw.rooms)?raw.rooms:[]
+ obligations:Array.isArray(raw.obligations)?raw.obligations:[], x:Array.isArray(raw.x)?raw.x:[], oi:Array.isArray(raw.oi)?raw.oi:[], sv:Array.isArray(raw.sv)?raw.sv:[], att:Array.isArray(raw.att)?raw.att:[], sch:Array.isArray(raw.sch)?raw.sch:[], rooms:Array.isArray(raw.rooms)?raw.rooms:[], reserveGoals:raw.reserveGoals&&typeof raw.reserveGoals==="object"&&!Array.isArray(raw.reserveGoals)?{low:Number(raw.reserveGoals.low)||0,dev:Number(raw.reserveGoals.dev)||0}:{low:0,dev:0}
 };
 if(!db.rooms.length)db.rooms=[
  {id:"room30",n:"القاعة 1",cap:30,active:true},
@@ -4592,7 +4592,7 @@ function splitState(state){
    return safe;
   });
  }
- if(canFinance())for(const k of financialKeys)fin[k]=Array.isArray(state[k])?state[k]:[];
+ if(canFinance()){for(const k of financialKeys)fin[k]=Array.isArray(state[k])?state[k]:[];fin.reserveGoals={low:Number(state.reserveGoals?.low)||0,dev:Number(state.reserveGoals?.dev)||0};}
  return {op,fin};
 }
 
@@ -4677,6 +4677,7 @@ function emciaTeacherDiscountReport(tid,month){
 const emciaPaymentSplitCore=cloudPaymentSplit;
 function joinState(op,fin){
  const state={...op};
+ if(canFinance())state.reserveGoals=fin?.reserveGoals&&typeof fin.reserveGoals==="object"?{low:Number(fin.reserveGoals.low)||0,dev:Number(fin.reserveGoals.dev)||0}:{low:0,dev:0};
  for(const k of operationalKeys)if(!Array.isArray(state[k]))state[k]=[];
  for(const k of financialKeys)state[k]=(canFinance()||k==='x'||k==='oi')&&Array.isArray(fin?.[k])?fin[k]:[];
  if(canFinance())for(const k of ['g','e','p','sc']){
