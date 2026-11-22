@@ -1180,6 +1180,29 @@ function emciaOperationsSaveReserve(){
  if(!confirm("تسجيل تخصيص ادخار بقيمة "+money(amount)+"؟ سيظهر أيضًا في سجل تدبير الميزانية."))return;
  db.sv.push({id:uid(),fund,a:amount,month});save();emciaFinanceOperationsPlaceholder();
 }
+function emciaNovemberLiquidityStatement(m){
+ const start="2026-11",eligible=m>=start;
+ const receipts=[...db.p,...db.sp].filter(p=>!p.voidedAt&&!p.cancelledAt&&(p.receiptMonth||(p.date||"").slice(0,7))===m);
+ const collected=receipts.reduce((s,p)=>s+(Number(p.netAfterRefund??p.a)||0),0);
+ const other=db.oi.filter(x=>emciaAccountingMonth(x)===m).reduce((s,x)=>s+(Number(x.a)||0),0);
+ const expenses=db.x.filter(x=>emciaAccountingMonth(x)===m).reduce((s,x)=>s+(Number(x.a)||0),0);
+ const allocated=db.sv.filter(x=>emciaAccountingMonth(x)===m).reduce((s,x)=>s+(Number(x.a)||0),0);
+ const fmt=n=>money(n);
+ const row=(title,value,note)=>'<tr><td>'+title+'</td><td style="white-space:nowrap;text-align:left">'+value+'</td><td class="muted">'+note+'</td></tr>';
+ const preliminary=collected+other-expenses;
+ return '<div class="card"><h3>كشف السيولة والادخار — '+esc(m)+'</h3><p class="muted">'+(eligible?'نونبر 2026 هو بداية الفترة المؤهلة للادخار في الموسم الحالي.':'هذا الشهر سابق لبداية الادخار المعتمدة (نونبر 2026)، ولا يُحتسب منه ادخار جديد.')+' هذا الكشف تشخيصي ولا يسجل أي تحويل.</p><div style="overflow-x:auto"><table><thead><tr><th>البيان</th><th>المبلغ</th><th>التوضيح</th></tr></thead><tbody>'+
+ row("مقبوضات المتعلمين",fmt(collected),"بحسب شهر التحصيل الفعلي")+
+ row("المداخيل الأخرى",fmt(other),"المسجلة للشهر")+
+ row("المصاريف المسجلة",fmt(expenses),"لا تشمل تلقائيًا كل الالتزامات غير المؤداة")+
+ row("صافي الحركة المسجلة",fmt(preliminary),"مؤشر أولي وليس رصيدًا نقديًا متاحًا")+
+ row("الادخار المسجل للشهر",fmt(allocated),"تخصيصات موجودة في سجل الادخار، وليست مصروفًا جديدًا")+
+ row("رصيد الصندوق والبنك المؤكد","غير متوفر","يتطلب مطابقة الرصيد الفعلي")+
+ row("مستحقات الأساتذة غير المؤداة","قيد المطابقة","لا يمكن استنتاجها من مستحقات الشهر وحدها")+
+ row("الالتزامات غير المؤداة","قيد المطابقة","تحتاج مراجعة الفواتير والمصاريف المستحقة")+
+ row("التسبيقات التي يجب حجزها","قيد المطابقة","لا تساوي بالضرورة التسبيقات المقبوضة خلال هذا الشهر")+
+ row("السيولة الحرة القابلة للادخار",eligible?"غير محسوبة بعد":"غير مؤهلة","لا يُقترح مبلغ قبل اكتمال المطابقة")+
+ '</tbody></table></div><p class="muted">لا تُرحّل مداخيل أكتوبر تلقائيًا كفائض ادخار، ولا يُفترض وجود رصيد افتتاحي للادخار. ولا يغيّر هذا الكشف أرصدة الصندوق أو البنك.</p></div>';
+}
 function emciaFinanceOperationsPlaceholder(){
  if(!emciaCanViewManagement())return;
  const m=window.emciaOperationsMonth||nowMonth(),el=document.getElementById("financeoperations");
@@ -1201,6 +1224,7 @@ function emciaFinanceOperationsPlaceholder(){
  el.innerHTML='<div class="card"><h3>شاشة المتابعة</h3><p class="muted">لوحة قراءة فقط للمدير والمحاسب. تعرض المقبوضات حسب تاريخ التحصيل، وحصص الأستاذ والمؤسسة حسب شهر الاستحقاق؛ لذلك لا يجوز طرح المؤشرات المختلفة من بعضها مباشرة.</p><div class="row"><div><label>الشهر</label><input type="month" id="emciaOperationsMonth" value="'+esc(m)+'" onchange="window.emciaOperationsMonth=this.value;emciaFinanceOperationsPlaceholder()"></div></div></div>'+
  '<div class="row" style="gap:10px;align-items:stretch">'+card("المقبوضات من المتعلمين",cash,"شهري وبالحصة خلال الشهر")+card("مداخيل أخرى",other,"العمليات المسجلة")+card("المصاريف المسجلة",expenses,"حسب شهر المحاسبة")+card("صافي التدفق المسجل قبل تسويات أخرى",cashAfterExpenses,"المقبوضات + المداخيل الأخرى − المصاريف")+'</div>'+
  '<div class="row" style="gap:10px;align-items:stretch">'+card("مستحقات الأساتذة المعترف بها",recognized.teacher,"عن شهر الاستحقاق وفق حسابات المتعلمين")+card("حصة المؤسسة المعترف بها",recognized.emcia,"عن شهر الاستحقاق وفق حسابات المتعلمين")+card("الادخار المسجل",recordedSavings,"إجمالي قيود الادخار الحالية؛ دون افتراض تخصيصها")+card("تسبيقات محصلة لأشهر مقبلة",advances,"جزء من التوصيلات الشهرية المقبوضة هذا الشهر")+'</div>'+
+ emciaNovemberLiquidityStatement(m)+
  '<div class="card"><h3>تفصيل مصاريف المؤسسة</h3><div class="row" style="gap:10px;align-items:stretch">'+card("المصاريف الثابتة",fixed,"وفق تصنيف المصاريف المسجل")+card("المصاريف المتغيرة",variable,"باقي المصاريف المسجلة")+'</div></div>'+
  '<div class="card"><h3>تخصيص مبلغ للادخار</h3><p class="muted">تُسجل العملية مرة واحدة في سجل الادخار الحالي؛ ولا تمثل مصروفًا تشغيليًا جديدًا أو تحويلًا بنكيًا مؤكدًا.</p><div class="row"><div><label>الصندوق</label><select id="opsReserveFund"><option value="low">احتياطي الأشهر الراكدة</option><option value="dev">احتياطي الإصلاحات والتجهيزات</option></select></div><div><label>المبلغ (درهم)</label><input id="opsReserveAmount" type="number" min="0.01" step="0.01"></div><div><label>الشهر</label><input id="opsReserveMonth" type="month" value="'+esc(m)+'"></div><div style="align-self:end"><button type="button" onclick="emciaOperationsSaveReserve()">تسجيل الادخار</button></div></div></div>'+
  '<details class="card"><summary style="cursor:pointer;font-weight:650">حسابات المتعلمين التفصيلية — اضغط للعرض</summary><div id="opsLearnerAccounts" style="margin-top:12px">'+emciaAccountsHTML(m,{shares:true})+'</div></details>'+
