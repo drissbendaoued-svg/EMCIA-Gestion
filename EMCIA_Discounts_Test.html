@@ -778,7 +778,7 @@ main .page:not(#workspace):not(#home) textarea:focus-visible{outline:2px solid #
 <section id="attendance" class="page"></section>
 <section id="teacheratt" class="page"></section>
 <section id="arrears" class="page"></section>
-<section id="analysis" class="page"></section>
+<section id="analysis" class="page"></section><section id="receiptreview" class="page"></section><section id="financeoperations" class="page"></section>
 <section id="reports" class="page"></section>
 <section id="exports" class="page"></section>
 <section id="backup" class="page"></section>
@@ -1065,7 +1065,8 @@ function toggleLangMenu(){document.getElementById("langChoices")?.classList.togg
 const NAV_GROUPS=[
  ["academic","الإدارة",[["teachers","إضافة أستاذ"],["students","إضافة متعلم"],["groups","إضافة فوج"],["enroll","تسجيل متعلم"],["waiting","لوائح الانتظار"]]],
  ["dailycat","التدبير اليومي",[["daily","التشغيل اليومي"],["alerts","التنبيهات"],["schedule","استعمال الزمن"],["attendance","الحضور والغياب"],["teacheratt","حضور الأساتذة"]]],
- ["finance","المالية",[["payments","الأداءات"],["advances","التسبيقات"],["cashbox","الصندوق"],["shifts","المناوبات"],["adjustments","التسوية الاستثنائية"],["teacherpay","تسوية مستحقات الأساتذة"],["expenses","المداخيل والمصاريف"],["budget","تدبير الميزانية"],["analysis","التحليل المالي"],["arrears","متابعة المتأخرات"]]],
+ ["finance","المالية",[["payments","الأداءات"],["advances","التسبيقات"],["cashbox","الصندوق"],["shifts","المناوبات"],["adjustments","التسوية الاستثنائية"],["teacherpay","تسوية مستحقات الأساتذة"],["expenses","المداخيل والمصاريف"],["arrears","متابعة المتأخرات"]]],
+ ["managementfinance","المحاسبة والتدبير المالي",[["budget","تدبير الميزانية"],["analysis","التحليل المالي"],["receiptreview","مراجعة المحاسبة والتوصيلات"],["financeoperations","الشاشة التشغيلية المالية"]]],
  ["filescat","الملفات والمتابعة",[["studentfile","ملف المتعلم"],["teacherfile","ملف الأستاذ"]]],
  ["reportcat","التقارير والأرشفة",[["reportcenter","التقارير"],["backup","النسخ الاحتياطي"]]],
  ["certcat","الإشهاد والشواهد",[["certification","إعداد الشواهد"]]]
@@ -1073,7 +1074,7 @@ const NAV_GROUPS=[
 function emciaRole(){return window.EMCIA_CURRENT_ROLE||"secretary_morning"}
 function emciaIsSecretary(){return emciaRole()==="secretary_morning"||emciaRole()==="secretary_evening"}
 function emciaCanViewManagement(){return emciaRole()==="director"||emciaRole()==="accountant"}
-function emciaCanOpenPage(id){return !emciaIsSecretary()||!["budget","analysis"].includes(id)}
+function emciaCanOpenPage(id){return !emciaIsSecretary()||!["budget","analysis","receiptreview","financeoperations"].includes(id)}
 let navCategory=window.navCategory||"";
 function nav(){
  let active=document.querySelector(".page.active")?.id;
@@ -1116,12 +1117,14 @@ function enterApp(){
  applyLang();
 }
 
+function emciaFinanceReviewPlaceholder(){document.getElementById("receiptreview").innerHTML='<div class="card"><h3>مراجعة المحاسبة والتوصيلات</h3><p class="muted">تم إنشاء القسم في النسخة التجريبية. سيضاف جدول التوصيلات مع التصفية حسب الأستاذ والفوج، وتأكيد المراجعة في المرحلة التالية. لا توجد عمليات مراجعة مفترضة أو تعديلات على التوصيلات.</p></div>'}
+function emciaFinanceOperationsPlaceholder(){document.getElementById("financeoperations").innerHTML='<div class="card"><h3>الشاشة التشغيلية المالية</h3><p class="muted">تم إنشاء القسم في النسخة التجريبية. ستربط الشاشة لاحقًا المداخيل الفعلية ومستحقات الأساتذة والمصاريف والاحتياطيات بعد التحقق من قواعد الحساب.</p></div>'}
 function show(id){
  if(!emciaCanOpenPage(id)){alert("هذه الصفحة مخصصة للمدير والمحاسب.");return}
  if(id==="home"){enterApp();return}
  if(id==='attendance'&&!document.getElementById('attendance')?.classList.contains('active'))document.querySelectorAll('#attendance details[data-att-disclosure]').forEach(panel=>panel.open=false);
  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
- $("#"+id).classList.add("active");render(id);nav();
+ $("#"+id).classList.add("active");if(id==="receiptreview")emciaFinanceReviewPlaceholder();else if(id==="financeoperations")emciaFinanceOperationsPlaceholder();else render(id);nav();
  if(id!=="home")autoCollapseMobileNav()
 }
 function opts(a,sel="",filter=()=>true){return a.filter(filter).map(x=>`<option value="${x.id}" ${x.id===sel?"selected":""}>${esc(x.n)}</option>`).join("")}
