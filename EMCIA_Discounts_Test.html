@@ -3711,7 +3711,7 @@ function rcBuildReport(){
    let teacher=by(db.t,tid);if(!teacher){alert("اختر الأستاذ");return false}
    let html=type==="teacherDetailed"?teacherReportHTML(tid,m):teacherShortReportHTML(tid,m);
    let box=$("#rcPreview");if(!box){alert("تعذر تجهيز معاينة التقرير.");return false}
-   box.innerHTML=`<div class="rc-paper">${html}</div>`;
+   box.innerHTML=`<div class="rc-paper">${type==="teacherDetailed"?`<div class="rc-executive-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #bbb;padding-bottom:10px;margin-bottom:12px"><h2 style="font-size:16px;margin:0;text-align:right;flex:1">كشف الأستاذ — ${esc(emciaReportMonthLabel(m))}</h2><img src="./EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA" style="width:66px;height:66px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'"></div>`:""}${html}</div>`;
    box.style.display="block";
  } else if(type==="attendance"){
    let rows=db.g.filter(g=>g.active!==false).map(g=>{let a=emciaAttendanceRecords().filter(x=>x.gid===g.id&&x.date.slice(0,7)===m);return[esc(g.n),a.filter(x=>x.status==="present").length,a.filter(x=>x.status==="absent").length,a.filter(x=>x.status==="late").length,a.filter(x=>x.status==="excused").length]});
