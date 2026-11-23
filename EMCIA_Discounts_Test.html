@@ -3452,7 +3452,7 @@ function emciaReportMonthLabel(m){
 }
 function rcSetReport(title,body){
  let box=$("#rcPreview");if(!box){alert("تعذر تجهيز معاينة التقرير.");return}
- box.innerHTML=`<div class="rc-paper">${["executive","monthly","studentAccounts","receiptAudit","discounts","teacherDetailed","expenseStatement","financial","arrears"].includes($("#rcType")?.value)?`<div class="rc-executive-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #bbb;padding-bottom:10px;margin-bottom:12px"><h2 style="font-size:16px;margin:0;text-align:right;flex:1">${esc(title)}</h2><img src="./EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA" style="width:66px;height:66px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'"></div>`:`<h1>EMCIA</h1><h2>${esc(title)}</h2>`}${body}</div>`;
+ box.innerHTML=`<div class="rc-paper">${["executive","monthly","studentAccounts","receiptAudit","discounts","teacherDetailed","teacher","expenseStatement","financial","arrears"].includes($("#rcType")?.value)?`<div class="rc-executive-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #bbb;padding-bottom:10px;margin-bottom:12px"><h2 style="font-size:16px;margin:0;text-align:right;flex:1">${esc(title)}</h2><img src="./EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA" style="width:66px;height:66px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'"></div>`:`<h1>EMCIA</h1><h2>${esc(title)}</h2>`}${body}</div>`;
  box.style.display="block"
 }
 function rcFileCode(){
@@ -3748,7 +3748,7 @@ function rcBuildReport(){
    let teacher=by(db.t,tid);if(!teacher){alert("اختر الأستاذ");return false}
    let html=type==="teacherDetailed"?teacherReportHTML(tid,m):teacherShortReportHTML(tid,m);
    let box=$("#rcPreview");if(!box){alert("تعذر تجهيز معاينة التقرير.");return false}
-   box.innerHTML=`<div class="rc-paper">${type==="teacherDetailed"?`<div class="rc-executive-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #bbb;padding-bottom:10px;margin-bottom:12px"><h2 style="font-size:16px;margin:0;text-align:right;flex:1">كشف الأستاذ — ${esc(emciaReportMonthLabel(m))}</h2><img src="./EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA" style="width:66px;height:66px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'"></div>`:""}${html}</div>`;
+   box.innerHTML=`<div class="rc-paper">${type==="teacher"||type==="teacherDetailed"?`<div class="rc-executive-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #bbb;padding-bottom:10px;margin-bottom:12px"><h2 style="font-size:16px;margin:0;text-align:right;flex:1">${type==="teacher"?"كشف الأستاذ المختصر":"كشف الأستاذ"} — ${esc(emciaReportMonthLabel(m))}</h2><img src="./EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA" style="width:66px;height:66px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'"></div>`:""}${html}</div>`;
    box.style.display="block";
  } else if(type==="attendance"){
    let rows=db.g.filter(g=>g.active!==false).map(g=>{let a=emciaAttendanceRecords().filter(x=>x.gid===g.id&&x.date.slice(0,7)===m);return[esc(g.n),a.filter(x=>x.status==="present").length,a.filter(x=>x.status==="absent").length,a.filter(x=>x.status==="late").length,a.filter(x=>x.status==="excused").length]});
@@ -4626,7 +4626,7 @@ function emciaTeacherReceiptSourceHTML(sid,gid,m){
  return entries.length?entries.map(x=>'<div style="white-space:nowrap">#'+esc(String(x.receipt))+' — '+esc(String(x.date))+' — '+money(x.amount)+'</div>').join(""):'—';
 }
 function emciaTeacherShortPrintCSS(){
- return '<style>@page{size:A4 portrait;margin:11mm}.emcia-teacher-short{max-width:190mm;margin:0 auto;font-family:Arial,Tahoma,sans-serif;color:#111}.emcia-teacher-short h1{text-align:center;font-size:17px;margin:0 0 7px}.emcia-teacher-short .teacher-meta{font-size:11px;margin:5px 0 12px}.emcia-teacher-short .teacher-two-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0;align-items:start;direction:rtl}.emcia-teacher-short .teacher-half{min-width:0;padding:0 10px}.emcia-teacher-short .teacher-half:first-child{border-left:1px solid #777}.emcia-teacher-short .teacher-half h3{font-size:11px;margin:9px 0 3px}.emcia-teacher-short .teacher-learner-table{width:auto;max-width:100%;table-layout:auto;border-collapse:collapse;margin:0 0 8px;display:table}.emcia-teacher-short .teacher-learner-table th,.emcia-teacher-short .teacher-learner-table td{border:1px solid #888;padding:3px 6px;font-size:10.5px;line-height:1.35;vertical-align:middle}.emcia-teacher-short .teacher-learner-table th:first-child,.emcia-teacher-short .teacher-learner-table td:first-child{width:auto;text-align:right;white-space:nowrap}.emcia-teacher-short .teacher-learner-table th:last-child,.emcia-teacher-short .teacher-learner-table td:last-child{width:1%;white-space:nowrap;text-align:center}.emcia-teacher-short .teacher-total{font-size:14px;text-align:center;border-top:1px solid #777;padding-top:10px;margin:12px 0 8px}.emcia-teacher-short .teacher-signature{text-align:center;margin:15px 0 0;font-size:12px;break-inside:avoid}.emcia-teacher-short .teacher-signature-space{height:45px}.emcia-teacher-short tr{break-inside:avoid;page-break-inside:avoid}@media print{.emcia-teacher-short{max-width:none}.emcia-teacher-short .teacher-two-columns{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}.emcia-teacher-short .teacher-half{padding:0 8px}}</style>';
+ return '<style>.emcia-teacher-short{max-width:190mm;margin:0 auto;font-family:Arial,Tahoma,sans-serif;color:#111}.emcia-teacher-short .teacher-meta{font-size:11px;margin:5px 0 12px}.emcia-teacher-short .teacher-two-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:start;direction:rtl}.emcia-teacher-short .teacher-half{min-width:0;padding:0 5px}.emcia-teacher-short .teacher-half h3{font-size:11px;margin:9px 0 4px}.emcia-teacher-short .teacher-learner-table{width:100%;border-collapse:collapse;margin:0 0 8px}.emcia-teacher-short .teacher-learner-table th,.emcia-teacher-short .teacher-learner-table td{border:1px solid #d9dee4!important;padding:4px 3px;font-size:10px;line-height:1.3;vertical-align:middle}.emcia-teacher-short .teacher-learner-table th{background:#edf0f3!important;text-align:center}.emcia-teacher-short .teacher-learner-table td:first-child{text-align:right}.emcia-teacher-short .teacher-learner-table td:nth-child(2),.emcia-teacher-short .teacher-learner-table td:nth-child(3){text-align:center;white-space:nowrap}.emcia-teacher-short .teacher-learner-table td:nth-child(3){background:#f7f8f9!important;font-variant-numeric:tabular-nums}.emcia-teacher-short .teacher-total{font-size:13px;text-align:center;border-top:1px solid #777;padding-top:10px;margin:12px 0 8px}.emcia-teacher-short .teacher-signature{text-align:center;margin:15px 0 0;font-size:12px;break-inside:avoid}.emcia-teacher-short .teacher-signature-space{height:45px}.emcia-teacher-short tr{break-inside:avoid;page-break-inside:avoid}@media print{.emcia-teacher-short{max-width:none}.emcia-teacher-short .teacher-two-columns{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}.emcia-teacher-short .teacher-half{padding:0 4px}}</style>';
 }
 function emciaTeacherLateCashHTML(tid,m){
  const items=emciaTeacherLateCashRows(tid,m);
@@ -4652,9 +4652,11 @@ function teacherShortReportHTML(tid,m){
  const items=[];
  groups.forEach(g=>{
   items.push({kind:"heading",label:g.group.n});
-  g.rows.forEach(r=>items.push({kind:"student",name:r.name,due:r.due}));
+  g.rows.forEach(r=>items.push({kind:"student",name:r.name,sid:r.sid,gid:g.group.id,mode:r.mode,due:r.due}));
   items.push({kind:"subtotal",due:g.teacherDue});
  });
+ const registrationDate=item=>db.e.filter(e=>e.sid===item.sid&&e.gid===item.gid&&(e.billingMode==="session"?"session":"monthly")===item.mode&&e.start).map(e=>e.start).sort()[0]||"—";
+ const num=n=>Number(n||0).toLocaleString("fr-MA",{minimumFractionDigits:2,maximumFractionDigits:2});
  const studentCount=items.filter(x=>x.kind==="student").length;
  let seen=0,split=items.length;
  for(let i=0;i<items.length;i++){
@@ -4668,9 +4670,9 @@ function teacherShortReportHTML(tid,m){
   for(let i=0;i<list.length;i++){
    const item=list[i];
    if(item.kind==="heading"){close();groupName=item.label;out+='<h3>الفوج: '+esc(groupName)+'</h3>';continue}
-   if(!tableOpen){out+='<table class="teacher-learner-table"><tr><th>اسم المتعلم</th><th>مستحق الأستاذ</th></tr>';tableOpen=true}
-   if(item.kind==="student")out+='<tr><td>'+esc(item.name)+'</td><td>'+money(item.due)+'</td></tr>';
-   else if(item.kind==="subtotal")out+='<tr><th>مجموع الفوج</th><th>'+money(item.due)+'</th></tr>';
+   if(!tableOpen){out+='<table class="teacher-learner-table"><tr><th>اسم<br>المتعلم</th><th>تاريخ<br>التسجيل</th><th>مستحق<br>الأستاذ</th></tr>';tableOpen=true}
+   if(item.kind==="student")out+='<tr><td>'+esc(item.name)+'</td><td>'+esc(registrationDate(item))+'</td><td>'+num(item.due)+'</td></tr>';
+   else if(item.kind==="subtotal")out+='<tr><th colspan="2">مجموع الفوج</th><th>'+num(item.due)+'</th></tr>';
   }
   close();return '<div class="teacher-half">'+out+'</div>';
  }
@@ -4681,7 +4683,7 @@ function teacherShortReportHTML(tid,m){
   halves[1].unshift({kind:"heading",label:current+" (تابع)"});
  }
  const studyTotal=d.groups.reduce((v,g)=>v+g.teacherDue,0),lateTotal=emciaTeacherLateCashTotal(tid,m),total=studyTotal+lateTotal;
- return emciaTeacherShortPrintCSS()+'<div class="emcia-teacher-short"><h1>EMCIA — كشف مستحقات الأستاذ</h1><p class="teacher-meta"><b>الأستاذ:</b> '+esc(objName(d.teacher))+' &nbsp; | &nbsp; <b>شهر الدراسة:</b> '+esc(m)+'</p><div class="teacher-two-columns">'+renderHalf(halves[0])+renderHalf(halves[1])+'</div>'+emciaTeacherLateCashShortHTML(tid,m)+'<div class="teacher-total"><b>إجمالي مستحق الأستاذ للصرف: '+money(total)+'</b></div><div class="teacher-signature"><b>توقيع الأستاذ</b><div class="teacher-signature-space"></div></div></div>';
+ return emciaTeacherShortPrintCSS()+'<div class="emcia-teacher-short"><p class="teacher-meta"><b>الأستاذ:</b> '+esc(objName(d.teacher))+' &nbsp; | &nbsp; <b>شهر الدراسة:</b> '+esc(m)+'</p><div class="teacher-two-columns">'+renderHalf(halves[0])+renderHalf(halves[1])+'</div>'+emciaTeacherLateCashShortHTML(tid,m)+'<div class="teacher-total"><b>إجمالي مستحق الأستاذ للصرف: '+num(total)+'</b></div><div class="teacher-signature"><b>توقيع الأستاذ</b><div class="teacher-signature-space"></div></div></div>';
 }
 function teacherReportHTML(tid,m){
  let d=teacherExportData(tid,m); if(!d.teacher)return "";
