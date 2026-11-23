@@ -4648,42 +4648,18 @@ function emciaTeacherLateCashShortHTML(tid,m){
 }
 function teacherShortReportHTML(tid,m){
  const d=teacherExportData(tid,m);if(!d.teacher)return "";
- const groups=d.groups.filter(g=>g.rows.length);
- const items=[];
- groups.forEach(g=>{
-  items.push({kind:"heading",label:g.group.n});
-  g.rows.forEach(r=>items.push({kind:"student",name:r.name,sid:r.sid,gid:g.group.id,mode:r.mode,due:r.due}));
-  items.push({kind:"subtotal",due:g.teacherDue});
- });
- const registrationDate=item=>db.e.filter(e=>e.sid===item.sid&&e.gid===item.gid&&(e.billingMode==="session"?"session":"monthly")===item.mode&&e.start).map(e=>e.start).sort()[0]||"—";
  const num=n=>Number(n||0).toLocaleString("fr-MA",{minimumFractionDigits:2,maximumFractionDigits:2});
- const studentCount=items.filter(x=>x.kind==="student").length;
- let seen=0,split=items.length;
- for(let i=0;i<items.length;i++){
-  if(items[i].kind==="student")seen++;
-  if(seen>=Math.ceil(studentCount/2)){split=i+1;break}
- }
- const halves=[items.slice(0,split),items.slice(split)];
- function renderHalf(list,offset){
-  let out="",tableOpen=false,groupName="";
-  const close=()=>{if(tableOpen){out+="</table>";tableOpen=false}};
-  for(let i=0;i<list.length;i++){
-   const item=list[i];
-   if(item.kind==="heading"){close();groupName=item.label;out+='<h3>الفوج: '+esc(groupName)+'</h3>';continue}
-   if(!tableOpen){out+='<table class="teacher-learner-table"><tr><th>اسم<br>المتعلم</th><th>تاريخ<br>التسجيل</th><th>مستحق<br>الأستاذ</th></tr>';tableOpen=true}
-   if(item.kind==="student")out+='<tr><td>'+esc(item.name)+'</td><td>'+esc(registrationDate(item))+'</td><td>'+num(item.due)+'</td></tr>';
-   else if(item.kind==="subtotal")out+='<tr><th colspan="2">مجموع الفوج</th><th>'+num(item.due)+'</th></tr>';
-  }
-  close();return '<div class="teacher-half">'+out+'</div>';
- }
- // If a group continues in the second column, repeat its heading there.
- if(halves[1].length&&halves[1][0].kind!=="heading"){
-  let current="";
-  for(let i=0;i<split;i++)if(items[i].kind==="heading")current=items[i].label;
-  halves[1].unshift({kind:"heading",label:current+" (تابع)"});
- }
+ const registrationDate=r=>db.e.filter(e=>e.sid===r.sid&&e.gid===r.gid&&(e.billingMode==="session"?"session":"monthly")===r.mode&&e.start).map(e=>e.start).sort()[0]||"—";
+ const groups=d.groups.filter(g=>g.rows.length);
+ const body=groups.map(g=>{
+  const entries=g.rows.map(r=>'<tr><td>'+esc(r.name)+'</td><td class="date">'+esc(registrationDate({...r,gid:g.group.id}))+'</td><td class="amount">'+num(r.due)+'</td></tr>').join("");
+  return '<tbody class="teacher-group"><tr class="teacher-group-heading"><th colspan="3">الفوج: '+esc(g.group.n)+'</th></tr>'+entries+'<tr class="teacher-group-total"><th colspan="2">مجموع الفوج</th><th class="amount">'+num(g.teacherDue)+'</th></tr></tbody>';
+ }).join("");
  const studyTotal=d.groups.reduce((v,g)=>v+g.teacherDue,0),lateTotal=emciaTeacherLateCashTotal(tid,m),total=studyTotal+lateTotal;
- return emciaTeacherShortPrintCSS()+'<div class="emcia-teacher-short"><p class="teacher-meta"><b>الأستاذ:</b> '+esc(objName(d.teacher))+' &nbsp; | &nbsp; <b>شهر الدراسة:</b> '+esc(m)+'</p><div class="teacher-two-columns">'+renderHalf(halves[0])+renderHalf(halves[1])+'</div>'+emciaTeacherLateCashShortHTML(tid,m)+'<div class="teacher-total"><b>إجمالي مستحق الأستاذ للصرف: '+num(total)+'</b></div><div class="teacher-signature"><b>توقيع الأستاذ</b><div class="teacher-signature-space"></div></div></div>';
+ return '<style>.emcia-teacher-short{width:100%;max-width:100%;box-sizing:border-box;font-family:Arial,Tahoma,sans-serif;color:#111;direction:rtl}.emcia-teacher-short .teacher-meta{font-size:11px;margin:7px 0 14px}.emcia-teacher-short .teacher-full-table{width:100%;table-layout:fixed;border-collapse:collapse;margin:0 0 12px}.emcia-teacher-short .teacher-full-table th,.emcia-teacher-short .teacher-full-table td{border:1px solid #d9dee4!important;padding:6px 7px;font-size:11px;line-height:1.4;overflow-wrap:anywhere}.emcia-teacher-short .teacher-full-table th{background:#edf0f3!important;text-align:center}.emcia-teacher-short .teacher-full-table td:first-child{width:50%;text-align:right}.emcia-teacher-short .teacher-full-table .date{width:26%;text-align:center;direction:ltr;white-space:nowrap}.emcia-teacher-short .teacher-full-table .amount{width:24%;text-align:center;background:#f7f8f9!important;font-variant-numeric:tabular-nums;white-space:nowrap}.emcia-teacher-short .teacher-group-heading th{background:#e5e9ed!important;text-align:right!important;padding:7px}.emcia-teacher-short .teacher-group-total th{background:#edf0f3!important}.emcia-teacher-short .teacher-total{font-size:13px;text-align:center;border-top:1px solid #777;padding-top:10px;margin:12px 0 8px}.emcia-teacher-short .teacher-signature{text-align:center;margin:15px 0 0;font-size:12px;break-inside:avoid}.emcia-teacher-short .teacher-signature-space{height:45px}.emcia-teacher-short tr{break-inside:avoid;page-break-inside:avoid}@media print{.emcia-teacher-short .teacher-full-table th,.emcia-teacher-short .teacher-full-table td{font-size:10.5px;padding:5px 6px}.emcia-teacher-short .teacher-full-table{width:100%!important}}</style>'+
+ '<div class="emcia-teacher-short"><p class="teacher-meta"><b>الأستاذ:</b> '+esc(objName(d.teacher))+' &nbsp; | &nbsp; <b>شهر الدراسة:</b> '+esc(emciaReportMonthLabel(m))+'</p>'+
+ '<table class="teacher-full-table"><colgroup><col style="width:50%"><col style="width:26%"><col style="width:24%"></colgroup><thead><tr><th>اسم<br>المتعلم</th><th>تاريخ<br>التسجيل</th><th>مستحق<br>الأستاذ</th></tr></thead>'+(body||'<tbody><tr><td colspan="3">لا توجد تسجيلات لهذا الأستاذ خلال الشهر.</td></tr></tbody>')+'</table>'+
+ emciaTeacherLateCashShortHTML(tid,m)+'<div class="teacher-total"><b>إجمالي مستحق الأستاذ للصرف: '+num(total)+'</b></div><div class="teacher-signature"><b>توقيع الأستاذ</b><div class="teacher-signature-space"></div></div></div>';
 }
 function teacherReportHTML(tid,m){
  let d=teacherExportData(tid,m); if(!d.teacher)return "";
