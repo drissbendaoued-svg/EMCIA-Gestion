@@ -3697,8 +3697,12 @@ function rcChooseCategory(category){
  const allowed={management:["executive","monthly","financial","receiptAudit","discounts","teacherDetailed"],secretary:["arrears"],teacher:["teacher","attendance","blankAttendance"],student:[]};
  if(!allowed[category]||(category==="management"&&!emciaCanViewManagement()))return;
  const values=allowed[category];
- Array.from(select.options).forEach(o=>{if(o.value)o.hidden=!values.includes(o.value)});
- Array.from(select.querySelectorAll("optgroup")).forEach(g=>{g.hidden=!Array.from(g.querySelectorAll("option")).some(o=>values.includes(o.value))});
+ if(!window.rcOriginalReportOptions)window.rcOriginalReportOptions=select.innerHTML;
+ const source=document.createElement("select");source.innerHTML=window.rcOriginalReportOptions;
+ const fragment=document.createDocumentFragment();
+ fragment.appendChild(new Option("— اختر الوثيقة —",""));
+ Array.from(source.querySelectorAll("option")).filter(o=>values.includes(o.value)).forEach(o=>fragment.appendChild(o.cloneNode(true)));
+ select.replaceChildren(fragment);
  select.value="";
  const controls=document.getElementById("rcReportControls"),student=document.getElementById("rcStudentDocuments");
  if(controls)controls.style.display=category==="student"?"none":"block";
