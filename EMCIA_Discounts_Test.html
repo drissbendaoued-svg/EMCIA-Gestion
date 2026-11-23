@@ -2558,8 +2558,8 @@ function enrollmentFor(sid,gid,month=nowMonth()){return emciaBillingEnrollment(d
 function emciaExactTeacherRate(rate){
  const n=Number(rate)||0;
  // Existing 66.67% / 33.33% entries represent the conventional two-thirds / one-third split.
- if(Math.abs(n-66.67)<0.00001)return 2/3;
- if(Math.abs(n-33.33)<0.00001)return 1/3;
+ if(Math.abs(n-100*2/3)<0.02)return 2/3;
+ if(Math.abs(n-100/3)<0.02)return 1/3;
  return n/100;
 }
 function emciaPaymentSplitCore(g,e,amount,month){
@@ -2883,6 +2883,8 @@ function emciaSessionBalance(sid,gid,asOf=today()){
 Object.assign(I18N,{"نظام الأداء":"Mode de paiement","المخصص للدراسة":"Affecté aux cours","المقبوض في الفترة":"Encaissé sur la période","الرصيد المسبق / الزائد":"Avance / excédent","المقبوض فعلياً":"Encaissements effectifs","المستحق الدراسي":"Montant des cours dû","حسابات المتعلمين — الشهري والحصص":"Comptes apprenants — mensuel et séances","سجل الأداءات — الشهري والحصص":"Historique des paiements — mensuel et séances","حركة القبض وتوزيع المستحقات":"Encaissements et répartition des parts"});
 /* Unified read model. Receipts are cash once; recognition records carry earned shares only. */
 function emciaAccountRows(month="",options={}){
+ // Refresh legacy receipt shares in memory before producing the statement.
+ emciaRepricePayments(db,emciaPaymentSplitCore);
  const end=month?month+"-31":today(),cutoff=end<today()?end:today();
  const inPeriod=m=>m>=EMCIA_ACCOUNTING_START_MONTH&&(!month||options.through?m<=(month||nowMonth()):m===month);
  const cashPeriod=d=>!!d&&d<=cutoff&&inPeriod(d.slice(0,7));
