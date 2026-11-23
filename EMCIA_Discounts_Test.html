@@ -3452,7 +3452,7 @@ function emciaReportMonthLabel(m){
 }
 function rcSetReport(title,body){
  let box=$("#rcPreview");if(!box){alert("تعذر تجهيز معاينة التقرير.");return}
- box.innerHTML=`<div class="rc-paper">${["executive","monthly","studentAccounts","receiptAudit","discounts","teacherDetailed","expenseStatement","financial"].includes($("#rcType")?.value)?`<div class="rc-executive-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #bbb;padding-bottom:10px;margin-bottom:12px"><h2 style="font-size:16px;margin:0;text-align:right;flex:1">${esc(title)}</h2><img src="./EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA" style="width:66px;height:66px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'"></div>`:`<h1>EMCIA</h1><h2>${esc(title)}</h2>`}${body}</div>`;
+ box.innerHTML=`<div class="rc-paper">${["executive","monthly","studentAccounts","receiptAudit","discounts","teacherDetailed","expenseStatement","financial","arrears"].includes($("#rcType")?.value)?`<div class="rc-executive-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #bbb;padding-bottom:10px;margin-bottom:12px"><h2 style="font-size:16px;margin:0;text-align:right;flex:1">${esc(title)}</h2><img src="./EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA" style="width:66px;height:66px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'"></div>`:`<h1>EMCIA</h1><h2>${esc(title)}</h2>`}${body}</div>`;
  box.style.display="block"
 }
 function rcFileCode(){
@@ -3499,7 +3499,7 @@ function rcDirectPrint(){
  let doc=frame.contentWindow.document;
  doc.open();
  const printedAt=new Date().toLocaleDateString("ar-MA",{year:"numeric",month:"2-digit",day:"2-digit"});
- const executivePrint=["executive","monthly","receiptAudit","discounts","teacherDetailed","expenseStatement","financial"].includes($("#rcType")?.value);
+ const executivePrint=["executive","monthly","receiptAudit","discounts","teacherDetailed","expenseStatement","financial","arrears"].includes($("#rcType")?.value);
  doc.write(`<!doctype html><html lang="${LANG==="fr"?"fr":"ar"}" dir="${LANG==="fr"?"ltr":"rtl"}"><head><meta charset="utf-8"><title>EMCIA</title><style>body{font-family:Arial,Tahoma,sans-serif;color:#111;padding:20px}h1,h2{text-align:center}table{width:100%;border-collapse:collapse;margin:10px 0 20px}th,td{border:1px solid #777;padding:7px;text-align:${LANG==="fr"?"left":"right"};font-size:12px}th{background:#eee}.meta,.muted{color:#555}@page{margin:16mm 12mm 20mm;${executivePrint?`@bottom-center{content:"صفحة " counter(page);font-size:10px;color:#555} @bottom-left{content:"تاريخ الطبع: ${printedAt}";font-size:10px;color:#555}`:""}}${executivePrint?`.rc-executive-header{display:flex!important;align-items:center;justify-content:space-between;direction:rtl;break-inside:avoid}.rc-executive-header h2{text-align:right!important;font-size:16px!important;margin:0!important}.rc-executive-header img{width:66px;height:66px;object-fit:contain}`:""}</style></head><body>${paper.outerHTML}
 
 </body></html>`);
@@ -3754,13 +3754,38 @@ function rcBuildReport(){
    let rows=db.g.filter(g=>g.active!==false).map(g=>{let a=emciaAttendanceRecords().filter(x=>x.gid===g.id&&x.date.slice(0,7)===m);return[esc(g.n),a.filter(x=>x.status==="present").length,a.filter(x=>x.status==="absent").length,a.filter(x=>x.status==="late").length,a.filter(x=>x.status==="excused").length]});
    rcSetReport(`تقرير الحضور والغياب — ${m}`,rcTable(["الفوج","حاضر","غائب","متأخر","بعذر"],rows))
  } else if(type==="arrears"){
-   rcSetReport('تقرير المتأخرات — '+m,emciaAccountsHTML(m,{through:true,debtOnly:true}));
+   rcSetReport("تقرير المتأخرات — إلى "+emciaReportMonthLabel(m),emciaSecretaryArrearsHTML(m));
  } else if(type==="financial"){
    rcSetReport("التقرير المالي للسكرتارية — "+emciaReportMonthLabel(m),emciaSecretaryFinancialHTML(m));
 
  }
 
  return true
+}
+function emciaSecretaryArrearsHTML(m){
+ const num=n=>Number(n||0).toLocaleString("fr-MA",{minimumFractionDigits:2,maximumFractionDigits:2});
+ const rows=emciaAccountRows(m,{through:true}).flatMap(r=>r.details.filter(d=>d.mm<=m&&d.rem>0.009).map(d=>({
+  sid:r.sid,gid:r.gid,mode:r.mode,month:d.mm,due:d.due,paid:d.paid,rem:d.rem,
+  teacher:objName(by(db.t,by(db.g,r.gid)?.tid))||"—",group:by(db.g,r.gid)?.n||"—"
+ })));
+ rows.sort((a,b)=>a.teacher.localeCompare(b.teacher,"ar")||a.group.localeCompare(b.group,"ar")||a.month.localeCompare(b.month)||name(db.s,a.sid).localeCompare(name(db.s,b.sid),"ar"));
+ const totals=list=>list.reduce((v,r)=>({due:v.due+r.due,paid:v.paid+r.paid,rem:v.rem+r.rem}),{due:0,paid:0,rem:0});
+ const all=totals(rows),people=new Set(rows.map(r=>r.sid)),groups=new Set(rows.map(r=>r.gid));
+ const display=r=>'<tr><td>'+esc(name(db.s,r.sid))+'</td><td>'+esc(r.teacher)+'</td><td>'+esc(r.group)+'</td><td>'+esc(r.month)+'</td><td>'+emciaAccountMode(r.mode)+'</td><td class="num">'+num(r.due)+'</td><td class="num">'+num(r.paid)+'</td><td class="num">'+num(r.rem)+'</td></tr>';
+ const teachers=[...new Set(rows.map(r=>r.teacher))].map(t=>{
+  const list=rows.filter(r=>r.teacher===t),sum=totals(list);
+  const grouped=[...new Set(list.map(r=>r.gid))].map(gid=>{
+   const part=list.filter(r=>r.gid===gid),st=totals(part);
+   return '<tr><td>'+esc(t)+'</td><td>'+esc(part[0].group)+'</td><td class="num">'+new Set(part.map(r=>r.sid)).size+'</td><td class="num">'+num(st.due)+'</td><td class="num">'+num(st.paid)+'</td><td class="num">'+num(st.rem)+'</td></tr>';
+  }).join("");
+  return grouped+'<tr class="subtotal"><th colspan="2">مجموع '+esc(t)+'</th><th class="num">'+new Set(list.map(r=>r.sid)).size+'</th><th class="num">'+num(sum.due)+'</th><th class="num">'+num(sum.paid)+'</th><th class="num">'+num(sum.rem)+'</th></tr>';
+ }).join("");
+ return '<div class="emcia-secretary-arrears"><style>.emcia-secretary-arrears table{width:100%;border-collapse:collapse}.emcia-secretary-arrears th,.emcia-secretary-arrears td{border:1px solid #d9dee4!important;padding:4px 3px!important;font-size:10px}.emcia-secretary-arrears th{background:#edf0f3!important;text-align:center;line-height:1.3}.emcia-secretary-arrears .num{background:#f7f8f9!important;text-align:center;font-variant-numeric:tabular-nums}.emcia-secretary-arrears .subtotal th,.emcia-secretary-arrears .total th{background:#e9edf1!important}.emcia-secretary-arrears tr{break-inside:avoid}@media print{.emcia-secretary-arrears th,.emcia-secretary-arrears td{font-size:9.5px!important;padding:3px 2px!important}}</style>'+
+ '<p class="muted">متأخرات واجبات الدراسة حتى نهاية الشهر المختار، ابتداءً من نونبر 2026. تظهر فقط الأشهر ذات المبالغ المتبقية، دون بيانات أجور الأساتذة أو ميزانية المؤسسة.</p>'+
+ '<table><tr><th>المتعلمون<br>المعنيون</th><th>الأفواج<br>المعنية</th><th>حالات التأخر<br>حسب الشهر والفوج</th><th>إجمالي<br>المتبقي</th></tr><tr><td class="num">'+people.size+'</td><td class="num">'+groups.size+'</td><td class="num">'+rows.length+'</td><td class="num">'+num(all.rem)+'</td></tr></table>'+
+ '<h3>تفاصيل المتأخرات حسب المتعلم والشهر</h3><table><thead><tr><th>اسم<br>المتعلم</th><th>اسم<br>الأستاذ</th><th>الفوج</th><th>شهر<br>الاستحقاق</th><th>نظام<br>الأداء</th><th>الواجب<br>المستحق</th><th>المبلغ<br>المؤدى</th><th>المبلغ<br>المتبقي</th></tr></thead><tbody>'+(rows.map(display).join("")||'<tr><td colspan="8">لا توجد متأخرات مسجلة إلى نهاية الشهر المختار.</td></tr>')+'<tr class="total"><th colspan="5">المجموع العام</th><th class="num">'+num(all.due)+'</th><th class="num">'+num(all.paid)+'</th><th class="num">'+num(all.rem)+'</th></tr></tbody></table>'+
+ '<h3>ملخص المتأخرات حسب الأستاذ والفوج</h3><table><thead><tr><th>اسم<br>الأستاذ</th><th>الفوج</th><th>عدد<br>المتعلمين</th><th>الواجبات<br>المستحقة</th><th>المبالغ<br>المؤداة</th><th>المبالغ<br>المتبقية</th></tr></thead><tbody>'+(teachers||'<tr><td colspan="6">لا توجد متأخرات.</td></tr>')+'<tr class="total"><th colspan="2">المجموع العام</th><th class="num">'+people.size+'</th><th class="num">'+num(all.due)+'</th><th class="num">'+num(all.paid)+'</th><th class="num">'+num(all.rem)+'</th></tr></tbody></table>'+
+ '<p class="muted">المتعلم المسجل في أكثر من فوج أو المتأخر في أكثر من شهر قد يظهر في عدة أسطر. مجموع المتعلمين العام دون تكرار، أما مجاميع الأساتذة فتحسب المتعلمين داخل أفواج كل أستاذ. التسبيق المخصص لشهر لاحق لا يسدد متأخرات شهر سابق تلقائياً.</p></div>';
 }
 function emciaSecretaryFinancialHTML(m){
  const num=n=>Number(n||0).toLocaleString("fr-MA",{minimumFractionDigits:2,maximumFractionDigits:2});
