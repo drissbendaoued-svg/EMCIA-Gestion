@@ -3452,7 +3452,7 @@ function emciaReportMonthLabel(m){
 }
 function rcSetReport(title,body){
  let box=$("#rcPreview");if(!box){alert("تعذر تجهيز معاينة التقرير.");return}
- box.innerHTML=`<div class="rc-paper">${["executive","monthly","studentAccounts"].includes($("#rcType")?.value)?`<div class="rc-executive-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #bbb;padding-bottom:10px;margin-bottom:12px"><h2 style="font-size:16px;margin:0;text-align:right;flex:1">${esc(title)}</h2><img src="./EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA" style="width:66px;height:66px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'"></div>`:`<h1>EMCIA</h1><h2>${esc(title)}</h2>`}${body}</div>`;
+ box.innerHTML=`<div class="rc-paper">${["executive","monthly","studentAccounts","receiptAudit"].includes($("#rcType")?.value)?`<div class="rc-executive-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #bbb;padding-bottom:10px;margin-bottom:12px"><h2 style="font-size:16px;margin:0;text-align:right;flex:1">${esc(title)}</h2><img src="./EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA" style="width:66px;height:66px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'"></div>`:`<h1>EMCIA</h1><h2>${esc(title)}</h2>`}${body}</div>`;
  box.style.display="block"
 }
 function rcFileCode(){
@@ -3476,7 +3476,7 @@ function rcFileBase(){
  }
  return `EMCIA_${code}_${m}`;
 }
-function emciaReportAllowed(type){return !['executive','monthly','financial','discounts','teacherDetailed'].includes(type)||emciaCanViewManagement()}
+function emciaReportAllowed(type){return !['executive','monthly','discounts','teacherDetailed','receiptAudit'].includes(type)||emciaCanViewManagement()}
 function emciaGuardReport(type){if(emciaReportAllowed(type))return true;alert('هذا التقرير المالي متاح للمدير والمحاسب فقط.');rcClearPreview('هذا التقرير المالي متاح للمدير والمحاسب فقط.');return false}
 function rcDirectPrint(){
  if(!emciaGuardReport($("#rcType")?.value))return;
@@ -3499,7 +3499,7 @@ function rcDirectPrint(){
  let doc=frame.contentWindow.document;
  doc.open();
  const printedAt=new Date().toLocaleDateString("ar-MA",{year:"numeric",month:"2-digit",day:"2-digit"});
- const executivePrint=["executive","monthly"].includes($("#rcType")?.value);
+ const executivePrint=["executive","monthly","receiptAudit"].includes($("#rcType")?.value);
  doc.write(`<!doctype html><html lang="${LANG==="fr"?"fr":"ar"}" dir="${LANG==="fr"?"ltr":"rtl"}"><head><meta charset="utf-8"><title>EMCIA</title><style>body{font-family:Arial,Tahoma,sans-serif;color:#111;padding:20px}h1,h2{text-align:center}table{width:100%;border-collapse:collapse;margin:10px 0 20px}th,td{border:1px solid #777;padding:7px;text-align:${LANG==="fr"?"left":"right"};font-size:12px}th{background:#eee}.meta,.muted{color:#555}@page{margin:16mm 12mm 20mm;${executivePrint?`@bottom-center{content:"صفحة " counter(page);font-size:10px;color:#555} @bottom-left{content:"تاريخ الطبع: ${printedAt}";font-size:10px;color:#555}`:""}}${executivePrint?`.rc-executive-header{display:flex!important;align-items:center;justify-content:space-between;direction:rtl;break-inside:avoid}.rc-executive-header h2{text-align:right!important;font-size:16px!important;margin:0!important}.rc-executive-header img{width:66px;height:66px;object-fit:contain}`:""}</style></head><body>${paper.outerHTML}
 
 </body></html>`);
@@ -3627,28 +3627,26 @@ function emciaDiscountReportHTML(m){
  '<p class="muted">الأرقام تعبر عن التخفيضات المقررة وليست التحصيل الفعلي. تقييم القدرة على تقديم تخفيضات إضافية يتطلب بيانات التكاليف.</p>';
 }
 function emciaReceiptAuditHTML(m){
- if(!emciaCanViewManagement())return '<p>هذا التقرير مخصص للمدير والمحاسب.</p>';
+ if(!emciaCanViewManagement())return '<p>هذا السجل مخصص للمدير والمحاسب.</p>';
  const gid=$("#rcAuditGroup")?.value||"";
  const all=db.p.filter(p=>(p.receiptMonth||(p.date||"").slice(0,7))===m&&(!gid||(p.gid||by(db.e,p.eid)?.gid)===gid));
- const rows=all.flatMap(p=>{
-  const sid=p.sid||by(db.e,p.eid)?.sid,g=p.gid||by(db.e,p.eid)?.gid;
-  const alloc=paymentAllocations(p),gross=Number(p.a)||0;
-  const group=by(db.g,g),student=by(db.s,sid);
-  const monthly=Number(group?.fee??group?.a??group?.price??group?.monthlyFee??0);
+ const num=n=>Number(n||0).toLocaleString("fr-MA",{minimumFractionDigits:2,maximumFractionDigits:2});
+ const rows=all.map(p=>{
+  const sid=p.sid||by(db.e,p.eid)?.sid,g=p.gid||by(db.e,p.eid)?.gid,alloc=paymentAllocations(p),gross=Number(p.a)||0;
+  const group=by(db.g,g),enrollment=db.e.filter(e=>e.sid===sid&&e.gid===g&&e.start).sort((x,y)=>x.start.localeCompare(y.start))[0];
   const totalAlloc=alloc.reduce((z,x)=>z+(Number(x.amount)||0),0);
   const warnings=[];
-  if(Math.abs(totalAlloc-gross)>.02)warnings.push("مجموع التوزيع لا يطابق التوصيل");
-  if(alloc.some(x=>!x.month))warnings.push("شهر الاستحقاق غير محدد");
-  if(monthly>0&&gross>monthly&&alloc.length===1)warnings.push("مبلغ يتجاوز الواجب دون توزيع متعدد");
-  if(alloc.some(x=>x.month>m))warnings.push("تسبيق لأشهر مقبلة");
-  if(alloc.some(x=>x.month<m))warnings.push("أداء عن شهر سابق");
-  return [[esc(name(db.s,sid)||objName(student)||"—"),esc(group?.n||"—"),esc(p.receiptNo||p.receipt||p.number||"—"),esc(p.date||"—"),money(gross),esc(alloc.map(x=>x.month+": "+(Number(x.amount)||0).toFixed(2)).join(" | ")),money(totalAlloc),esc(p.method||"—"),esc(p.createdByName||p.createdBy||p.userName||p.actor||"غير محفوظ"),esc(warnings.join("؛ ")||"لا تنبيه آلي")]];
+  if(Math.abs(totalAlloc-gross)>.02)warnings.push("التوزيع لا يطابق المقبوض");
+  if(alloc.some(x=>!x.month))warnings.push("شهر غير محدد");
+  if(alloc.some(x=>x.month>m))warnings.push("تسبيق");
+  if(alloc.some(x=>x.month<m))warnings.push("أداء سابق");
+  return [esc(p.receiptNo||p.receipt||p.number||"—"),esc(name(db.s,sid)),esc(enrollment?.start||"—"),esc(p.date||"—"),num(gross),esc(alloc.map(x=>x.month+": "+num(x.amount)).join(" | ")),esc(group?.n||"—"),num(totalAlloc),esc(p.method||"—"),esc(warnings.join("؛ ")||"—")];
  });
- const gross=all.reduce((z,p)=>z+(Number(p.a)||0),0);
- const advances=all.reduce((z,p)=>z+paymentAllocations(p).filter(x=>x.month>m).reduce((a,x)=>a+(Number(x.amount)||0),0),0);
- return '<p>تقرير افتحاص للقراءة فقط حسب تاريخ قبض التوصيل. التوزيع حسب أشهر الدراسة كما هو محفوظ، دون تعديل السجلات. هوية المدخل تظهر فقط إذا كانت محفوظة في التوصيل.</p>'+
- rcTable(["المؤشر","القيمة"],[["عدد التوصيلات",String(all.length)],["المقبوض خلال الشهر",money(gross)],["المخصص لأشهر لاحقة",money(advances)]])+
- (rows.length?rcTable(["المتعلم","الفوج","رقم التوصيل","تاريخ القبض","المبلغ المقبوض","توزيع الأشهر","مجموع التوزيع","طريقة الأداء","المسجل","ملاحظات الافتحاص"],rows):'<p>لا توجد توصيلات في الشهر والفوج المختارين.</p>');
+ const gross=all.reduce((z,p)=>z+(Number(p.a)||0),0),advances=all.reduce((z,p)=>z+paymentAllocations(p).filter(x=>x.month>m).reduce((a,x)=>a+(Number(x.amount)||0),0),0);
+ const head=["رقم<br>التوصيل","اسم<br>المتعلم","تاريخ<br>التسجيل","تاريخ<br>القبض","المبلغ<br>المقبوض","توزيع<br>الأشهر","الفوج","مجموع<br>التوزيع","طريقة<br>الأداء","ملاحظات"];
+ return '<div class="emcia-receipt-register"><style>.emcia-receipt-register table{border-collapse:collapse;width:100%}.emcia-receipt-register th,.emcia-receipt-register td{border:1px solid #d9dee4!important;padding:4px 3px!important;font-size:10px;vertical-align:middle}.emcia-receipt-register th{background:#edf0f3!important;text-align:center;white-space:normal!important;line-height:1.25}.emcia-receipt-register td:nth-child(5),.emcia-receipt-register td:nth-child(8){background:#f6f7f8!important;white-space:nowrap;text-align:center;font-variant-numeric:tabular-nums}@media print{.emcia-receipt-register th,.emcia-receipt-register td{font-size:9.5px!important;padding:3px 2px!important}.emcia-receipt-register table{table-layout:auto!important}}</style><p class="muted">السجل حسب تاريخ قبض التوصيل، ويعرض توزيع المبالغ على أشهر الدراسة دون تعديل البيانات.</p>'+
+ rcTable(["المؤشر","القيمة"],[["عدد التواصيل",String(all.length)],["المقبوض خلال الشهر",num(gross)],["تسبيقات لأشهر لاحقة",num(advances)]])+
+ (rows.length?rcTable(head,rows):'<p>لا توجد تواصيل في الشهر والفوج المختارين.</p>')+'</div>';
 }
 function rcBuildReport(){
  if(!emciaGuardReport($("#rcType")?.value))return false;
@@ -3661,7 +3659,7 @@ function rcBuildReport(){
   let box=$("#rcPreview");box.innerHTML=`<div class="rc-paper">${emciaBlankAttendanceHTML(m,gid,teacherId&&!gid?teacherId:null)}</div>`;box.style.display="block";
  }else if(type==="receiptAudit"){
   if(!emciaCanViewManagement()){rcClearPreview("هذا التقرير متاح للمدير والمحاسب فقط.");return false}
-  rcSetReport("سجل الأداءات والتسبيقات حسب الفوج — "+m,emciaReceiptAuditHTML(m));
+  rcSetReport("سجل الأداء والتسبيق — "+emciaReportMonthLabel(m),emciaReceiptAuditHTML(m));
  }else if(type==="discounts"){
   if(!emciaCanViewManagement()){rcClearPreview("هذا التقرير متاح للمدير والمحاسب فقط.");return false}
   rcSetReport(`تقرير التخفيضات — ${m}`,emciaDiscountReportHTML(m));
@@ -3727,7 +3725,7 @@ function rcBuildReport(){
 }
 function rcChooseCategory(category){
  const select=document.getElementById("rcType");if(!select)return;
- const allowed={management:["executive","monthly","financial","receiptAudit","discounts","teacherDetailed"],secretary:["arrears"],teacher:["teacher","attendance","blankAttendance"],student:["studentAccounts"]};
+ const allowed={management:["executive","monthly","receiptAudit","discounts","teacherDetailed"],secretary:["arrears","financial"],teacher:["teacher","attendance","blankAttendance"],student:["studentAccounts"]};
  if(!allowed[category]||(category==="management"&&!emciaCanViewManagement()))return;
  const values=allowed[category];
  if(!window.rcOriginalReportOptions)window.rcOriginalReportOptions=select.innerHTML;
@@ -3746,8 +3744,8 @@ function rcChooseCategory(category){
 function reportcenter(){
  let teachers=db.t.filter(x=>x.active!==false);
  $("#reportcenter").innerHTML=`<div class="card"><h2>مركز التقارير والوثائق</h2><p class="muted">الوثائق مصنفة حسب الغرض والمستفيد. التصنيف لا يمنح صلاحيات جديدة؛ الوثائق المالية الداخلية محصورة في الإدارة والمحاسبة.</p><div class="row" style="gap:8px;flex-wrap:wrap;margin:12px 0" id="rcCategoryTabs">${emciaCanViewManagement()?`<button type="button" data-rc-cat="management" onclick="rcChooseCategory(\'management\')">▣ الإدارة والمحاسبة</button>`:""}<button type="button" data-rc-cat="secretary" onclick="rcChooseCategory(\'secretary\')">▤ السكرتارية</button><button type="button" data-rc-cat="teacher" onclick="rcChooseCategory(\'teacher\')">▥ الأساتذة</button><button type="button" data-rc-cat="student" onclick="rcChooseCategory(\'student\')">▦ المتعلمون</button></div><div id="rcStudentDocuments" class="card" style="display:none"><p>وثائق المتعلمين متاحة حالياً من قسمي الأداءات والإشهاد والشواهد.</p><div class="row"><button type="button" onclick="show(\'payments\')">التواصيل</button><button type="button" onclick="show(\'certification\')">الشواهد</button></div></div><p class="muted">اختر نوع التقرير من القائمة. يُقترح الشهر الحالي تلقائياً ويمكن تغييره، ثم تظهر المعاينة قبل الطباعة أو التصدير.</p><div id="rcReportControls"><div class="row"><div><label>نوع التقرير</label><select id="rcType" onchange="rcToggleFields()"><option value="">— اختر الوثيقة —</option>
-${emciaCanViewManagement()?`<optgroup dir="rtl" label="الإدارة والمحاسبة"><option value="executive">المؤشرات المالية والإدارية</option><option value="monthly">المؤشرات المالية للتسجيل والأداء</option><option value="financial">التقرير المالي</option><option value="receiptAudit">سجل الأداء والتسبيق (افتحاص)</option><option value="discounts">تقرير التخفيضات</option><option value="teacherDetailed">كشف الأستاذ التفصيلي — داخلي</option></optgroup>`:""}
-<optgroup dir="rtl" label="السكرتارية"><option value="arrears">تقرير المتأخرات للمتابعة</option></optgroup>
+${emciaCanViewManagement()?`<optgroup dir="rtl" label="الإدارة والمحاسبة"><option value="executive">المؤشرات المالية والإدارية</option><option value="monthly">المؤشرات المالية للتسجيل والأداء</option><option value="receiptAudit">سجل الأداء والتسبيق</option><option value="discounts">تقرير التخفيضات</option><option value="teacherDetailed">كشف الأستاذ التفصيلي — داخلي</option></optgroup>`:""}
+<optgroup dir="rtl" label="السكرتارية"><option value="arrears">تقرير المتأخرات للمتابعة</option><option value="financial">التقرير المالي</option></optgroup>
 <optgroup dir="rtl" label="المتعلمون"><option value="studentAccounts">حسابات المتعلمين — الشهري والحصص</option></optgroup>
 <optgroup dir="rtl" label="الأساتذة"><option value="teacher">كشف الأستاذ المختصر — للتسليم</option><option value="attendance">تقرير الحضور والغياب</option><option value="blankAttendance">سجل الغياب الفارغ</option></optgroup>
 </select></div><div><label>الشهر</label><input id="rcMonth" type="month" value="${nowMonth()}" onchange="rcRefreshPreview()"></div></div><div id="rcAuditFilters" style="display:none" class="row"><div><label>الفوج</label><select id="rcAuditGroup" onchange="rcRefreshPreview()"><option value="">جميع الأفواج</option>${db.g.map(g=>`<option value="${esc(g.id)}">${esc(g.n)}</option>`).join("")}</select></div></div><div id="rcDiscountFilters" style="display:none" class="row"><div><label>الفوج</label><select id="rcDiscountGroup" onchange="rcRefreshPreview()"><option value="">جميع الأفواج</option>${db.g.map(g=>`<option value="${esc(g.id)}">${esc(g.n)}</option>`).join("")}</select></div><div><label>الأستاذ</label><select id="rcDiscountTeacher" onchange="rcRefreshPreview()"><option value="">جميع الأساتذة</option>${db.t.map(t=>`<option value="${esc(t.id)}">${esc(objName(t))}</option>`).join("")}</select></div><div><label>الجهة المتحملة</label><select id="rcDiscountBearer" onchange="rcRefreshPreview()"><option value="">جميع الأنواع</option><option value="teacher">الأستاذ</option><option value="emcia">المؤسسة</option><option value="half">مشترك 50/50</option><option value="custom">توزيع مخصص</option></select></div></div><div id="rcBlankGroupBox" style="display:none"><label>الأستاذ (جميع أفواجه)</label><select id="rcBlankTeacher" onchange="rcRefreshPreview()"><option value="">— اختر الأستاذ أو اختر فوجًا أسفله —</option>${db.t.map(t=>`<option value="${esc(t.id)}">${esc(objName(t))}</option>`).join("")}</select><label>فوج واحد (اختياري)</label><select id="rcBlankGroup" onchange="rcRefreshPreview()"><option value="">— جميع أفواج الأستاذ —</option>${db.g.map(g=>`<option value="${esc(g.id)}">${esc(g.n)}</option>`).join("")}</select></div><div id="rcTeacherBox" style="display:none"><label>الأستاذ</label><select id="rcTeacher" oninput="rcRefreshPreview()" onchange="rcRefreshPreview()"><option value="">— اختر الأستاذ —</option>${teachers.map(x=>`<option value="${x.id}">${esc(objName(x))}</option>`).join("")}</select></div><div class="report-action-row" style="margin-top:12px">
