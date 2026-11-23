@@ -3452,7 +3452,7 @@ function emciaReportMonthLabel(m){
 }
 function rcSetReport(title,body){
  let box=$("#rcPreview");if(!box){alert("تعذر تجهيز معاينة التقرير.");return}
- box.innerHTML=`<div class="rc-paper">${["executive","monthly","studentAccounts","receiptAudit","discounts","teacherDetailed"].includes($("#rcType")?.value)?`<div class="rc-executive-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #bbb;padding-bottom:10px;margin-bottom:12px"><h2 style="font-size:16px;margin:0;text-align:right;flex:1">${esc(title)}</h2><img src="./EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA" style="width:66px;height:66px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'"></div>`:`<h1>EMCIA</h1><h2>${esc(title)}</h2>`}${body}</div>`;
+ box.innerHTML=`<div class="rc-paper">${["executive","monthly","studentAccounts","receiptAudit","discounts","teacherDetailed","expenseStatement"].includes($("#rcType")?.value)?`<div class="rc-executive-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #bbb;padding-bottom:10px;margin-bottom:12px"><h2 style="font-size:16px;margin:0;text-align:right;flex:1">${esc(title)}</h2><img src="./EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA" style="width:66px;height:66px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'"></div>`:`<h1>EMCIA</h1><h2>${esc(title)}</h2>`}${body}</div>`;
  box.style.display="block"
 }
 function rcFileCode(){
@@ -3463,7 +3463,7 @@ function rcFileCode(){
   teacher:"Releve_Professeur",
   attendance:"Rapport_Presences",blankAttendance:"Registre_Absences_Vierge",
   arrears:"Rapport_Impayes",studentAccounts:"Comptes_Apprenants",
-  financial:"Rapport_Financier",discounts:"Rapport_Reductions"
+  financial:"Rapport_Financier",discounts:"Rapport_Reductions",expenseStatement:"Depenses_Etablissement"
  }[type]||"Rapport";
 }
 function rcFileBase(){
@@ -3476,7 +3476,7 @@ function rcFileBase(){
  }
  return `EMCIA_${code}_${m}`;
 }
-function emciaReportAllowed(type){return !['executive','monthly','discounts','teacherDetailed','receiptAudit'].includes(type)||emciaCanViewManagement()}
+function emciaReportAllowed(type){return !['executive','monthly','discounts','teacherDetailed','receiptAudit','expenseStatement'].includes(type)||emciaCanViewManagement()}
 function emciaGuardReport(type){if(emciaReportAllowed(type))return true;alert('هذا التقرير المالي متاح للمدير والمحاسب فقط.');rcClearPreview('هذا التقرير المالي متاح للمدير والمحاسب فقط.');return false}
 function rcDirectPrint(){
  if(!emciaGuardReport($("#rcType")?.value))return;
@@ -3499,7 +3499,7 @@ function rcDirectPrint(){
  let doc=frame.contentWindow.document;
  doc.open();
  const printedAt=new Date().toLocaleDateString("ar-MA",{year:"numeric",month:"2-digit",day:"2-digit"});
- const executivePrint=["executive","monthly","receiptAudit","discounts","teacherDetailed"].includes($("#rcType")?.value);
+ const executivePrint=["executive","monthly","receiptAudit","discounts","teacherDetailed","expenseStatement"].includes($("#rcType")?.value);
  doc.write(`<!doctype html><html lang="${LANG==="fr"?"fr":"ar"}" dir="${LANG==="fr"?"ltr":"rtl"}"><head><meta charset="utf-8"><title>EMCIA</title><style>body{font-family:Arial,Tahoma,sans-serif;color:#111;padding:20px}h1,h2{text-align:center}table{width:100%;border-collapse:collapse;margin:10px 0 20px}th,td{border:1px solid #777;padding:7px;text-align:${LANG==="fr"?"left":"right"};font-size:12px}th{background:#eee}.meta,.muted{color:#555}@page{margin:16mm 12mm 20mm;${executivePrint?`@bottom-center{content:"صفحة " counter(page);font-size:10px;color:#555} @bottom-left{content:"تاريخ الطبع: ${printedAt}";font-size:10px;color:#555}`:""}}${executivePrint?`.rc-executive-header{display:flex!important;align-items:center;justify-content:space-between;direction:rtl;break-inside:avoid}.rc-executive-header h2{text-align:right!important;font-size:16px!important;margin:0!important}.rc-executive-header img{width:66px;height:66px;object-fit:contain}`:""}</style></head><body>${paper.outerHTML}
 
 </body></html>`);
@@ -3650,11 +3650,48 @@ function emciaReceiptAuditHTML(m){
  rcTable(["المؤشر","القيمة"],[["عدد التواصيل",String(all.length)],["المقبوض خلال الشهر",num(gross)],["تسبيقات لأشهر لاحقة",num(advances)]])+
  (rows.length?rcTable(head,rows):'<p>لا توجد تواصيل في الشهر والفوج المختارين.</p>')+'</div>';
 }
+function emciaExpenseStatementHTML(m){
+ const num=n=>Number(n||0).toLocaleString("fr-MA",{minimumFractionDigits:2,maximumFractionDigits:2});
+ const staffCats=new Set(["المدير","المحاسبة","الكاتبة الصباحية","الكاتبة المسائية","المنظفة"]);
+ const entries=(db.x||[]).filter(x=>emciaAccountingMonth(x)===m);
+ const sections=[["المستخدمون",x=>staffCats.has(x.cat)],["المصاريف الثابتة",x=>!staffCats.has(x.cat)&&x.type==="fixed"],["المصاريف المتغيرة",x=>!staffCats.has(x.cat)&&x.type!=="fixed"]];
+ const totals=[];
+ const expenses=[];
+ for(const [label,filter] of sections){
+  const rows=entries.filter(filter),subtotal=rows.reduce((n,x)=>n+(Number(x.a)||0),0);
+  totals.push(subtotal);
+  expenses.push('<tr class="expense-section"><th colspan="5">'+esc(label)+'</th></tr>');
+  for(const x of rows)expenses.push('<tr><td>'+esc(x.cat||"—")+'</td><td>'+esc(x.date||x.month||"—")+'</td><td>'+esc(x.note||"—")+'</td><td>'+esc(x.type==="fixed"?"ثابت":"متغير")+'</td><td class="number">'+num(x.a)+'</td></tr>');
+  if(!rows.length)expenses.push('<tr><td colspan="5">لا توجد مصاريف مسجلة لهذه الفئة خلال الشهر.</td></tr>');
+  expenses.push('<tr class="subtotal"><th colspan="4">مجموع '+esc(label)+'</th><th class="number">'+num(subtotal)+'</th></tr>');
+ }
+ const expenseTotal=totals.reduce((n,v)=>n+v,0);
+ const enrollments=activeEnrollmentsForMonth(m);
+ const teacherRows=(db.t||[]).filter(t=>db.g.some(g=>g.tid===t.id)||teacherSettlement(t.id,m)).map(t=>{
+  const groups=db.g.filter(g=>g.tid===t.id&&enrollments.some(e=>e.gid===g.id));
+  const gids=new Set(groups.map(g=>g.id));
+  const students=new Set(enrollments.filter(e=>gids.has(e.gid)).map(e=>e.sid));
+  const due=emciaTeacherSettlementDue(t.id,m);
+  return {name:objName(t),groups:groups.length,students:students.size,due};
+ }).filter(t=>t.groups||t.due).sort((a,b)=>a.name.localeCompare(b.name,"ar"));
+ const teacherTotal=teacherRows.reduce((n,t)=>n+t.due,0);
+ const groupTotal=teacherRows.reduce((n,t)=>n+t.groups,0);
+ const registrationTotal=teacherRows.reduce((n,t)=>n+t.students,0);
+ const teachers=teacherRows.map(t=>'<tr><td>'+esc(t.name)+'</td><td class="number">'+t.groups+'</td><td class="number">'+t.students+'</td><td class="number">'+num(t.due)+'</td></tr>').join("");
+ return '<div class="emcia-expense-statement"><style>.emcia-expense-statement table{width:100%;border-collapse:collapse;table-layout:auto}.emcia-expense-statement th,.emcia-expense-statement td{border:1px solid #d9dee4!important;padding:5px 4px!important;font-size:11px;vertical-align:middle}.emcia-expense-statement th{background:#edf0f3;text-align:center;line-height:1.3}.emcia-expense-statement .number{background:#f7f8f9;text-align:center;font-variant-numeric:tabular-nums}.emcia-expense-statement .expense-section th{background:#e5e9ed;text-align:right}.emcia-expense-statement .subtotal th,.emcia-expense-statement .grand-total th{font-weight:750;background:#e9edf1}.emcia-expense-statement tr{break-inside:avoid}@media print{.emcia-expense-statement th,.emcia-expense-statement td{font-size:10px!important;padding:4px 3px!important}}</style>'+
+ '<h3>أولاً: مصاريف المستخدمين والتسيير</h3><table><thead><tr><th>نوع<br>المصروف</th><th>تاريخ<br>الأداء</th><th>البيان /<br>الملاحظة</th><th>طبيعة<br>المصروف</th><th>المبلغ</th></tr></thead><tbody>'+expenses.join("")+'<tr class="grand-total"><th colspan="4">المجموع العام للمصاريف التشغيلية</th><th class="number">'+num(expenseTotal)+'</th></tr></tbody></table>'+
+ '<h3>ثانياً: مستحقات الأساتذة</h3><table><thead><tr><th>الاسم الكامل<br>للأستاذ</th><th>عدد<br>الأفواج</th><th>عدد<br>المتعلمين</th><th>المستحق<br>المالي</th></tr></thead><tbody>'+(teachers||'<tr><td colspan="4">لا توجد مستحقات للأساتذة خلال الشهر.</td></tr>')+'<tr class="grand-total"><th>المجموع</th><th class="number">'+groupTotal+'</th><th class="number">'+registrationTotal+'</th><th class="number">'+num(teacherTotal)+'</th></tr></tbody></table>'+
+ '<p class="muted">المصاريف التشغيلية حسب شهر تسجيل المصروف؛ مستحقات الأساتذة محسوبة عن شهر الاستحقاق وتشمل حصص المتأخرات المقبوضة فيه. عدد المتعلمين دون تكرار داخل أفواج الأستاذ، وقد يظهر المتعلم لدى أكثر من أستاذ. مجموع الأفواج هو مجموع أفواج الأساتذة، وليس بالضرورة عدد الأفواج الفريدة بالمؤسسة. لا تُضاف مستحقات الأساتذة إلى المصاريف التشغيلية أعلاه حتى لا يحدث احتساب مزدوج.</p>'+
+ '<p><b>إجمالي المصاريف التشغيلية ومستحقات الأساتذة: '+num(expenseTotal+teacherTotal)+'</b></p></div>';
+}
 function rcBuildReport(){
  if(!emciaGuardReport($("#rcType")?.value))return false;
  let ok=true;
  let type=$("#rcType").value,m=$("#rcMonth").value||nowMonth(),teacherEl=$("#rcTeacher"),tid=teacherEl?teacherEl.value:"";
- if(type==="studentAccounts"){
+ if(type==="expenseStatement"){
+  if(!emciaCanViewManagement()){rcClearPreview("هذا الكشف متاح للإدارة والمحاسبة فقط.");return false}
+  rcSetReport("كشف مصاريف المؤسسة — "+emciaReportMonthLabel(m),emciaExpenseStatementHTML(m));
+ }else if(type==="studentAccounts"){
   rcSetReport("حسابات المتعلمين — الشهري والحصص — "+emciaReportMonthLabel(m),emciaAccountsHTML(m,{shares:emciaCanViewManagement()}));
  }else if(type==="blankAttendance"){
   let gid=$("#rcBlankGroup")?.value||"",teacherId=$("#rcBlankTeacher")?.value||"";if(!gid&&!teacherId)return false;
@@ -3727,7 +3764,7 @@ function rcBuildReport(){
 }
 function rcChooseCategory(category){
  const select=document.getElementById("rcType");if(!select)return;
- const allowed={management:["executive","monthly","receiptAudit","discounts","teacherDetailed"],secretary:["arrears","financial"],teacher:["teacher","attendance","blankAttendance"],student:["studentAccounts"]};
+ const allowed={management:["executive","monthly","expenseStatement","receiptAudit","discounts","teacherDetailed"],secretary:["arrears","financial"],teacher:["teacher","attendance","blankAttendance"],student:["studentAccounts"]};
  if(!allowed[category]||(category==="management"&&!emciaCanViewManagement()))return;
  const values=allowed[category];
  if(!window.rcOriginalReportOptions)window.rcOriginalReportOptions=select.innerHTML;
@@ -3746,7 +3783,7 @@ function rcChooseCategory(category){
 function reportcenter(){
  let teachers=db.t.filter(x=>x.active!==false);
  $("#reportcenter").innerHTML=`<div class="card"><h2>مركز التقارير والوثائق</h2><p class="muted">الوثائق مصنفة حسب الغرض والمستفيد. التصنيف لا يمنح صلاحيات جديدة؛ الوثائق المالية الداخلية محصورة في الإدارة والمحاسبة.</p><div class="row" style="gap:8px;flex-wrap:wrap;margin:12px 0" id="rcCategoryTabs">${emciaCanViewManagement()?`<button type="button" data-rc-cat="management" onclick="rcChooseCategory(\'management\')">▣ الإدارة والمحاسبة</button>`:""}<button type="button" data-rc-cat="secretary" onclick="rcChooseCategory(\'secretary\')">▤ السكرتارية</button><button type="button" data-rc-cat="teacher" onclick="rcChooseCategory(\'teacher\')">▥ الأساتذة</button><button type="button" data-rc-cat="student" onclick="rcChooseCategory(\'student\')">▦ المتعلمون</button></div><div id="rcStudentDocuments" class="card" style="display:none"><p>وثائق المتعلمين متاحة حالياً من قسمي الأداءات والإشهاد والشواهد.</p><div class="row"><button type="button" onclick="show(\'payments\')">التواصيل</button><button type="button" onclick="show(\'certification\')">الشواهد</button></div></div><p class="muted">اختر نوع التقرير من القائمة. يُقترح الشهر الحالي تلقائياً ويمكن تغييره، ثم تظهر المعاينة قبل الطباعة أو التصدير.</p><div id="rcReportControls"><div class="row"><div><label>نوع التقرير</label><select id="rcType" onchange="rcToggleFields()"><option value="">— اختر الوثيقة —</option>
-${emciaCanViewManagement()?`<optgroup dir="rtl" label="الإدارة والمحاسبة"><option value="executive">المؤشرات المالية والإدارية</option><option value="monthly">المؤشرات المالية للتسجيل والأداء</option><option value="receiptAudit">سجل الأداء والتسبيق</option><option value="discounts">تقرير التخفيضات</option><option value="teacherDetailed">كشف الأستاذ</option></optgroup>`:""}
+${emciaCanViewManagement()?`<optgroup dir="rtl" label="الإدارة والمحاسبة"><option value="executive">المؤشرات المالية والإدارية</option><option value="monthly">المؤشرات المالية للتسجيل والأداء</option><option value="expenseStatement">كشف مصاريف المؤسسة</option><option value="receiptAudit">سجل الأداء والتسبيق</option><option value="discounts">تقرير التخفيضات</option><option value="teacherDetailed">كشف الأستاذ</option></optgroup>`:""}
 <optgroup dir="rtl" label="السكرتارية"><option value="arrears">تقرير المتأخرات للمتابعة</option><option value="financial">التقرير المالي</option></optgroup>
 <optgroup dir="rtl" label="المتعلمون"><option value="studentAccounts">حسابات المتعلمين — الشهري والحصص</option></optgroup>
 <optgroup dir="rtl" label="الأساتذة"><option value="teacher">كشف الأستاذ المختصر — للتسليم</option><option value="attendance">تقرير الحضور والغياب</option><option value="blankAttendance">سجل الغياب الفارغ</option></optgroup>
