@@ -3475,7 +3475,7 @@ function rcDirectPrint(){
  doc.open();
  const printedAt=new Date().toLocaleDateString("ar-MA",{year:"numeric",month:"2-digit",day:"2-digit"});
  const executivePrint=$("#rcType")?.value==="executive";
- doc.write(`<!doctype html><html lang="${LANG==="fr"?"fr":"ar"}" dir="${LANG==="fr"?"ltr":"rtl"}"><head><meta charset="utf-8"><title>EMCIA</title><style>body{font-family:Arial,Tahoma,sans-serif;color:#111;padding:20px}h1,h2{text-align:center}table{width:100%;border-collapse:collapse;margin:10px 0 20px}th,td{border:1px solid #777;padding:7px;text-align:${LANG==="fr"?"left":"right"};font-size:12px}th{background:#eee}.meta,.muted{color:#555}@page{margin:16mm 12mm 20mm;${executivePrint?`@bottom-right{content:"صفحة " counter(page);font-size:10px;color:#555} @bottom-left{content:"تاريخ الطبع: ${printedAt}";font-size:10px;color:#555}`:""}}${executivePrint?`.rc-executive-header{display:flex!important;align-items:center;justify-content:space-between;direction:rtl;break-inside:avoid}.rc-executive-header h2{text-align:right!important;font-size:16px!important;margin:0!important}.rc-executive-header img{width:66px;height:66px;object-fit:contain}`:""}</style></head><body>${paper.outerHTML}
+ doc.write(`<!doctype html><html lang="${LANG==="fr"?"fr":"ar"}" dir="${LANG==="fr"?"ltr":"rtl"}"><head><meta charset="utf-8"><title>EMCIA</title><style>body{font-family:Arial,Tahoma,sans-serif;color:#111;padding:20px}h1,h2{text-align:center}table{width:100%;border-collapse:collapse;margin:10px 0 20px}th,td{border:1px solid #777;padding:7px;text-align:${LANG==="fr"?"left":"right"};font-size:12px}th{background:#eee}.meta,.muted{color:#555}@page{margin:16mm 12mm 20mm;${executivePrint?`@bottom-center{content:"صفحة " counter(page);font-size:10px;color:#555} @bottom-left{content:"تاريخ الطبع: ${printedAt}";font-size:10px;color:#555}`:""}}${executivePrint?`.rc-executive-header{display:flex!important;align-items:center;justify-content:space-between;direction:rtl;break-inside:avoid}.rc-executive-header h2{text-align:right!important;font-size:16px!important;margin:0!important}.rc-executive-header img{width:66px;height:66px;object-fit:contain}`:""}</style></head><body>${paper.outerHTML}
 
 </body></html>`);
  doc.close();
@@ -3668,7 +3668,7 @@ function rcBuildReport(){
    ['المصاريف',money(stats.exp)],['الادخار',money(stats.sav)],['الرصيد المحاسبي للشهر',money(stats.avail)]
   ]);
   rcSetReport('المؤشرات المالية والإدارية — '+emciaReportMonthLabel(m),
-   '<p class="meta">تاريخ التقرير: '+new Date().toLocaleDateString('ar-MA')+'</p><h3>المؤشرات الإدارية</h3>'+summary+
+   '<h3>المؤشرات الإدارية</h3>'+summary+
    '<h3>مقارنة بالشهر السابق ('+esc(previous)+')</h3>'+
    rcTable(['المؤشر','الشهر السابق','الشهر المختار'],[['المحصل حسب الاستحقاق',money(prevPaid),money(paid)],['نسبة التحصيل',prevRate.toFixed(1)+'%',rate.toFixed(1)+'%']])+
    '<h3>تطور المستحقات والتحصيل خلال ستة أشهر</h3>'+
