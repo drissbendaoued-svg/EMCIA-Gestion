@@ -1137,8 +1137,8 @@ function enterApp(){
  $("#workspace").classList.add("active");
  let y=new Date().getFullYear(),m=new Date().getMonth()+1,season=m>=9?`${y}/${y+1}`:`${y-1}/${y}`;
  const quick=[["students","المتعلمون"],["payments","الأداءات"],["attendance","الغياب والحضور"],["expenses","المصاريف"],["reports","التقارير"]].filter(x=>emciaCanOpenPage(x[0]));
- $("#workspace").innerHTML=`<div class="card emcia-dashboard-brand emcia-home-hero"><img class="emcia-official-logo" src="./EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA"><h2>مرحبًا بكم في EMCIA</h2><p>فضاء تدبير المؤسسة</p><div class="welcome-season">الموسم الدراسي ${season.replace("/", "–")}</div></div><section class="emcia-home-access"><h3>الوصول السريع</h3><div class="emcia-home-links">${quick.map(x=>'<button type="button" onclick="show(&quot;'+x[0]+'&quot;)" class="emcia-home-link">'+x[1].replaceAll(' ','<br>')+'</button>').join("")}</div></section>${emciaObligationAlertsHTML()}`;
- nav();
+ $("#workspace").innerHTML=`<div class="card emcia-dashboard-brand emcia-home-hero"><img class="emcia-official-logo" src="./EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA"><h2>مرحبًا بكم في EMCIA</h2><p>فضاء تدبير المؤسسة</p><div class="welcome-season">الموسم الدراسي ${season.replace("/", "–")}</div></div><section class="emcia-home-access"><h3>الوصول السريع</h3><div class="emcia-home-links">${quick.map(x=>'<button type="button" onclick="show(&quot;'+x[0]+'&quot;)" class="emcia-home-link">'+x[1].replaceAll(' ','<br>')+'</button>').join("")}</div></section>${emciaObligationAlertsHTML()}${emciaHomeCorrectionNotice()}`;
+ nav();emciaCorrectionBadge();
  applyLang();
 }
 
@@ -1204,7 +1204,26 @@ function emciaReviewDetails(kind,id){
 function emciaSecretaryReturnedReceipts(){
  if(!emciaIsSecretary())return "";
  const items=emciaReviewRows().filter(x=>["returned","corrected"].includes(emciaReviewState(x)));
- return '<details class="card" id="emciaReturnedDetails" style="margin:10px 0"><summary><strong>↩ تواصيل تحتاج التصحيح ('+items.filter(x=>emciaReviewState(x)==="returned").length+')</strong></summary><p class="muted">صححي العملية في سجل الأداء والتسبيق ثم أرسليها للمحاسب.</p>'+items.map(x=>{const v=db.receiptReviews?.[x.kind+":"+x.p.id],ready=emciaReviewState(x)==="corrected";return '<div style="padding:10px;border-bottom:1px solid #ddd"><b>'+emciaReviewEsc(x.p.receiptNo||x.p.id)+' — '+emciaReviewEsc(name(db.s,x.p.sid))+'</b><p style="white-space:pre-wrap">'+emciaReviewEsc(v?.note||"")+'</p><small>'+(ready?"تم التصحيح — جاهز للإرسال":"بانتظار التصحيح")+'</small> '+(ready?'<button type="button" onclick="emciaSubmitCorrectedReceipt(\''+x.kind+'\',\''+emciaReviewEsc(x.p.id)+'\')">إرسال لإعادة المراجعة</button>':'')+'</div>'}).join("")+'</details>';
+ const count=items.filter(x=>emciaReviewState(x)==="returned").length;
+ const badge='<span class="emcia-correction-pill" style="background:#d97706;color:white;border-radius:18px;padding:2px 9px;font-size:13px;margin-inline:7px">'+count+'</span>';
+ return '<details class="card" id="emciaReturnedDetails" style="margin:10px 0"><summary style="cursor:pointer"><strong>↩ تواصيل تحتاج التصحيح '+badge+'</strong></summary><p class="muted">راجعي ملاحظات المحاسب، وافتحي الأداء الأصلي للتصحيح، ثم أرسليه لإعادة المراجعة.</p>'+items.map(x=>{
+ const v=db.receiptReviews?.[x.kind+":"+x.p.id],ready=emciaReviewState(x)==="corrected",args=JSON.stringify([x.kind,String(x.p.id)]).slice(1,-1);
+ return '<div style="padding:12px 0;border-bottom:1px solid #ddd;display:grid;gap:8px"><strong>'+emciaReviewEsc(x.p.receiptNo||x.p.id)+' — '+emciaReviewEsc(name(db.s,x.p.sid))+'</strong><div style="white-space:pre-wrap">'+emciaReviewEsc(v?.note||"")+'</div><small>'+(ready?"تم تعديل البيانات — جاهز للإرسال":"بانتظار التصحيح")+'</small><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" style="width:auto;padding:8px 12px" onclick="emciaOpenReturnedPayment('+args+')">✎ فتح الأداء الأصلي</button><button type="button" style="width:auto;padding:8px 12px" '+(ready?'':'disabled title="يجب تعديل البيانات أولاً"')+' onclick="emciaSubmitCorrectedReceipt('+args+')">✓ تأكيد التصحيح وإرساله</button></div></div>'
+ }).join("")+'</details>';
+}
+function emciaOpenReturnedPayment(kind,id){
+ const x=emciaReviewRows().find(x=>x.kind===kind&&String(x.p.id)===String(id));
+ if(!x)return alert("لم يعد التوصيل موجوداً");
+ window.pg=x.p.gid||"";window.emciaPaymentMode=kind==="session"?"session":"monthly";
+ show("payments");
+ const panel=document.getElementById("emciaReturnedDetails");if(panel)panel.open=true;
+ if(kind==="monthly"){editPayment(x.p.id);show("payments");document.getElementById("emciaReturnedDetails")?.setAttribute("open","");}
+ else alert("تم فتح سجل الأداءات بالحصة. ابحثي عن التوصيل رقم "+(x.p.receiptNo||x.p.id)+" في السجل الأصلي.");
+}
+function emciaHomeCorrectionNotice(){
+ if(!emciaIsSecretary())return "";
+ const count=emciaCorrectionCount();if(!count)return "";
+ return '<div class="card" style="margin:12px 0;border:1px solid #d97706;background:#fff7ed" dir="rtl"><strong>↩ تواصيل تحتاج التصحيح <span style="background:#d97706;color:#fff;border-radius:20px;padding:2px 9px">'+count+'</span></strong><p>توجد ملاحظات جديدة من المحاسب.</p><button type="button" onclick="show(\'payments\');document.getElementById(\'emciaReturnedDetails\')?.setAttribute(\'open\',\'\')">فتح التواصيل</button></div>';
 }
 function emciaCorrectionCount(){return emciaIsSecretary()?emciaReviewRows().filter(x=>emciaReviewState(x)==="returned").length:0}
 function emciaCorrectionBadge(){
@@ -4217,7 +4236,7 @@ function emciaAdministrativeAlerts(){
  const arrearsSection=document.createElement('details');arrearsSection.className='card';arrearsSection.innerHTML='<summary><strong>المتأخرات والأداءات الجزئية</strong></summary>';
  arrearsSection.append(filters,count,go,list);panel.appendChild(arrearsSection);
  if(emciaIsSecretary()){
- const correction=document.createElement("details");correction.className="card";correction.innerHTML='<summary><strong>↩ تواصيل تحتاج التصحيح <span style="color:#d97706">('+emciaCorrectionCount()+')</span></strong></summary><p>توجد الملاحظات في المالية ← الأداءات.</p>';
+ const correction=document.createElement("details");correction.className="card";correction.innerHTML='<summary><strong>↩ تواصيل تحتاج التصحيح <span style="background:#d97706;color:#fff;border-radius:20px;padding:2px 9px">'+emciaCorrectionCount()+'</span></strong></summary><p>توجد الملاحظات في المالية ← الأداءات.</p>';
  const jump=document.createElement("button");jump.type="button";jump.textContent="فتح التواصيل المُرجعة";jump.onclick=()=>{show("payments");document.getElementById("emciaReturnedDetails")?.setAttribute("open","");document.getElementById("emciaReturnedDetails")?.scrollIntoView({block:"start"})};correction.appendChild(jump);panel.insertBefore(correction,arrearsSection);
  }
  const institutional=document.createElement('details');institutional.className='card';institutional.innerHTML='<summary><strong>التنبيهات والالتزامات الإدارية</strong></summary>'+(emciaCanViewManagement()?emciaObligationAlertsHTML():'<p class="muted">التنبيهات المالية الخاصة بالالتزامات متاحة للمدير والمحاسب فقط.</p>');if(emciaCanViewManagement())panel.appendChild(institutional);
