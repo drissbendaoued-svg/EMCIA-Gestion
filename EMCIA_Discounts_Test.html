@@ -3452,7 +3452,7 @@ function emciaReportMonthLabel(m){
 }
 function rcSetReport(title,body){
  let box=$("#rcPreview");if(!box){alert("تعذر تجهيز معاينة التقرير.");return}
- box.innerHTML=`<div class="rc-paper">${["executive","monthly","studentAccounts","receiptAudit","discounts","teacherDetailed","teacher","expenseStatement","financial","arrears"].includes($("#rcType")?.value)?`<div class="rc-executive-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #bbb;padding-bottom:10px;margin-bottom:12px"><h2 style="font-size:16px;margin:0;text-align:right;flex:1">${esc(title)}</h2><img src="./EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA" style="width:66px;height:66px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'"></div>`:`<h1>EMCIA</h1><h2>${esc(title)}</h2>`}${body}</div>`;
+ box.innerHTML=`<div class="rc-paper">${["executive","monthly","studentAccounts","receiptAudit","discounts","teacherDetailed","teacher","expenseStatement","financial","arrears","attendance"].includes($("#rcType")?.value)?`<div class="rc-executive-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #bbb;padding-bottom:10px;margin-bottom:12px"><h2 style="font-size:16px;margin:0;text-align:right;flex:1">${esc(title)}</h2><img src="./EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA" style="width:66px;height:66px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'"></div>`:`<h1>EMCIA</h1><h2>${esc(title)}</h2>`}${body}</div>`;
  box.style.display="block"
 }
 function rcFileCode(){
@@ -3512,7 +3512,7 @@ function rcDirectPrint(){
 }
 function rcExportPDF(){
  if(!emciaGuardReport($("#rcType")?.value))return;
- if($("#rcType")?.value==="executive"&&!emciaCanViewManagement()){alert("هذا التقرير متاح للمدير والمحاسب فقط.");return} if(!($("#rcType")?.value)){alert("اختر نوع التقرير أولاً.");return;} if(["executive","monthly","studentAccounts","financial"].includes($("#rcType").value)){rcDirectPrint();return;}
+ if($("#rcType")?.value==="executive"&&!emciaCanViewManagement()){alert("هذا التقرير متاح للمدير والمحاسب فقط.");return} if(!($("#rcType")?.value)){alert("اختر نوع التقرير أولاً.");return;} if(["executive","monthly","studentAccounts","financial","attendance"].includes($("#rcType").value)){rcDirectPrint();return;}
  let paper=document.querySelector("#rcPreview .rc-paper");if(!paper){if(rcBuildReport()===false)return;}
 
  paper=document.querySelector("#rcPreview .rc-paper");if(!paper){alert("اعرض التقرير أولاً.");return}
@@ -3752,7 +3752,7 @@ function rcBuildReport(){
    box.style.display="block";
  } else if(type==="attendance"){
    let rows=db.g.filter(g=>g.active!==false).map(g=>{let a=emciaAttendanceRecords().filter(x=>x.gid===g.id&&x.date.slice(0,7)===m);return[esc(g.n),a.filter(x=>x.status==="present").length,a.filter(x=>x.status==="absent").length,a.filter(x=>x.status==="late").length,a.filter(x=>x.status==="excused").length]});
-   rcSetReport(`تقرير الحضور والغياب — ${m}`,rcTable(["الفوج","حاضر","غائب","متأخر","بعذر"],rows))
+   rcSetReport("تقرير الحضور والغياب — "+emciaReportMonthLabel(m),emciaAttendanceSummaryHTML(rows,m))
  } else if(type==="arrears"){
    rcSetReport("تقرير المتأخرات — إلى "+emciaReportMonthLabel(m),emciaSecretaryArrearsHTML(m));
  } else if(type==="financial"){
@@ -3761,6 +3761,13 @@ function rcBuildReport(){
  }
 
  return true
+}
+function emciaAttendanceSummaryHTML(rows,m){
+ const total=[0,0,0,0];
+ const body=rows.map(r=>{for(let i=1;i<5;i++)total[i-1]+=Number(r[i])||0;return '<tr><td>'+r[0]+'</td>'+r.slice(1).map(n=>'<td class="number">'+n+'</td>').join('')+'</tr>'}).join('');
+ return '<div class="emcia-attendance-summary"><style>.emcia-attendance-summary table{width:100%;border-collapse:collapse;table-layout:fixed}.emcia-attendance-summary th,.emcia-attendance-summary td{border:1px solid #d9dee4!important;padding:7px 5px;font-size:11px;line-height:1.4}.emcia-attendance-summary th{background:#edf0f3!important;text-align:center}.emcia-attendance-summary .number{background:#f7f8f9!important;text-align:center;font-variant-numeric:tabular-nums}.emcia-attendance-summary .total th{background:#e9edf1!important}.emcia-attendance-summary tr{break-inside:avoid}@media print{.emcia-attendance-summary th,.emcia-attendance-summary td{font-size:10.5px;padding:5px 4px}}</style>'+
+ '<p class="muted">ملخص حالات الحضور والغياب المسجلة لكل فوج خلال '+esc(emciaReportMonthLabel(m))+'. الأرقام تمثل عدد سجلات الحالات، وليس عدد المتعلمين الفريدين.</p>'+
+ '<table><thead><tr><th>اسم<br>الفوج</th><th>حالات<br>الحضور</th><th>حالات<br>الغياب</th><th>حالات<br>التأخر</th><th>غياب<br>بعذر</th></tr></thead><tbody>'+(body||'<tr><td colspan="5">لا توجد أفواج نشطة.</td></tr>')+'<tr class="total"><th>المجموع العام</th>'+total.map(n=>'<th class="number">'+n+'</th>').join('')+'</tr></tbody></table></div>';
 }
 function emciaSecretaryArrearsHTML(m){
  const num=n=>Number(n||0).toLocaleString("fr-MA",{minimumFractionDigits:2,maximumFractionDigits:2});
