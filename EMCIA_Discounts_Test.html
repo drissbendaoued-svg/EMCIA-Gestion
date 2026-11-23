@@ -4977,6 +4977,8 @@ async function enter(user,accessToken){
  `;
  document.head.appendChild(compactTopStyle);
  if(typeof window.emciaUpdateAlertCounter==='function')window.emciaUpdateAlertCounter();
+ // The alerts button is created after enterApp(); refresh the correction badge only once it exists.
+ if(typeof window.emciaUpdateCorrectionBadge==='function')window.emciaUpdateCorrectionBadge();
  addAction('🔑 تغيير كلمة المرور',()=>{
   const overlay=document.createElement('div');overlay.style.cssText='position:fixed;inset:0;z-index:100020;background:#0008;display:grid;place-items:center;direction:rtl;padding:14px';
   const form=document.createElement('form');form.style.cssText='background:white;color:#102a43;padding:22px;border-radius:12px;width:min(100%,420px);box-sizing:border-box';
