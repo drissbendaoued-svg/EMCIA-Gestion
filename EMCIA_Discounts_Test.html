@@ -3565,7 +3565,7 @@ function emciaBlankAttendanceHTML(m,gid,tid){
  const enrollments=activeEnrollmentsForMonth(m);
  const weeks=[1,2,3,4].map(n=>'<th colspan="7">الأسبوع '+n+'</th>').join('')+'<th colspan="3"></th>';
  const dates=Array.from({length:31},(_,i)=>'<th>'+(i+1)+'</th>').join('');
- const head='<thead><tr><th rowspan="2" class="payment-col">أداء</th><th rowspan="2" class="student-head">اسم المتعلم</th>'+weeks+'</tr><tr>'+dates+'</tr></thead>';
+ const head='<thead><tr><th rowspan="2" class="payment-col">أداء</th><th rowspan="2" class="student-head" style="white-space:nowrap!important;min-width:115px">اسم&nbsp;المتعلم</th>'+weeks+'</tr><tr>'+dates+'</tr></thead>';
  const blocks=groups.map(g=>({g,students:enrollments.filter(e=>e.gid===g.id).map(e=>by(db.s,e.sid)).filter(Boolean).filter((x,i,a)=>a.findIndex(y=>y.id===x.id)===i).sort((x,y)=>objName(x).localeCompare(objName(y),'ar'))}));
  const pages=[];let page=[],studentTotal=0,slots=0;
  const flush=()=>{if(page.length){pages.push(page);page=[];studentTotal=0;slots=0}};
