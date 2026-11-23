@@ -814,6 +814,7 @@ const $=s=>document.querySelector(s), money=n=>(+n||0).toFixed(2)+" DH", uid=()=
 const nowMonth=()=>new Date().toISOString().slice(0,7), today=()=>new Date().toISOString().slice(0,10);
 let raw={}; try{raw=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){}
 let db={
+ receiptReviews:raw.receiptReviews&&typeof raw.receiptReviews==="object"&&!Array.isArray(raw.receiptReviews)?raw.receiptReviews:{},reviewEvents:Array.isArray(raw.reviewEvents)?raw.reviewEvents:[],
  subj:Array.isArray(raw.subj)?raw.subj:[], t:Array.isArray(raw.t)?raw.t:[], s:Array.isArray(raw.s)?raw.s:[], g:Array.isArray(raw.g)?raw.g:[],
  e:Array.isArray(raw.e)?raw.e:[], p:Array.isArray(raw.p)?raw.p:[], sp:Array.isArray(raw.sp)?raw.sp:[], sc:Array.isArray(raw.sc)?raw.sc:[], at2:Array.isArray(raw.at2)?raw.at2:[], tp:Array.isArray(raw.tp)?raw.tp:[], adj:Array.isArray(raw.adj)?raw.adj:[], cash:Array.isArray(raw.cash)?raw.cash:[], shifts:Array.isArray(raw.shifts)?raw.shifts:[], tatt:Array.isArray(raw.tatt)?raw.tatt:[], wait:Array.isArray(raw.wait)?raw.wait:[], wls:Array.isArray(raw.wls)?raw.wls:[],
  obligations:Array.isArray(raw.obligations)?raw.obligations:[], x:Array.isArray(raw.x)?raw.x:[], oi:Array.isArray(raw.oi)?raw.oi:[], sv:Array.isArray(raw.sv)?raw.sv:[], att:Array.isArray(raw.att)?raw.att:[], sch:Array.isArray(raw.sch)?raw.sch:[], rooms:Array.isArray(raw.rooms)?raw.rooms:[], reserveGoals:raw.reserveGoals&&typeof raw.reserveGoals==="object"&&!Array.isArray(raw.reserveGoals)?{low:Number(raw.reserveGoals.low)||0,dev:Number(raw.reserveGoals.dev)||0}:{low:0,dev:0}
@@ -835,7 +836,7 @@ db.p=db.p.map(o=>({...o,date:o.date||today(),receiptMonth:o.receiptMonth||o.m||n
 db.tp=db.tp.map(o=>({...o,month:o.month||nowMonth(),amount:+o.amount||0,date:o.date||today(),method:o.method||"cash",note:o.note||""}));
 db.p=db.p.map(o=>({...o,receiptNo:o.receiptNo||"",method:o.method||"cash",paymentRef:o.paymentRef||""}));
 db.adj=db.adj.map(o=>({...o,month:o.month||nowMonth(),countedDays:+o.countedDays||0,originalPaid:+o.originalPaid||0,approvedDue:+o.approvedDue||0,refund:+o.refund||0,date:o.date||today()}));
-function save(){emciaRepricePayments(db,emciaPaymentSplitCore);localStorage.setItem(KEY,JSON.stringify(db));window.EMCIA_CLOUD_SYNC?.save(db);window.emciaUpdateAlertCounter?.();window.emciaUpdateCorrectionBadge?.();if(document.getElementById("daily-payment-alerts-content"))emciaRenderDailyPayments();setTimeout(applyLang,0)}
+function save(){db.reviewEvents=Object.entries(db.receiptReviews||{}).map(([id,review])=>({id,...review}));emciaRepricePayments(db,emciaPaymentSplitCore);localStorage.setItem(KEY,JSON.stringify(db));window.EMCIA_CLOUD_SYNC?.save(db);window.emciaUpdateAlertCounter?.();window.emciaUpdateCorrectionBadge?.();if(document.getElementById("daily-payment-alerts-content"))emciaRenderDailyPayments();setTimeout(applyLang,0)}
 function teacherDueOf(p){return +(p?.d??p?.t??0)||0}
 const by=(a,id)=>a.find(x=>x.id===id);
 function objName(o,mode="ui"){if(!o)return "—";let ar=o.nAr||o.n||"",fr=o.nFr||"";if(mode==="both")return [ar,fr].filter(Boolean).join(" / ")||"—";if(mode==="fr")return fr||ar||"—";if(mode==="ar")return ar||fr||"—";return LANG==="fr"?(fr||ar||"—"):(ar||fr||"—")}
@@ -1209,7 +1210,7 @@ function emciaCorrectionCount(){return emciaIsSecretary()?emciaReviewRows().filt
 function emciaCorrectionBadge(){
  document.querySelectorAll(".emcia-correction-badge").forEach(x=>x.remove());
  const count=emciaCorrectionCount();if(!count)return;
- document.querySelectorAll("button").forEach(btn=>{if(btn.textContent.includes("التنبيهات")&&!btn.closest("#alerts")){const span=document.createElement("span");span.className="emcia-correction-badge";span.textContent=count;span.title="تواصيل تحتاج التصحيح";span.style.cssText="display:inline-block;background:#d97706;color:white;border-radius:20px;padding:2px 7px;margin:0 5px;font-size:12px";btn.appendChild(span)}});
+ document.querySelectorAll("button").forEach(btn=>{if((btn.textContent.includes("التنبيهات")||btn.getAttribute("onclick")?.includes("alerts"))&&!btn.closest("#alerts")){const span=document.createElement("span");span.className="emcia-correction-badge";span.textContent=count;span.title="تواصيل تحتاج التصحيح";span.style.cssText="display:inline-block;background:#d97706;color:white;border-radius:20px;padding:2px 7px;margin:0 5px;font-size:12px";btn.appendChild(span)}});
 }
 window.emciaUpdateCorrectionBadge=emciaCorrectionBadge;
 function emciaSubmitCorrectedReceipt(kind,id){
@@ -4688,7 +4689,7 @@ window.addEventListener('beforeunload',event=>{
 });
 const operationalUrl=api+'/rest/v1/emcia_operational_state_v2';
 const financialUrl=api+'/rest/v1/emcia_financial_state_v2';
-const operationalKeys=['subj','t','s','g','e','p','sp','sc','att','at2','sch','rooms','tatt','wait','wls','cash','shifts'];
+const operationalKeys=['reviewEvents','subj','t','s','g','e','p','sp','sc','att','at2','sch','rooms','tatt','wait','wls','cash','shifts'];
 const financialKeys=['tp','adj','x','oi','sv','obligations'];
 const restrictedFields={sc:['unitTeacherDiscount'],g:[],e:['discountTeacher','discountEmcia'],p:['discountTeacher','discountEmcia']};
 const financialFieldPattern=/^(teacherShare|emciaShare|instituteShare|teacherDue|emciaDue|salary|profit|netProfit|commission)$/i;
@@ -4804,6 +4805,7 @@ function joinState(op,fin){
    if(target&&typeof target==='object')for(const [field,value] of Object.entries(item))if(!['_index','_id'].includes(field)&&!(field==='r'&&target.r!=null)&&!(k==='p'&&['d','e','t'].includes(field)&&target[field]!=null))target[field]=value;
   }
  }
+ state.receiptReviews=Object.fromEntries((state.reviewEvents||[]).filter(x=>x&&x.id).map(({id,...review})=>[id,review]));
  emciaRepricePayments(state,cloudPaymentSplit);
 
  return state;
