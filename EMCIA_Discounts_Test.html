@@ -2542,16 +2542,24 @@ function emciaRepricePayments(state,split){
 }
 
 function enrollmentFor(sid,gid,month=nowMonth()){return emciaBillingEnrollment(db.e,sid,gid,month)}
+function emciaExactTeacherRate(rate){
+ const n=Number(rate)||0;
+ // Existing 66.67% / 33.33% entries represent the conventional two-thirds / one-third split.
+ if(Math.abs(n-66.67)<0.00001)return 2/3;
+ if(Math.abs(n-33.33)<0.00001)return 1/3;
+ return n/100;
+}
 function emciaPaymentSplitCore(g,e,amount,month){
- let rate=+g?.r||0;
+ let rate=emciaExactTeacherRate(g?.r);
  const terms=emciaMonthlyTerms(g,e,month);let base=e?.monthlySettlements?.length?terms.base:(Number(e?.fee==null?g?.f:e.fee)||0),disc=activeDiscount(e,month);
  if(disc)disc={...disc,amount:disc.amount*terms.factor,teacher:disc.teacher*terms.factor,emcia:disc.emcia*terms.factor};
  let D=disc?.amount||0;
  if(e?.start&&month<e.start.slice(0,7)||e?.end&&!emciaEnrollmentMonth(e,month))return {teacher:0,emcia:0,discount:0,due:0,base:0,discountTeacher:0,discountEmcia:0};
- let due=Math.max(0,base-D),teacherFull=base*rate/100-(disc?.teacher||0),emciaFull=base*(100-rate)/100-(disc?.emcia||0);
+ let due=Math.max(0,base-D),teacherFull=base*rate-(disc?.teacher||0),emciaFull=base*(1-rate)-(disc?.emcia||0);
  teacherFull=Math.max(0,teacherFull);emciaFull=Math.max(0,emciaFull);
  let a=+amount||0,scale=due>0?Math.min(1,a/due):0;
- let td=teacherFull*scale,ee=emciaFull*scale;
+ let td=Math.round((teacherFull*scale+Number.EPSILON)*100)/100,ee=Math.round((emciaFull*scale+Number.EPSILON)*100)/100;
+ if(!disc?.amount&&a<=due){ee=Math.round((a-td)*100)/100;}
  if(a>due&&!e?.end&&!terms.settlement){let extra=a-due;ee+=extra}
  return {teacher:td,emcia:ee,discount:D,due,base,discountTeacher:disc?.teacher||0,discountEmcia:disc?.emcia||0}
 }
@@ -2828,7 +2836,7 @@ function emciaSessionLedger(asOf=today()){
    const base=Math.max(0,cents(x.unitPrice??e.sessionPrice)),deduction=Math.min(base,Math.max(0,cents(x.unitDiscount??discount?.amount)));
    const bearer=x.unitBearer??discount?.bearer??'none',net=base-deduction,rate=Number(g?.r)||0;
    let teacherDiscount=bearer==='teacher'?deduction:bearer==='half'?Math.round(deduction/2):bearer==='custom'?cents(x.unitTeacherDiscount??discount?.teacher):0;
-   row.cost=net;row.remaining=net;row.teacher=Math.min(net,Math.max(0,Math.round(base*rate/100)-teacherDiscount));row.teacherDiscount=teacherDiscount;
+   row.cost=net;row.remaining=net;row.teacher=Math.min(net,Math.max(0,Math.round(base*emciaExactTeacherRate(rate))-teacherDiscount));row.teacherDiscount=teacherDiscount;
   }
   rows.sort((a,b)=>(a.date+a.time+a.id).localeCompare(b.date+b.time+b.id));lessons.push(...rows);
   const receipts=db.sp.filter(p=>p.sid===sid&&p.gid===gid&&p.date<=asOf).slice().sort((a,b)=>(a.date+(a.createdAt||'')+a.id).localeCompare(b.date+(b.createdAt||'')+b.id));
