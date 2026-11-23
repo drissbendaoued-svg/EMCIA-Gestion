@@ -2378,7 +2378,7 @@ function groups(){
  <input id="gn" placeholder="اسم الفوج المقترح تلقائياً" oninput="markGroupNameManual()">
  <input id="glinkcode" placeholder="اختصار اختياري (غير إلزامي)" oninput="updateSuggestedGroupName()">
  <input id="gf" type="number" placeholder="الواجب الافتراضي">
- <input id="gr" type="number" placeholder="نسبة الأستاذ %">
+ <select id="gr"><option value="">نسبة الأستاذ</option><option value="50">50%</option><option value="60">60%</option><option value="65">65%</option><option value="66.67">⅔ (الثلثان)</option></select>
  <button onclick="addGroup()">إضافة فوج</button>
  </div></div>
  <div class="card emcia-group-list"><h3>لائحة الأفواج</h3><div class="row emcia-group-list-filters"><input id="groupListQuery" placeholder="بحث باسم الفوج أو الأستاذ" oninput="emciaFilterGroupList()"><select id="groupListSubject" onchange="emciaFilterGroupList()">${emciaFilterOptions()}</select><input id="groupListLevel" placeholder="المستوى / التخصص" oninput="emciaFilterGroupList()"><select id="groupListStatus" onchange="emciaFilterGroupList()"><option value="">جميع الحالات</option><option value="active">نشط</option><option value="inactive">غير نشط</option></select></div><div class="emcia-list-table-scroll"><table id="groupListTable"><tr><th>الفوج</th><th>الفئة</th><th>المادة</th><th>المستوى / التخصص</th><th>الاختصار</th><th>الأستاذ</th><th>الواجب</th><th>النسبة</th><th>الحالة</th><th></th></tr>${[...db.g].reverse().map(o=>`<tr data-group-id="${o.id}"><td>${esc(o.n)}</td><td>${esc(o.category||"—")}</td><td>${esc(o.subject||groupSubject(o.id)||"—")}</td><td>${esc(o.level||"—")}</td><td><b>${esc(o.linkCode||"—")}</b></td><td>${esc(name(db.t,o.tid))}</td><td>${money(o.f)}</td><td>${o.r}%</td><td>${o.studyStatus==="stopped"?"متوقف منذ "+esc(o.stoppedOn||""):o.active?"نشط":"غير نشط"}</td><td class="actions"><button onclick="editGroup('${o.id}')">✏️</button>${o.active?"":`<button class="ok" onclick="activateObj('g','${o.id}')">✓ تنشيط</button>`}<button class="danger" onclick="removeObj('g','${o.id}')">🗑️</button></td></tr>`).join("")}</table></div><p id="groupListEmpty" class="muted" hidden>لا توجد أفواج مطابقة للتصفية المحددة</p></div>`;
@@ -2396,7 +2396,20 @@ function addGroup(){
  if(same.length&&$("#gn").dataset.manual!=="1")n=`${n} – ${same.length+1}`;
  db.g.push({id:uid(),n,category,subject,subjectId:subjectIdByLegacyName(subject)||"",level,specialty,linkCode,tid:tt.id,f:+$("#gf").value||0,r:+$("#gr").value||0,active:true});save();groups()
 }
-function editGroup(id){
+function emciaSelectTeacherRate(current){
+ return new Promise(resolve=>{
+  const overlay=document.createElement("div");overlay.style.cssText="position:fixed;inset:0;background:#0008;z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px";
+  const panel=document.createElement("div");panel.style.cssText="background:var(--card,#fff);color:var(--text,#222);border-radius:12px;padding:20px;max-width:360px;width:100%;box-shadow:0 12px 35px #0003";
+  panel.innerHTML='<h3>نسبة الأستاذ</h3><select id="emciaEditTeacherRate" style="width:100%;margin:12px 0"><option value="50">50%</option><option value="60">60%</option><option value="65">65%</option><option value="66.67">⅔ (الثلثان)</option></select><div style="display:flex;gap:10px"><button type="button" id="emciaRateSave">اعتماد</button><button type="button" id="emciaRateCancel">إلغاء</button></div>';
+  overlay.append(panel);document.body.append(overlay);
+  const select=panel.querySelector("select");select.value=String(current);if(!select.value||select.selectedIndex<0)select.selectedIndex=0;
+  const done=v=>{overlay.remove();resolve(v)};
+  panel.querySelector("#emciaRateSave").onclick=()=>done(Number(select.value));
+  panel.querySelector("#emciaRateCancel").onclick=()=>done(null);
+  overlay.onclick=e=>{if(e.target===overlay)done(null)};
+ });
+}
+async function editGroup(id){
  let o=by(db.g,id);if(!o)return;
  let names=[...new Set(activeSubjectRecords().map(x=>x.n).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ar"));
  let cur=subjectById(o.subjectId),txt=names.map((n,i)=>`${i+1}. ${n}${n===(cur?.n||o.subject)?" ✓":""}`).join("\n");
@@ -2412,7 +2425,7 @@ function editGroup(id){
  let tt=eligible[(+tp||1)-1];if(!tt)return alert("اختيار الأستاذ غير صحيح");
  let linkCode=prompt("اختصار الربط بين المادة والمستوى/التخصص",o.linkCode||"");if(linkCode===null)return;linkCode=linkCode.trim();
  let auto=[linkCode||sr.code||sr.n,specialty,objName(tt)].filter(Boolean).join(" – "),gn=prompt("اسم الفوج",o.n||auto);if(gn===null)return;
- let f=prompt("الواجب الافتراضي",o.f);if(f===null)return;let r=prompt("نسبة الأستاذ %",o.r);if(r===null)return;
+ let f=prompt("الواجب الافتراضي",o.f);if(f===null)return;let r=await emciaSelectTeacherRate(o.r);if(r===null)return;
  o.n=gn.trim()||auto;o.subject=sr.n;o.subjectId=sr.id;o.specialty=specialty;o.level=specialty;o.linkCode=linkCode;o.tid=tt.id;if(!isNaN(f))o.f=+f;if(!isNaN(r))o.r=+r;o.active=true;save();groups()
 }
 function groupSubjectRecord(gid){let g=by(db.g,gid);if(!g)return null;return subjectById(g.subjectId)||subjectById(subjectIdByLegacyName(g.subject))}
