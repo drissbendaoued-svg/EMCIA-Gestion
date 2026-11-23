@@ -3452,7 +3452,7 @@ function emciaReportMonthLabel(m){
 }
 function rcSetReport(title,body){
  let box=$("#rcPreview");if(!box){alert("تعذر تجهيز معاينة التقرير.");return}
- box.innerHTML=`<div class="rc-paper">${["executive","monthly","studentAccounts","receiptAudit"].includes($("#rcType")?.value)?`<div class="rc-executive-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #bbb;padding-bottom:10px;margin-bottom:12px"><h2 style="font-size:16px;margin:0;text-align:right;flex:1">${esc(title)}</h2><img src="./EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA" style="width:66px;height:66px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'"></div>`:`<h1>EMCIA</h1><h2>${esc(title)}</h2>`}${body}</div>`;
+ box.innerHTML=`<div class="rc-paper">${["executive","monthly","studentAccounts","receiptAudit","discounts"].includes($("#rcType")?.value)?`<div class="rc-executive-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #bbb;padding-bottom:10px;margin-bottom:12px"><h2 style="font-size:16px;margin:0;text-align:right;flex:1">${esc(title)}</h2><img src="./EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA" style="width:66px;height:66px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'"></div>`:`<h1>EMCIA</h1><h2>${esc(title)}</h2>`}${body}</div>`;
  box.style.display="block"
 }
 function rcFileCode(){
@@ -3499,7 +3499,7 @@ function rcDirectPrint(){
  let doc=frame.contentWindow.document;
  doc.open();
  const printedAt=new Date().toLocaleDateString("ar-MA",{year:"numeric",month:"2-digit",day:"2-digit"});
- const executivePrint=["executive","monthly","receiptAudit"].includes($("#rcType")?.value);
+ const executivePrint=["executive","monthly","receiptAudit","discounts"].includes($("#rcType")?.value);
  doc.write(`<!doctype html><html lang="${LANG==="fr"?"fr":"ar"}" dir="${LANG==="fr"?"ltr":"rtl"}"><head><meta charset="utf-8"><title>EMCIA</title><style>body{font-family:Arial,Tahoma,sans-serif;color:#111;padding:20px}h1,h2{text-align:center}table{width:100%;border-collapse:collapse;margin:10px 0 20px}th,td{border:1px solid #777;padding:7px;text-align:${LANG==="fr"?"left":"right"};font-size:12px}th{background:#eee}.meta,.muted{color:#555}@page{margin:16mm 12mm 20mm;${executivePrint?`@bottom-center{content:"صفحة " counter(page);font-size:10px;color:#555} @bottom-left{content:"تاريخ الطبع: ${printedAt}";font-size:10px;color:#555}`:""}}${executivePrint?`.rc-executive-header{display:flex!important;align-items:center;justify-content:space-between;direction:rtl;break-inside:avoid}.rc-executive-header h2{text-align:right!important;font-size:16px!important;margin:0!important}.rc-executive-header img{width:66px;height:66px;object-fit:contain}`:""}</style></head><body>${paper.outerHTML}
 
 </body></html>`);
@@ -3610,6 +3610,8 @@ function monthlyTeacherAttendanceHTML(m){
 }
 
 function emciaDiscountReportHTML(m){
+ const discountNum=n=>Number(n||0).toLocaleString("fr-MA",{minimumFractionDigits:2,maximumFractionDigits:2});
+ const discountTable=(headers,rows)=>rcTable(headers.map(h=>String(h).includes(" ")?String(h).split(/\s+/).join("<br>"):h),rows);
  const gid=$("#rcDiscountGroup")?.value||"",tid=$("#rcDiscountTeacher")?.value||"",bearer=$("#rcDiscountBearer")?.value||"";
  const scoped=db.e.filter(e=>emciaEnrollmentMonth(e,m)&&by(db.g,e.gid)&&by(db.s,e.sid)&&(!gid||e.gid===gid)&&(!tid||by(db.g,e.gid).tid===tid));
  const base=e=>emciaMonthlyTerms(by(db.g,e.gid),e,m).base;
@@ -3617,14 +3619,14 @@ function emciaDiscountReportHTML(m){
  const sum=(a,fn)=>a.reduce((z,x)=>z+fn(x),0),total=sum(entries,x=>x.v),gross=sum(scoped,base);
  const share=(x,k)=>x.d.amount?x.v*(x.d[k]||0)/x.d.amount:0;
  const pct=(a,b)=>b?(a*100/b).toFixed(1)+"%":"0%";
- const groups=[...new Set(scoped.map(e=>e.gid))].map(id=>{const g=by(db.g,id),es=scoped.filter(e=>e.gid===id),ds=entries.filter(x=>x.e.gid===id),v=sum(ds,x=>x.v);return [esc(g.n),esc(objName(by(db.t,g.tid))||"—"),es.length,ds.length,pct(ds.length,es.length),money(v),pct(v,sum(es,base)),money(sum(ds,x=>share(x,"teacher"))),money(sum(ds,x=>share(x,"emcia")))];});
+ const groups=[...new Set(scoped.map(e=>e.gid))].map(id=>{const g=by(db.g,id),es=scoped.filter(e=>e.gid===id),ds=entries.filter(x=>x.e.gid===id),v=sum(ds,x=>x.v);return [esc(g.n),esc(objName(by(db.t,g.tid))||"—"),es.length,ds.length,pct(ds.length,es.length),discountNum(v),pct(v,sum(es,base)),discountNum(sum(ds,x=>share(x,"teacher"))),discountNum(sum(ds,x=>share(x,"emcia")))];});
  const labels={teacher:"الأستاذ",emcia:"المؤسسة",half:"مشترك 50/50",custom:"توزيع مخصص"};
- const details=entries.map(x=>[esc(objName(by(db.s,x.e.sid))),esc(x.g.n),esc(objName(by(db.t,x.g.tid))||"—"),money(x.b),money(x.v),money(x.b-x.v),esc(labels[x.d.bearer]||"—"),money(share(x,"teacher")),money(share(x,"emcia")),esc(x.e.discountStart||x.e.start.slice(0,7)),esc(x.e.discountTerm==="month"?"شهر واحد":x.e.discountTerm==="season"?"نهاية الموسم":x.e.discountTerm==="date"?(x.e.discountEnd||"—"):"حتى الإيقاف")]);
- return '<p class="muted">تقرير قراءة فقط للتخفيضات السارية في الشهر المحدد. كل تسجيل في فوج يحسب مستقلاً.</p>'+
- rcTable(["المؤشر","القيمة"],[["التسجيلات المشمولة",scoped.length],["التسجيلات المستفيدة",entries.length],["المتعلمون المستفيدون دون تكرار",new Set(entries.map(x=>x.e.sid)).size],["نسبة التسجيلات المستفيدة",pct(entries.length,scoped.length)],["الواجبات الأصلية",money(gross)],["التخفيض الشهري",money(total)],["نسبة التخفيض المالي",pct(total,gross)],["يتحمله الأساتذة",money(sum(entries,x=>share(x,"teacher")))],["تتحمله المؤسسة",money(sum(entries,x=>share(x,"emcia")))]])+
- '<h3>التخفيضات حسب الفوج</h3>'+rcTable(["الفوج","الأستاذ","التسجيلات","المستفيدون","نسبة المستفيدين","مبلغ التخفيض","نسبة التخفيض المالي","حصة الأستاذ","حصة المؤسسة"],groups)+
- '<h3>تفاصيل المستفيدين</h3>'+(details.length?rcTable(["المتعلم","الفوج","الأستاذ","الواجب الأصلي","التخفيض","الواجب النهائي","الجهة","حصة الأستاذ","حصة المؤسسة","بداية التخفيض","المدة"],details):"<p>لا توجد تخفيضات سارية وفق الاختيارات.</p>")+
- '<p class="muted">الأرقام تعبر عن التخفيضات المقررة وليست التحصيل الفعلي. تقييم القدرة على تقديم تخفيضات إضافية يتطلب بيانات التكاليف.</p>';
+ const details=entries.map(x=>[esc(objName(by(db.s,x.e.sid))),esc(x.g.n),esc(objName(by(db.t,x.g.tid))||"—"),discountNum(x.b),discountNum(x.v),discountNum(x.b-x.v),esc(labels[x.d.bearer]||"—"),discountNum(share(x,"teacher")),discountNum(share(x,"emcia")),esc(x.e.discountStart||x.e.start.slice(0,7)),esc(x.e.discountTerm==="month"?"شهر واحد":x.e.discountTerm==="season"?"نهاية الموسم":x.e.discountTerm==="date"?(x.e.discountEnd||"—"):"حتى الإيقاف")]);
+ return '<div class="emcia-discount-report"><style>.emcia-discount-report table{width:100%;border-collapse:collapse}.emcia-discount-report th,.emcia-discount-report td{border:1px solid #d9dee4!important;padding:4px 3px!important;font-size:10px;vertical-align:middle}.emcia-discount-report th{background:#edf0f3!important;white-space:normal!important;text-align:center;line-height:1.25}.emcia-discount-report td:nth-child(n+3){background:#f7f8f9}.emcia-discount-report td{font-variant-numeric:tabular-nums}@media print{.emcia-discount-report th,.emcia-discount-report td{font-size:9.5px!important;padding:3px 2px!important}.emcia-discount-report table{table-layout:auto!important}}</style><p class="muted">تقرير قراءة فقط للتخفيضات السارية في الشهر المحدد. كل تسجيل في فوج يحسب مستقلاً.</p>'+
+ discountTable(["المؤشر","القيمة"],[["التسجيلات المشمولة",scoped.length],["التسجيلات المستفيدة",entries.length],["المتعلمون المستفيدون دون تكرار",new Set(entries.map(x=>x.e.sid)).size],["نسبة التسجيلات المستفيدة",pct(entries.length,scoped.length)],["الواجبات الأصلية",discountNum(gross)],["التخفيض الشهري",discountNum(total)],["نسبة التخفيض المالي",pct(total,gross)],["يتحمله الأساتذة",discountNum(sum(entries,x=>share(x,"teacher")))],["تتحمله المؤسسة",discountNum(sum(entries,x=>share(x,"emcia")))]])+
+ '<h3>التخفيضات حسب الفوج</h3>'+discountTable(["الفوج","الأستاذ","التسجيلات","المستفيدون","نسبة المستفيدين","مبلغ التخفيض","نسبة التخفيض المالي","حصة الأستاذ","حصة المؤسسة"],groups)+
+ '<h3>تفاصيل المستفيدين</h3>'+(details.length?discountTable(["المتعلم","الفوج","الأستاذ","الواجب الأصلي","التخفيض","الواجب النهائي","الجهة","حصة الأستاذ","حصة المؤسسة","بداية التخفيض","المدة"],details):"<p>لا توجد تخفيضات سارية وفق الاختيارات.</p>")+
+ '<p class="muted">الأرقام تعبر عن التخفيضات المقررة وليست التحصيل الفعلي. تقييم القدرة على تقديم تخفيضات إضافية يتطلب بيانات التكاليف.</p></div>';
 }
 function emciaReceiptAuditHTML(m){
  if(!emciaCanViewManagement())return '<p>هذا السجل مخصص للمدير والمحاسب.</p>';
@@ -3662,7 +3664,7 @@ function rcBuildReport(){
   rcSetReport("سجل الأداء والتسبيق — "+emciaReportMonthLabel(m),emciaReceiptAuditHTML(m));
  }else if(type==="discounts"){
   if(!emciaCanViewManagement()){rcClearPreview("هذا التقرير متاح للمدير والمحاسب فقط.");return false}
-  rcSetReport(`تقرير التخفيضات — ${m}`,emciaDiscountReportHTML(m));
+  rcSetReport(`تقرير التخفيضات — ${emciaReportMonthLabel(m)}`,emciaDiscountReportHTML(m));
  }else if(type==="executive"){
   if(!emciaCanViewManagement()){rcClearPreview("هذا التقرير متاح للمدير والمحاسب فقط.");return false}
   const ens=activeEnrollmentsForMonth(m),unified=emciaAccountTotals(emciaAccountRows(m)),due=unified.due;
