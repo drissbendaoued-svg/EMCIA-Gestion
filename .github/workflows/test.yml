@@ -1,0 +1,19 @@
+# EMCIA-Gestion tests
+name: Tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node tests/release-smoke-fixed.cjs && node tests/waiting-groups.cjs && node tests/schedule-room.cjs && node tests/student-file-search.cjs && node tests/unified-accounts-fixed.cjs
