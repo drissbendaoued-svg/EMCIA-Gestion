@@ -16,4 +16,4 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: node tests/waiting-groups.cjs && node tests/schedule-room.cjs && node tests/student-file-search.cjs
+      - run: node tests/release-smoke-fixed.cjs && node tests/waiting-groups.cjs && node tests/schedule-room.cjs && node tests/student-file-search.cjs && node tests/unified-accounts-fixed.cjs
