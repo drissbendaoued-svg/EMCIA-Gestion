@@ -834,6 +834,7 @@ const $=s=>document.querySelector(s), money=n=>(+n||0).toFixed(2)+" DH", uid=()=
 const nowMonth=()=>new Date().toISOString().slice(0,7), today=()=>new Date().toISOString().slice(0,10);
 let raw={}; try{raw=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){}
 let db={
+ duplicateDismissals:Array.isArray(raw.duplicateDismissals)?raw.duplicateDismissals:[],
  monthlyAdjustmentDues:Array.isArray(raw.monthlyAdjustmentDues)?raw.monthlyAdjustmentDues:[],
  receiptReviews:raw.receiptReviews&&typeof raw.receiptReviews==="object"&&!Array.isArray(raw.receiptReviews)?raw.receiptReviews:{},reviewEvents:Array.isArray(raw.reviewEvents)?raw.reviewEvents:[],
  subj:Array.isArray(raw.subj)?raw.subj:[], t:Array.isArray(raw.t)?raw.t:[], s:Array.isArray(raw.s)?raw.s:[], g:Array.isArray(raw.g)?raw.g:[],
@@ -1256,6 +1257,12 @@ Object.assign(I18N,{
  "التزامات غير مؤداة": "Obligations impayées",
  "التسبيقات الناتجة عن الأداءات المركبة": "Avances issues des paiements composites",
  "كشف الأداءات المسبقة": "Relevé des paiements anticipés",
+ "تأكيد عدم التكرار": "Confirmer les paiements distincts",
+ "تأكيد أن هذه الأداءات مستقلة؟": "Confirmer qu’il s’agit de paiements distincts ?",
+ "تعذر حفظ تأكيد عدم التكرار": "Impossible d’enregistrer la confirmation",
+ "راجع التواصيل للتأكد من أن كل أداء مستقل.": "Vérifiez les reçus pour confirmer que les paiements sont distincts.",
+ "لا توجد تنبيهات تكرار تحتاج إلى مراجعة.": "Aucune alerte de doublon à examiner.",
+ "متابعة الواجبات المتبقية ومراجعة تنبيهات الأداء.": "Suivez les cotisations dues et examinez les alertes de paiement.",
  "واجبات مؤداة قبل بداية الشهر": "Cotisations réglées avant le début du mois",
  "تسبيقات الشهر المختار": "Avances du mois sélectionné",
  "المجموع لهذا المتعلم": "Total pour cet apprenant",
@@ -2453,6 +2460,12 @@ const I18N_EN={
  "التزامات غير مؤداة": "Unpaid obligations",
  "التسبيقات الناتجة عن الأداءات المركبة": "Advances from composite payments",
  "كشف الأداءات المسبقة": "Early payments statement",
+ "تأكيد عدم التكرار": "Confirm separate payments",
+ "تأكيد أن هذه الأداءات مستقلة؟": "Confirm that these are separate payments?",
+ "تعذر حفظ تأكيد عدم التكرار": "Could not save the confirmation",
+ "راجع التواصيل للتأكد من أن كل أداء مستقل.": "Check the receipts to confirm that the payments are separate.",
+ "لا توجد تنبيهات تكرار تحتاج إلى مراجعة.": "No duplicate alerts to review.",
+ "متابعة الواجبات المتبقية ومراجعة تنبيهات الأداء.": "Track outstanding fees and review payment alerts.",
  "واجبات مؤداة قبل بداية الشهر": "Fees paid before the start of the month",
  "تسبيقات الشهر المختار": "Advances for the selected month",
  "المجموع لهذا المتعلم": "Total for this learner",
@@ -7067,6 +7080,7 @@ window.emciaUpdateAlertCounter=function(){
 };
 function emciaPotentialDuplicatePayments(){
  const buckets=new Map();
+ const confirmed=new Set((db.duplicateDismissals||[]).map(x=>x.key));
  for(const p of [...db.p.map(x=>({...x,_mode:'شهري'})),...db.sp.map(x=>({...x,_mode:'بالحصة'}))]){
   if(p.voidedAt||p.cancelledAt||!p.sid||!p.date)continue;
   const amount=Number(p.netAfterRefund??p.a);
@@ -7075,14 +7089,45 @@ function emciaPotentialDuplicatePayments(){
   if(!buckets.has(key))buckets.set(key,[]);
   buckets.get(key).push(p);
  }
- return [...buckets.values()].filter(rows=>rows.length>1).map(rows=>({rows,student:by(db.s,rows[0].sid),group:by(db.g,rows[0].gid)}));
+ return [...buckets].filter(([,rows])=>rows.length>1).map(([bucket,rows])=>{
+  const receipts=rows.map(p=>JSON.stringify([p.id,p.receiptNo,p.a,p.method,p.paymentRef,
+   p._mode==='شهري'?paymentAllocations(p).map(x=>JSON.stringify([x.month,Number(x.amount)])).sort():p.paymentTiming]));
+  const key=JSON.stringify([bucket,receipts.sort()]);
+  return {key,rows,student:by(db.s,rows[0].sid),group:by(db.g,rows[0].gid)};
+ }).filter(item=>!confirmed.has(item.key));
 }
-function emciaDuplicateAlertsHTML(){
+function emciaRenderDuplicateAlerts(section){
  const duplicates=emciaPotentialDuplicatePayments();
- return '<div class="card"><h3>تنبيهات احتمال تكرار الأداءات ('+duplicates.length+')</h3><p class="muted">تطابق المتعلم والفوج والتاريخ والمبلغ ونظام الأداء لا يعني بالضرورة وجود خطأ. لا تُحذف أي عملية تلقائياً. راجع التوصيلات مع الكاتبة قبل اتخاذ قرار.</p>'+(duplicates.length?'<div style="overflow-x:auto"><table><tr><th>المتعلم</th><th>الفوج</th><th>التاريخ</th><th>المبلغ</th><th>أرقام التوصيلات</th><th>الإجراء</th></tr>'+duplicates.map((x,i)=>'<tr><td>'+esc(objName(x.student))+'</td><td>'+esc(objName(x.group))+'</td><td>'+esc(x.rows[0].date)+'</td><td>'+money(x.rows[0].a)+'</td><td>'+x.rows.map(p=>esc(p.receiptNo||'بدون رقم')).join(' / ')+'</td><td><button type="button" onclick="emciaReviewDuplicatePayment('+i+')">مراجعة</button></td></tr>').join('')+'</table></div>':'<p>لا توجد أداءات متطابقة وفق معايير الفحص.</p>')+'</div>';
+ section.innerHTML=`<summary><strong>الأداءات المكررة المحتملة (${duplicates.length})</strong></summary>
+ <p class="muted">راجع التواصيل للتأكد من أن كل أداء مستقل.</p>
+ ${duplicates.length?`<div class="tablewrap"><table><thead><tr><th>المتعلم</th><th>الفوج</th><th>التاريخ</th><th>المبلغ</th><th>أرقام التوصيلات</th></tr></thead><tbody>
+ ${duplicates.map(item=>`<tr><td><strong>${esc(objName(item.student))}</strong>
+ <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
+ <button type="button" data-duplicate-key="${esc(item.key)}" onclick="emciaReviewDuplicatePayment(this.dataset.duplicateKey)">مراجعة</button>
+ ${emciaCanViewManagement()?`<button type="button" data-duplicate-key="${esc(item.key)}" onclick="emciaConfirmDistinctPayments(this)">تأكيد عدم التكرار</button>`:''}
+ </div></td><td>${esc(objName(item.group))}</td><td>${esc(item.rows[0].date)}</td><td>${money(item.rows[0].netAfterRefund??item.rows[0].a)}</td><td>${item.rows.map(p=>esc(p.receiptNo||'بدون رقم')).join(' / ')}</td></tr>`).join('')}
+ </tbody></table></div>`:'<p>لا توجد تنبيهات تكرار تحتاج إلى مراجعة.</p>'}`;
 }
-async function emciaReviewDuplicatePayment(index){
- const item=emciaPotentialDuplicatePayments()[index];if(!item)return alert('حدّث التنبيهات');
+async function emciaConfirmDistinctPayments(button){
+ if(!emciaCanViewManagement()||button.disabled)return;
+ const item=emciaPotentialDuplicatePayments().find(x=>x.key===button.dataset.duplicateKey);
+ if(!item)return alert('حدّث التنبيهات');
+ const lines=item.rows.map(p=>{
+  const allocations=p._mode==='شهري'?paymentAllocations(p).map(x=>x.month+' · '+money(x.amount)).join(' / '):'';
+  return (p.receiptNo||'بدون رقم')+' — '+money(p.a)+(allocations?' ('+allocations+')':'');
+ });
+ if(!confirm('تأكيد أن هذه الأداءات مستقلة؟'+'\n'+objName(item.student)+' — '+item.rows[0].date+'\n'+lines.join('\n')))return;
+ button.disabled=true;
+ try{
+  const record=await window.EMCIA_CLOUD_SYNC.confirmDistinctPayments(item.key);
+  (db.duplicateDismissals??=[]).push(record);
+  const section=document.getElementById('emcia-duplicate-alerts');
+  if(section){emciaRenderDuplicateAlerts(section);applyLang()}
+ }catch(error){alert('تعذر حفظ تأكيد عدم التكرار: '+error.message)}
+ finally{button.disabled=false}
+}
+async function emciaReviewDuplicatePayment(key){
+ const item=emciaPotentialDuplicatePayments().find(x=>x.key===key);if(!item)return alert('حدّث التنبيهات');
  const details=item.rows.map((p,i)=>(i+1)+'. '+(p.receiptNo||'بدون رقم')+' — '+money(p.a)+' — '+p.id).join('\\n');
  const choice=prompt('مراجعة أداءات '+objName(item.student)+' بتاريخ '+item.rows[0].date+'\\n'+details+'\\n\\nأدخل رقم العملية (1 إلى '+item.rows.length+') التي تأكدت من تكرارها لإلغائها، أو اترك الحقل فارغاً للمراجعة فقط:');
  if(choice===null||!choice.trim())return;
@@ -7103,7 +7148,7 @@ function emciaAdministrativeAlerts(){
  const panel=document.getElementById('alerts');if(!panel)return;
  panel.replaceChildren();
  const heading=document.createElement('h2');heading.textContent='التنبيهات الإدارية';
- const intro=document.createElement('p');intro.textContent='متابعة الواجبات المتبقية حسب الشهر ونوع الحالة. لا تُرسل رسائل تلقائية ولا تُعدّل البيانات.';
+ const intro=document.createElement('p');intro.textContent='متابعة الواجبات المتبقية ومراجعة تنبيهات الأداء.';
  const filters=document.createElement('div');filters.style.cssText='display:flex;flex-wrap:wrap;align-items:end;gap:8px;margin:12px 0';
  const monthLabel=document.createElement('label');monthLabel.textContent='الشهر';monthLabel.style.cssText='display:flex;flex-direction:column;gap:4px;font-size:13px';
  const monthInput=document.createElement('input');monthInput.type='month';monthInput.value=nowMonth();monthInput.max=nowMonth();monthLabel.appendChild(monthInput);
@@ -7117,7 +7162,7 @@ function emciaAdministrativeAlerts(){
  const go=document.createElement('button');go.type='button';go.textContent='فتح متابعة المتأخرات';go.style.margin='8px';go.onclick=()=>{show('arrears')};
  filters.append(monthLabel,typeLabel,allMonths);
  panel.append(heading,intro);
- const duplicateSection=document.createElement('details');duplicateSection.className='card';duplicateSection.innerHTML='<summary><strong>الأداءات المكررة المحتملة ('+emciaPotentialDuplicatePayments().length+')</strong></summary>'+emciaDuplicateAlertsHTML();panel.appendChild(duplicateSection);
+ const duplicateSection=document.createElement('details');duplicateSection.id='emcia-duplicate-alerts';duplicateSection.className='card';emciaRenderDuplicateAlerts(duplicateSection);panel.appendChild(duplicateSection);
  const arrearsSection=document.createElement('details');arrearsSection.className='card';arrearsSection.innerHTML='<summary><strong>المتأخرات والأداءات الجزئية</strong></summary>';
  arrearsSection.append(filters,count,go,list);panel.appendChild(arrearsSection);
  if(emciaCanViewManagement()){
@@ -7596,7 +7641,7 @@ window.addEventListener('beforeunload',event=>{
 });
 const operationalUrl=api+'/rest/v1/emcia_operational_state_v2';
 const financialUrl=api+'/rest/v1/emcia_financial_state_v2';
-const operationalKeys=['reviewEvents','subj','t','s','g','e','p','sp','sc','att','at2','sch','rooms','tatt','wait','wls','cash','shifts'];
+const operationalKeys=['reviewEvents','duplicateDismissals','subj','t','s','g','e','p','sp','sc','att','at2','sch','rooms','tatt','wait','wls','cash','shifts'];
 const financialKeys=['tp','adj','x','oi','sv','obligations'];
 const restrictedFields={sc:['unitTeacherDiscount'],g:[],e:['discountTeacher','discountEmcia'],p:['discountTeacher','discountEmcia']};
 const financialFieldPattern=/^(teacherShare|emciaShare|instituteShare|teacherDue|emciaDue|salary|profit|netProfit|commission)$/i;
@@ -7761,11 +7806,11 @@ async function cloudFetch(){
 }
 async function atomicCloudWrite(op,fin){
  const body={p_id:cloudId,p_operational_revision:opRevision,p_operational:op};
- if(canFinance()){body.p_financial_revision=finRevision;body.p_financial=fin;}
+ if(canFinance()&&fin){body.p_financial_revision=finRevision;body.p_financial=fin;}
  const out=await request(api+'/rest/v1/rpc/emcia_save_state_v2',{method:'POST',headers:headers(),body:JSON.stringify(body)});
  if(!Number.isSafeInteger(Number(out.operational_revision)))throw Error('تعذر تأكيد عملية الحفظ المترابط');
  opRevision=Number(out.operational_revision);
- if(canFinance())finRevision=Number(out.financial_revision);
+ if(canFinance()&&fin)finRevision=Number(out.financial_revision);
  revision=opRevision;
 }
 async function flushCloud(){
@@ -7797,6 +7842,25 @@ window.EMCIA_CANCEL_DUPLICATE=async function(collection,paymentId,reason){
  return result;
 };
 window.EMCIA_CLOUD_SYNC={
+ async confirmDistinctPayments(key){
+  if(!canFinance()||!token||blocked||saving||dirty||cashPending)throw Error('انتظر اكتمال المزامنة قبل التأكيد.');
+  saving=true;
+  try{
+   const {operational}=await loadCloudSnapshot();
+   if(Number(operational.revision)!==opRevision)throw Error('وصلت تغييرات من حساب آخر. حدّث الصفحة ثم أعد المحاولة.');
+   const op={...operational.payload};
+   const record={key,confirmedAt:new Date().toISOString(),confirmedBy:userId};
+   op.duplicateDismissals=[...(op.duplicateDismissals||[]),record];
+   await atomicCloudWrite(op);
+   const current=JSON.parse(localStorage.getItem(localKey)||'{}');
+   (current.duplicateDismissals??=[]).push(record);
+   localStorage.setItem(localKey,JSON.stringify(current));
+   return record;
+  }finally{
+   saving=false;
+   if(dirty&&!blocked)flushCloud();
+  }
+ },
  saveCash(collection,action,record){
   if(canFinance())return;
   cashPending++;
