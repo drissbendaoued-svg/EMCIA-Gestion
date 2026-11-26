@@ -320,9 +320,9 @@ html[dir="ltr"] #mobileNavToggle{margin-right:auto;margin-left:8px}
 .oi-compact-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:8px 0;align-items:end}.oi-compact-grid>div{min-width:0}.oi-compact-grid label{display:block;font-size:12px;margin:0 0 4px}.oi-compact-grid input,.oi-compact-grid select{width:100%;min-width:0;max-width:100%;padding:8px 5px;font-size:clamp(11px,2.7vw,14px);height:39px}.oi-compact-grid .oi-action button{width:100%;min-width:0;padding:8px 3px;font-size:clamp(10px,2.5vw,13px);min-height:39px;white-space:normal}
 
 /* Waiting cohorts: contact-first cards fit narrow phones. */
-.wl-cohort>summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;font-weight:700}
+.wl-cohort>summary{cursor:pointer;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 8px;align-items:baseline;text-align:start;font-weight:700}
 .wl-cohort>summary::before{content:"▸"}.wl-cohort[open]>summary::before{content:"▾"}
-.wl-cohort>summary span{font-size:12px;color:var(--muted)}
+.wl-cohort>summary span{grid-column:2;font-size:12px;color:var(--muted)}
 .wl-person{padding:12px 0;border-bottom:1px solid var(--line);min-width:0}
 .wl-person-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px}
 .wl-person-head>span{font-size:12px;color:var(--muted)}
@@ -762,11 +762,25 @@ main .page:not(#workspace):not(#home) textarea:focus-visible{outline:2px solid #
 </head>
 <body><div id="authGate"><div class="panel"><div class="emcia-display-controls">
 <button class="emcia-theme-toggle" type="button" data-toggle-theme aria-label="التبديل إلى الوضع الليلي"></button>
-<button class="emcia-language-toggle" type="button" data-toggle-language lang="fr" aria-label="Français">F</button>
+<details class="emcia-language-menu">
+<summary data-language-summary aria-label="اللغة"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg></summary>
+<div class="emcia-language-options">
+<button type="button" data-language="ar" lang="ar" dir="rtl">العربية</button>
+<button type="button" data-language="fr" lang="fr" dir="ltr">Français</button>
+<button type="button" data-language="en" lang="en" dir="ltr">English</button>
+</div>
+</details>
 </div><div class="emcia-login-brand"><img src="./EMCIA_Official_Logo-1.jpg" alt="الشعار الرسمي لمؤسسة EMCIA" class="emcia-login-logo" onerror="this.hidden=true"><h1 data-fr="Bienvenue à EMCIA">مرحبًا بكم في EMCIA</h1><p data-fr="Gestion de l’établissement">نظام تدبير المؤسسة</p></div><form id="authForm"><label><span data-fr="Adresse e-mail">البريد الإلكتروني</span><input id="authEmail" type="email" required autocomplete="username" ></label><label for="authPassword" data-fr="Mot de passe">كلمة المرور</label><div class="emcia-password-field"><div class="emcia-eye-wrap"><input id="authPassword" type="password" required autocomplete="current-password"><input id="authPasswordVisible" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" style="display:none" oninput="document.getElementById('authPassword').value=this.value"><button class="emcia-eye-button" id="authPasswordEye" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false" onclick="emciaLoginEyeClick()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><button id="emcia-login-submit" type="submit" data-fr="Connexion">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d" data-fr="Mot de passe oublié ?">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p data-fr="Saisissez votre adresse e-mail pour recevoir le lien de réinitialisation.">أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" data-fr-placeholder="Adresse e-mail" required><button type="submit" data-fr="Envoyer le lien">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p data-fr="Choisissez un nouveau mot de passe (8 caractères minimum).">اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة" data-fr-placeholder="Nouveau mot de passe"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور" data-fr-placeholder="Confirmer le mot de passe"><button type="submit" data-fr="Enregistrer le nouveau mot de passe">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><div class="emcia-login-footer" data-fr="Année scolaire 2026–2027">الموسم الدراسي 2026–2027</div><small data-fr="Les données sont conservées dans le système cloud de l’établissement.">البيانات محفوظة بأمان في النظام السحابي للمؤسسة.</small></div></div>
 <header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.17.2</small><div class="emcia-display-controls">
 <button class="emcia-theme-toggle" type="button" data-toggle-theme aria-label="التبديل إلى الوضع الليلي"></button>
-<button class="emcia-language-toggle" type="button" data-toggle-language lang="fr" aria-label="Français">F</button>
+<details class="emcia-language-menu">
+<summary data-language-summary aria-label="اللغة"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg></summary>
+<div class="emcia-language-options">
+<button type="button" data-language="ar" lang="ar" dir="rtl">العربية</button>
+<button type="button" data-language="fr" lang="fr" dir="ltr">Français</button>
+<button type="button" data-language="en" lang="en" dir="ltr">English</button>
+</div>
+</details>
 </div></header>
 <button id="mobileNavToggle" type="button" onclick="toggleMobileNav()" aria-label="إظهار أو إخفاء القائمة">☰ القائمة</button><div id="appWorkspace"><nav id="nav"></nav>
 <main>
@@ -786,9 +800,9 @@ main .page:not(#workspace):not(#home) textarea:focus-visible{outline:2px solid #
 <section id="adjustments" class="page"></section>
 <section id="expenses" class="page"></section>
 <section id="budget" class="page"></section>
-<section id="reportcenter" class="page"></section>
-<section id="teacherfile" class="page"></section>
-<section id="studentfile" class="page"></section>
+<section id="reportcenter" class="page" lang="ar" dir="rtl"></section>
+<section id="teacherfile" class="page" lang="ar" dir="rtl"></section>
+<section id="studentfile" class="page" lang="ar" dir="rtl"></section>
 <section id="daily" class="page"></section>
 <section id="alerts" class="page"></section>
 <section id="schedule" class="page"></section>
@@ -796,10 +810,10 @@ main .page:not(#workspace):not(#home) textarea:focus-visible{outline:2px solid #
 <section id="teacheratt" class="page"></section>
 <section id="arrears" class="page"></section>
 <section id="analysis" class="page"></section><section id="receiptreview" class="page"></section><section id="financeoperations" class="page"></section>
-<section id="reports" class="page"></section>
-<section id="exports" class="page"></section>
-<section id="backup" class="page"></section>
-<section id="certification" class="page"></section>
+<section id="reports" class="page" lang="ar" dir="rtl"></section>
+<section id="exports" class="page" lang="ar" dir="rtl"></section>
+<section id="backup" class="page" lang="ar" dir="rtl"></section>
+<section id="certification" class="page" lang="ar" dir="rtl"></section>
 </main></div>
 <script id="emcia-app-source" type="text/plain">
 const KEY="emcia_core_mobile";
@@ -942,12 +956,305 @@ Object.assign(I18N,{
 "العربية / Français":"Arabe / Français","الاسم بالعربية":"Nom en arabe","Nom en français":"Nom en français"
 });
 
-let LANG=localStorage.getItem("emcia_lang")||"ar";
+Object.assign(I18N,{
+ "الاسم بالعربية": "Nom en arabe",
+ "أسماء التقرير الإداري": "Noms du rapport administratif",
+ "حسب لغة الواجهة": "Selon la langue de l’interface",
+ "العربية / Français": "Arabe / Français",
+ "تقارير جاهزة للأرشفة والطباعة بصيغ PDF وXLS.": "Rapports prêts pour l’archivage et l’impression aux formats PDF et XLS.",
+ "الاسم الكامل": "Nom complet",
+ "اسم الفوج": "Nom du groupe",
+ "اسم الأستاذ": "Nom de l’enseignant",
+ "اسم المتعلم": "Nom de l’apprenant",
+ "المادة": "Matière",
+ "النسبة الافتراضية %": "Taux par défaut %",
+ "الواجب الافتراضي": "Tarif par défaut",
+ "نسبة الأستاذ %": "Taux de l’enseignant %",
+ "هاتف ولي الأمر": "Téléphone du parent/tuteur",
+ "تاريخ التسجيل بالمؤسسة": "Date d’inscription à l’établissement",
+ "الواجب الشهري المعتمد من الفوج": "Tarif mensuel du groupe",
+ "الاستحقاق": "Montant dû",
+ "الاستثناء": "Exception",
+ "بداية الدراسة": "Début des cours",
+ "مصاريف": "Dépenses",
+ "مداخيل أخرى": "Autres recettes",
+ "المصدر": "Source",
+ "الفئة": "Catégorie",
+ "المبلغ": "Montant",
+ "التاريخ": "Date",
+ "السبب": "Motif",
+ "المصاريف المسجلة": "Dépenses enregistrées",
+ "المداخيل الأخرى المسجلة": "Autres recettes enregistrées",
+ "صافي التشغيل قبل الادخار": "Résultat d’exploitation avant épargne",
+ "تحويل إلى الادخار": "Transférer vers l’épargne",
+ "صندوق التوفير / Fonds de réserve": "Fonds de réserve",
+ "إجمالي مستحق الأستاذ": "Rémunération totale de l’enseignant",
+ "مجموع الفوج": "Total du groupe",
+ "لا توجد أداءات مسجلة خلال هذا الشهر": "Aucun paiement enregistré durant ce mois"
+});
+const I18N_EN={
+ "ملاحظات": "Notes",
+ "المادة أو المواد المطلوبة": "Requested subject(s)",
+ "الأحد": "Sunday",
+ "الاثنين": "Monday",
+ "الثلاثاء": "Tuesday",
+ "الأربعاء": "Wednesday",
+ "الخميس": "Thursday",
+ "الجمعة": "Friday",
+ "السبت": "Saturday",
+ "مرحبًا بكم في EMCIA": "Welcome to EMCIA",
+ "نظام تدبير المؤسسة": "Institution management system",
+ "البريد الإلكتروني": "Email",
+ "كلمة المرور": "Password",
+ "دخول إلى الحساب": "Sign in",
+ "نسيت كلمة المرور؟": "Forgot your password?",
+ "أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.": "Enter the account email to receive a reset link. Open the link, then choose a new password.",
+ "إرسال رابط الاستعادة": "Send recovery link",
+ "اختر كلمة مرور جديدة (8 أحرف على الأقل).": "Choose a new password (at least 8 characters).",
+ "حفظ كلمة المرور الجديدة": "Save new password",
+ "كلمة المرور الجديدة": "New password",
+ "تأكيد كلمة المرور": "Confirm password",
+ "العربية": "العربية",
+ "☰ القائمة": "☰ Menu",
+ "الإدارة": "Administration",
+ "التدبير اليومي": "Daily operations",
+ "المالية": "Finances",
+ "المحاسبة والتدبير": "Accounting & management",
+ "الملفات والمتابعة": "Records & follow-up",
+ "التقارير والأرشفة": "Reports & archive",
+ "الإشهاد والشواهد": "Certification & certificates",
+ "فضاء تدبير المؤسسة": "Institution management",
+ "الوصول السريع": "Quick access",
+ "المتعلمون": "Learners",
+ "الأداءات": "Payments",
+ "المصاريف": "Expenses",
+ "التقارير": "Reports",
+ "تذكير بالالتزامات المالية": "Financial obligations reminder",
+ "تنبيه": "alert",
+ "لا توجد التزامات تستدعي التذكير حالياً.": "No obligations currently need a reminder.",
+ "ضبط المواعيد الشهرية": "Set monthly due dates",
+ "التاريخ": "Date",
+ "الحصص": "Sessions",
+ "حضور ناقص": "Incomplete attendance",
+ "السعة": "Capacity",
+ "غياب متكرر": "Repeated absences",
+ "كل المتأخرات": "All arrears",
+ "تنبيه اليوم": "Today's alert",
+ "برنامج اليوم": "Today's schedule",
+ "لا توجد حصص مبرمجة لهذا اليوم.": "No sessions scheduled for this day.",
+ "متابعة أداء متعلمي اليوم": "Payment follow-up for today's learners",
+ "واجبات الأفواج المبرمجة لهذا اليوم، بعد حلول تاريخ الاستحقاق. التذكير يوثّق مرة واحدة لكل متعلم في اليوم ولا يغيّر المبلغ المتبقي.": "Dues for groups scheduled today, after the due date. The reminder is logged once per learner per day and does not change the remaining amount.",
+ "الفوج": "Group",
+ "جميع الأفواج": "All groups",
+ "حالة الأداء": "Payment status",
+ "جميع الحالات": "All statuses",
+ "غير مؤدى": "Unpaid",
+ "أداء جزئي": "Partial payment",
+ "متأخرات سابقة": "Previous arrears",
+ "الحضور": "Attendance",
+ "جميع المبرمجين": "All scheduled",
+ "الحاضرون فقط": "Present only",
+ "تحديث سجل التذكير": "Refresh reminder log",
+ "تعذر التحقق من سجل التذكير. أعد المحاولة.": "Could not check the reminder log. Try again.",
+ "لا توجد مستحقات شهرية مطابقة للاختيارات لدى متعلمي اليوم.": "No monthly dues matching the filters for today's learners.",
+ "التنبيهات التشغيلية": "Operational alerts",
+ "✓ تسجيل الحضور مكتمل للحصص المسجلة اليوم.": "✓ Attendance is complete for today's recorded sessions.",
+ "✓ لا يوجد تجاوز لسعة القاعات في حصص اليوم.": "✓ No room capacity exceeded in today's sessions.",
+ "✓ لا توجد حالياً حالات غياب غير مبرر متكرر (3 مرات فأكثر) هذا الشهر.": "✓ No repeated unexcused absences (3+ times) this month.",
+ "فتح المتأخرات": "Open arrears",
+ "تسجيل الأداء — التحصيل الفعلي": "Record a payment — actual collection",
+ "هذه الواجهة مخصصة فقط للمبالغ التي قبضتها المؤسسة فعلياً من المتعلم.": "This screen is only for amounts actually collected from the learner.",
+ "— اختر فوجا —": "— Select a group —",
+ "شهري": "Monthly",
+ "بالحصة": "Per session",
+ "المتعلم": "Learner",
+ "— اختر متعلما —": "— Select a learner —",
+ "البحث باسم المتعلم": "Search by learner name",
+ "المبلغ المؤدى فعلياً": "Amount actually paid",
+ "تاريخ الأداء الفعلي": "Actual payment date",
+ "شهر الاستحقاق": "Due month",
+ "رقم التوصيل": "Receipt number",
+ "طريقة الأداء": "Payment method",
+ "نقداً": "Cash",
+ "تحويل بنكي": "Bank transfer",
+ "شيك": "Cheque",
+ "أخرى": "Other",
+ "مرجع العملية": "Transaction reference",
+ "نوع الأداء": "Payment type",
+ "أداء شهري": "Monthly payment",
+ "تسوية": "Settlement",
+ "أداء مركب": "Composite payment",
+ "متأخرات": "Arrears",
+ "توزيع مبلغ التوصيل على الأشهر": "Split receipt amount across months",
+ "+ إضافة شهر": "+ Add month",
+ "ملاحظة": "Note",
+ "تسجيل الأداء": "Record payment",
+ "إرشادات التوصيل المشترك": "Shared receipt guidelines",
+ "سجّل حصة كل متعلم فقط، مع لاحقة مختلفة للرقم: 125/1، 125/2. لا تكرر المبلغ الإجمالي.": "Record each learner's share only, with a different number suffix: 125/1, 125/2. Do not repeat the total amount.",
+ "دفعات الحصص": "Session payments",
+ "المبلغ المقبوض": "Amount collected",
+ "تاريخ القبض": "Collection date",
+ "نوع الدفعة": "Installment type",
+ "فوري": "Immediate",
+ "مسبق": "Advance",
+ "لاحق": "Deferred",
+ "حفظ دفعة الحصص": "Save session payment",
+ "آخر العمليات — جميع الأداءات": "Recent activity — all payments",
+ "النظام": "Mode",
+ "المبلغ": "Amount",
+ "الاستحقاق / النوع": "Due / Type",
+ "إجراء": "Action",
+ "دفعات الحصص مدرجة في المقبوضات المالية، وتوزيعها مرتبط بالحصص المنجزة. عدد الدفعات المسجلة بالحصة: 0.": "Session payments are included in collections; their split follows completed sessions. Recorded session payments: 0.",
+ "اكتب الاسم": "Enter the name",
+ "مثال: 125 أو 125/1": "Example: 125 or 125/1",
+ "مرجع التحويل / الشيك / العملية": "Transfer / cheque / transaction reference",
+ "اسم المتعلم": "Learner name",
+ "— المستوى التعليمي —": "— Education level —",
+ "ابتدائي": "Primary",
+ "إعدادي": "Middle school",
+ "ثانوي": "High school",
+ "جامعي": "University",
+ "موظف/عامل": "Employed/Worker",
+ "غير ذلك": "Other",
+ "— التوقيت المفضل —": "— Preferred time —",
+ "نهاراً": "Daytime",
+ "مساءً": "Evening",
+ "نهاراً أو مساءً": "Daytime or evening",
+ "غير محدد": "Unspecified",
+ "متعلم جديد بالمؤسسة": "New learner at the institution",
+ "متعلم سابق بالمؤسسة": "Returning learner",
+ "تاريخ التسجيل بالمؤسسة": "Institution enrollment date",
+ "لم تُحدد مواد بعد": "No subjects selected yet",
+ "— اختر مادة —": "— Select a subject —",
+ "الفرنسية": "French",
+ "الإنجليزية": "English",
+ "الإسبانية": "Spanish",
+ "الألمانية": "German",
+ "الهولندية": "Dutch",
+ "الرياضيات": "Mathematics",
+ "الفيزياء": "Physics",
+ "العلوم الطبيعية": "Natural sciences",
+ "الحجامة": "Cupping therapy",
+ "الطبخ": "Cooking",
+ "الإعلاميات": "Computer science",
+ "الإسعافات الأولية": "First aid",
+ "إدخال مادة جديدة...": "Enter a new subject...",
+ "المادة الأخرى": "Other subject",
+ "— اختر المستوى أو التخصص —": "— Select level or specialty —",
+ "الأول ابتدائي": "1st year primary",
+ "الثاني ابتدائي": "2nd year primary",
+ "الثالث ابتدائي": "3rd year primary",
+ "الرابع ابتدائي": "4th year primary",
+ "الخامس ابتدائي": "5th year primary",
+ "السادس ابتدائي": "6th year primary",
+ "الأولى إعدادي": "1st year middle school",
+ "الثانية إعدادي": "2nd year middle school",
+ "الثالثة إعدادي": "3rd year middle school",
+ "الجذع المشترك": "Common core",
+ "الأولى بكالوريا": "1st year baccalaureate",
+ "الثانية بكالوريا": "2nd year baccalaureate",
+ "الإجازة": "Bachelor's degree",
+ "الماستر": "Master's degree",
+ "مبتدئ": "Beginner",
+ "متوسط": "Intermediate",
+ "متقدم": "Advanced",
+ "أخرى — إدخال مستوى أو تخصص...": "Other — enter a level or specialty...",
+ "+ إضافة مادة ومستوى": "+ Add subject and level",
+ "إضافة متعلم": "Add learner",
+ "لائحة المتعلمين": "Learners list",
+ "— جميع الأفواج —": "— All groups —",
+ "نشط": "Active",
+ "غير نشط": "Inactive",
+ "جديد/سابق": "New/Returning",
+ "المواد المطلوبة": "Requested subjects",
+ "المستوى": "Level",
+ "الهاتف": "Phone",
+ "الحالة": "Status",
+ "جديد": "New",
+ "لا يوجد متعلمون مطابقون للتصفية المحددة": "No learners match the selected filters",
+ "الاسم بالعربية": "Name in Arabic",
+ "الهاتف الشخصي": "Personal phone",
+ "هاتف ولي الأمر": "Guardian's phone",
+ "الهاتف الثابت": "Landline",
+ "المستوى أو التخصص التفصيلي": "Detailed level or specialty",
+ "التوقيت المناسب للمتعلم، شروطه الخاصة أو أي ملاحظات أخرى": "Suitable time for the learner, special conditions, or other notes",
+ "اكتب اسم المادة": "Enter subject name",
+ "اكتب المستوى أو التخصص": "Enter level or specialty",
+ "بحث باسم المتعلم أو الهاتف": "Search by learner name or phone",
+ "— اختر الفئة —": "— Select category —",
+ "لغة": "Language",
+ "دعم مدرسي": "School support",
+ "تكوين": "Training",
+ "— اختر الفئة أولاً —": "— Select category first —",
+ "— اختر المادة أولاً —": "— Select subject first —",
+ "نسبة الأستاذ": "Teacher's share",
+ "⅔ (الثلثان)": "⅔ (two thirds)",
+ "إضافة فوج": "Add group",
+ "لائحة الأفواج": "Groups list",
+ "— جميع المواد —": "— All subjects —",
+ "الفئة": "Category",
+ "المادة": "Subject",
+ "المستوى / التخصص": "Level / Specialty",
+ "الاختصار": "Short code",
+ "الأستاذ": "Teacher",
+ "الواجب": "Fee",
+ "النسبة": "Rate",
+ "لا توجد أفواج مطابقة للتصفية المحددة": "No groups match the selected filters",
+ "أدخل المادة الأخرى": "Enter the other subject",
+ "أدخل المستوى أو التخصص الآخر": "Enter the other level or specialty",
+ "اسم الفوج المقترح تلقائياً": "Automatically suggested group name",
+ "اختصار اختياري (غير إلزامي)": "Optional short code (not required)",
+ "الواجب الافتراضي": "Default fee",
+ "بحث باسم الفوج أو الأستاذ": "Search by group or teacher name",
+ "حصص هذا اليوم": "Sessions of this day",
+ "لا توجد حصص مبرمجة في استعمال الزمن لهذا اليوم.": "No sessions scheduled in the timetable for this day.",
+ "الحضور والغياب": "Attendance & absences",
+ "تاريخ الحصة": "Session date",
+ "ملخص الحضور": "Attendance summary",
+ "المسجلون": "Enrolled",
+ "الحاضرون": "Present",
+ "الغائبون": "Absent",
+ "المتأخرون": "Late",
+ "بعذر": "Excused",
+ "مغادرة": "Left early",
+ "السجل اليومي القديم": "Legacy daily log",
+ "تحديد الجميع حاضرين": "Mark all present",
+ "مسح تسجيلات الحصة": "Clear session records",
+ "لا يوجد متعلمون نشطون في هذا الفوج.": "No active learners in this group.",
+ "الحضور حسب الحصة والتوقيت": "Attendance by session and time",
+ "لا توجد حصص لهذا اليوم والفوج المحدد.": "No sessions for this day and group.",
+ "ملخص الشهر": "Month summary",
+ "لا توجد حصص مسجلة خلال هذا الشهر بعد.": "No sessions recorded this month yet.",
+ "حفظ": "Save",
+ "إلغاء": "Cancel",
+ "تعديل": "Edit",
+ "حذف": "Delete",
+ "طباعة": "Print",
+ "إغلاق": "Close",
+ "تأكيد": "Confirm",
+ "رجوع": "Back",
+ "اليوم": "Today",
+ "الشهر": "Month",
+ "إظهار كلمة المرور": "Show password",
+ "إخفاء كلمة المرور": "Hide password",
+ "إظهار أو إخفاء القائمة": "Show or hide the menu",
+ "اختيار اللغة": "Choose language",
+ "الغياب والحضور": "Absences & attendance",
+ "الموسم الدراسي": "School year",
+ "القائمة": "Menu",
+ "إدارة التطبيق": "App administration",
+ "حاسبة الحصص": "Lesson calculator"
+};
+const emciaLanguageKeys={};
+let LANG=document.documentElement.lang;
 document.documentElement.lang=LANG;document.documentElement.dir=LANG==="ar"?"rtl":"ltr";
 function tr(s){
- if(LANG!=="fr"||!s)return s;
+ if(LANG==="ar"||!s)return s;
+ const dictionary=LANG==="en"?I18N_EN:I18N;
  let out=String(s);
- Object.keys(I18N).sort((a,b)=>b.length-a.length).forEach(k=>{if(out.includes(k))out=out.split(k).join(I18N[k])});
+ let keys=emciaLanguageKeys[LANG];
+ if(!keys||keys.length!==Object.keys(dictionary).length)keys=emciaLanguageKeys[LANG]=Object.keys(dictionary).sort((a,b)=>b.length-a.length);
+ for(const key of keys)if(out.includes(key))out=out.split(key).join(dictionary[key]);
  return out;
 }
 
@@ -1036,8 +1343,8 @@ function emciaFormatMetrics(root){
    let key=original,meta=emciaMetricLabels.get(key);
    if(!meta)for(const [candidate,config]of emciaMetricLabels)if(normalize(tr(candidate))===original){key=candidate;meta=config;break;}
    if(!meta)meta=[original,original,'info'];
-   label.dataset.metricFullAr=key;label.classList.add('emcia-metric-label');label.textContent=LANG==='fr'?meta[1]:meta[0];
-   label.title=LANG==='fr'?tr(key):key;
+   label.dataset.metricFullAr=key;label.classList.add('emcia-metric-label');label.textContent=LANG==="fr"?meta[1]:tr(meta[0]);
+   label.title=tr(key);
    let head=card.querySelector('.emcia-metric-head');
    if(!head){
     head=document.createElement('div');head.className='emcia-metric-head';
@@ -1045,36 +1352,49 @@ function emciaFormatMetrics(root){
     head.appendChild(label);card.insertBefore(head,card.firstChild);
    }
    if(card.tagName!=='BUTTON'&&!card.hasAttribute('role'))card.setAttribute('role','group');
-   card.title=LANG==='fr'?tr(key):key;
+   card.title=tr(key);
    if(/^[\d\s.,+%/\-:–]+(?:\s*DH)?$/.test(value.textContent.trim()))value.dir='ltr';
   }
  }
 }
 
+const emciaLocalizedUI="#nav,#emcia-top-controls,#workspace,#daily,#payments,#students,#groups,#attendance";
+const emciaOriginalText=new WeakMap();
 function applyLang(){
  document.documentElement.lang=LANG;
  document.documentElement.dir=LANG==="ar"?"rtl":"ltr";
  document.body.classList.toggle("rtl-ui",LANG==="ar");
- document.body.classList.toggle("ltr-ui",LANG==="fr");
+ document.body.classList.toggle("ltr-ui",LANG!=="ar");
  window.emciaSyncDisplayLanguage?.();
- const sels="button,a,th,td,h1,h2,h3,p,label,option,.muted,.warn,.welcome-season";
- document.querySelectorAll(sels).forEach(el=>{
-   if(!el.closest("#authGate,.emcia-display-controls")&&el.children.length===0){
-     if(el.dataset.uiAr===undefined && /[\u0600-\u06ff]/.test(el.textContent))el.dataset.uiAr=el.textContent;
-     if(el.dataset.uiAr!==undefined)el.textContent=LANG==="fr"?tr(el.dataset.uiAr):el.dataset.uiAr;
+ const labels="button,a,th,h1,h2,h3,h4,p,label,option,b,strong,summary,.muted,.warn,.welcome-season,.subnav-title";
+ document.querySelectorAll(labels).forEach(el=>{
+   if(!el.closest(emciaLocalizedUI)||el.closest(".rc-paper,[data-emcia-arabic]"))return;
+   for(const node of el.childNodes){
+     if(node.nodeType!==Node.TEXT_NODE)continue;
+     let record=emciaOriginalText.get(node);
+     if(!record||node.data!==record.display){
+       if(!/[\u0600-\u06ff]/.test(node.data))continue;
+       record={original:node.data,display:node.data};
+       emciaOriginalText.set(node,record);
+     }
+     const display=tr(record.original);
+     if(node.data!==display)node.data=display;
+     record.display=display;
    }
  });
  document.querySelectorAll("input[placeholder],textarea[placeholder]").forEach(el=>{
-   if(el.closest("#authGate"))return;
-   let p=el.getAttribute("placeholder")||"";
-   if(el.dataset.uiArPh===undefined && /[\u0600-\u06ff]/.test(p))el.dataset.uiArPh=p;
-   if(el.dataset.uiArPh!==undefined)el.setAttribute("placeholder",LANG==="fr"?tr(el.dataset.uiArPh):el.dataset.uiArPh);
+   if(!el.closest(emciaLocalizedUI))return;
+   const value=el.getAttribute("placeholder")||"";
+   if(el.dataset.uiArPh===undefined&&/[\u0600-\u06ff]/.test(value))el.dataset.uiArPh=value;
+   if(el.dataset.uiArPh!==undefined)el.setAttribute("placeholder",tr(el.dataset.uiArPh));
  });
+ const dateLabel=document.querySelector(".emcia-daily-date-picker time");
+ if(dateLabel)dateLabel.textContent=emciaDailyDateLabel(dateLabel.dateTime);
  emciaFormatMetrics(document.getElementById('appWorkspace'));
 }
-function setLang(v){
- LANG=v==="fr"?"fr":"ar";localStorage.setItem("emcia_lang",LANG);
- nav();
+function setLang(lang){
+ LANG=lang==="fr"||lang==="en"?lang:"ar";
+ try{localStorage.setItem("emcia_lang",LANG)}catch(e){}
  applyLang();
 }
 
@@ -1101,6 +1421,7 @@ function nav(){
  let main=`<div class="main-nav">${NAV_GROUPS.filter(x=>!(emciaIsSecretary()&&x[0]==="managementfinance")).map(x=>`<button class="${g&&x[0]===g[0]?"active-cat":""}" onclick="selectNavCategory('${x[0]}')">${x[1]}</button>`).join("")}</div>`;
  let sub=g?`<div class="subnav-wrap"><div class="subnav-title">${g[1]}</div><div class="subnav">${g[2].map(i=>`<button class="${active===i[0]?"active-sub":""}" onclick="show('${i[0]}')">${i[1]}</button>`).join("")}</div></div>`:`<div class="subnav-wrap"></div>`;
  $("#nav").innerHTML=main+sub;
+ applyLang();
 }
 function selectNavCategory(id){
  navCategory=id;window.navCategory=id;
@@ -1128,7 +1449,7 @@ function enterApp(){
  $("#workspace").classList.add("active");
  let y=new Date().getFullYear(),m=new Date().getMonth()+1,season=m>=9?`${y}/${y+1}`:`${y-1}/${y}`;
  const quick=[["students","المتعلمون"],["payments","الأداءات"],["attendance","الغياب والحضور"],["expenses","المصاريف"],["reports","التقارير"]].filter(x=>emciaCanOpenPage(x[0]));
- $("#workspace").innerHTML=`<div class="card emcia-dashboard-brand emcia-home-hero"><img class="emcia-official-logo" src="./EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA"><h2>مرحبًا بكم في EMCIA</h2><p>فضاء تدبير المؤسسة</p><div class="welcome-season">الموسم الدراسي ${season.replace("/", "–")}</div></div><section class="emcia-home-access"><h3>الوصول السريع</h3><div class="emcia-home-links">${quick.map(x=>'<button type="button" onclick="show(&quot;'+x[0]+'&quot;)" class="emcia-home-link">'+x[1].replaceAll(' ','<br>')+'</button>').join("")}</div></section>${emciaObligationAlertsHTML()}`;
+ $("#workspace").innerHTML=`<div class="card emcia-dashboard-brand emcia-home-hero"><img class="emcia-official-logo" src="./EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA"><h2>مرحبًا بكم في EMCIA</h2><p>فضاء تدبير المؤسسة</p><div class="welcome-season">الموسم الدراسي ${season.replace("/", "–")}</div></div><section class="emcia-home-access"><h3>الوصول السريع</h3><div class="emcia-home-links">${quick.map(x=>'<button type="button" onclick="show(&quot;'+x[0]+'&quot;)" class="emcia-home-link">'+x[1]+'</button>').join("")}</div></section>${emciaObligationAlertsHTML()}`;
  nav();emciaCorrectionBadge();
  applyLang();
 }
@@ -2466,7 +2787,7 @@ function enroll(){
  <div id="specialFeeBox" class="hidden"><label>استحقاق استثنائي للشهر الأول</label><input id="ef" type="number" placeholder="المبلغ المستحق لهذا الشهر فقط"></div>
  <button onclick="addEnroll()">تسجيل في الفوج</button></div>
  <p id="eSessionBillingNote" class="muted hidden">الأداء بالحصة: لا تُنشأ واجبات شهرية لهذا التسجيل. تسجيل الحصص والأداءات سيُفعّل في مرحلة لاحقة.</p>
- <div class="card" style="margin-top:12px;background:#f8fbff"><h4>التخفيض (اختياري)</h4><div class="row">
+ <div class="card emcia-enroll-discount" style="margin-top:12px;background:#f8fbff"><h4>التخفيض (اختياري)</h4><div class="row">
  <div><label id="ediscLabel">قيمة التخفيض الشهري</label><input id="edisc" type="number" min="0" value="0"></div>
  <div><label>من يتحمل التخفيض؟</label><select id="edbear" onchange="toggleCustomDiscount()"><option value="none">—</option><option value="teacher">الأستاذ</option><option value="emcia">المؤسسة</option><option value="half">50٪</option><option value="proportional">حسب النسبة المئوية</option><option value="custom">توزيع مخصص</option></select></div>
  <div><label>بداية التخفيض</label><input id="edstart" type="month" value="${nowMonth()}"></div>
@@ -3184,7 +3505,7 @@ function adjustments(){
  <div class="row"><div><label>سبب التوقف المقبول</label><select id="adjReason"><option value="health" ${existing?.reason==="health"?"selected":""}>ظرف صحي</option><option value="social" ${existing?.reason==="social"?"selected":""}>ظرف اجتماعي</option><option value="family" ${existing?.reason==="family"?"selected":""}>ظرف عائلي</option><option value="move" ${existing?.reason==="move"?"selected":""}>انتقال</option><option value="admin" ${existing?.reason==="admin"?"selected":""}>قرار إداري</option><option value="other" ${existing?.reason==="other"?"selected":""}>أخرى</option></select></div><div style="flex:2"><label>ملاحظة القرار</label><input id="adjNote" value="${esc(existing?.note||"")}" placeholder="سبب قبول التسوية أو توضيحات إضافية"></div></div>
  <div id="adjPreview">${adjustmentPreviewHTML(baseDue,+p.a||0,days,g?.r||0)}</div>
  <button ${settled?"disabled":""} onclick="saveExceptionalAdjustment()">${existing?"تحديث التسوية":"اعتماد التسوية والاسترجاع"}</button></div>`:`${gid&&sid?`<div class="card"><p class="muted">${payments.length?"اختر الأداء الذي تريد تسويته.":"لا توجد أداءات مسجلة لهذا المتعلم في الفوج والشهر المحددين."}</p></div>`:""}`}
- <div class="card"><h3>آخر التسويات الاستثنائية</h3><table><tr><th>التاريخ</th><th>المتعلم</th><th>الفوج</th><th>الشهر</th><th>الأيام المحتسبة</th><th>المؤدى أصلاً</th><th>المستحق بعد التسوية</th><th>المسترجع</th></tr>${db.adj.slice().reverse().slice(0,50).map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(objName(by(db.s,x.sid)))}</td><td>${esc(groupCompactName(by(db.g,x.gid)))}</td><td>${esc(x.month)}</td><td>${x.countedDays}/28</td><td>${money(x.originalPaid)}</td><td>${money(x.approvedDue)}</td><td>${money(x.refund)}</td></tr>`).join("")}</table></div>`;
+ <div class="card"><h3>آخر التسويات الاستثنائية</h3><div class="emcia-sticky-table-scroll emcia-adjustments-history" tabindex="0" aria-label="آخر التسويات الاستثنائية"><table><tr><th>التاريخ</th><th class="emcia-sticky-identity" scope="col">المتعلم</th><th>الفوج</th><th>الشهر</th><th>الأيام المحتسبة</th><th>المؤدى أصلاً</th><th>المستحق بعد التسوية</th><th>المسترجع</th></tr>${db.adj.slice().reverse().slice(0,50).map(x=>`<tr><td>${esc(x.date)}</td><td class="emcia-sticky-identity">${esc(objName(by(db.s,x.sid)))}</td><td>${esc(groupCompactName(by(db.g,x.gid)))}</td><td>${esc(x.month)}</td><td>${x.countedDays}/28</td><td>${money(x.originalPaid)}</td><td>${money(x.approvedDue)}</td><td>${money(x.refund)}</td></tr>`).join("")}</table></div></div>`;
 }
 function adjustmentPreviewHTML(baseDue,paid,days,rate){
  days=Math.max(0,Math.min(28,+days||0));baseDue=+baseDue||0;paid=+paid||0;rate=+rate||0;
@@ -3491,7 +3812,7 @@ function rcDirectPrint(){
  doc.open();
  const printedAt=new Date().toLocaleDateString("ar-MA",{year:"numeric",month:"2-digit",day:"2-digit"});
  const executivePrint=["executive","monthly","receiptAudit","discounts","teacherDetailed","expenseStatement","financial","arrears","attendance"].includes($("#rcType")?.value);
- doc.write(`<!doctype html><html lang="${LANG==="fr"?"fr":"ar"}" dir="${LANG==="fr"?"ltr":"rtl"}"><head><meta charset="utf-8"><title>EMCIA</title><style>body{font-family:Arial,Tahoma,sans-serif;color:#111;padding:20px}h1,h2{text-align:center}table{width:100%;border-collapse:collapse;margin:10px 0 20px}th,td{border:1px solid #777;padding:7px;text-align:${LANG==="fr"?"left":"right"};font-size:12px}th{background:#eee}.meta,.muted{color:#555}@page{margin:16mm 12mm 20mm;${executivePrint?`@bottom-center{content:"صفحة " counter(page);font-size:10px;color:#555} @bottom-left{content:"تاريخ الطبع: ${printedAt}";font-size:10px;color:#555}`:""}}${executivePrint?`.rc-executive-header{display:flex!important;align-items:center;justify-content:space-between;direction:rtl;break-inside:avoid}.rc-executive-header h2{text-align:right!important;font-size:16px!important;margin:0!important}.rc-executive-header img{width:66px;height:66px;object-fit:contain}`:""}</style></head><body>${paper.outerHTML}
+ doc.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>EMCIA</title><style>body{font-family:Arial,Tahoma,sans-serif;color:#111;padding:20px}h1,h2{text-align:center}table{width:100%;border-collapse:collapse;margin:10px 0 20px}th,td{border:1px solid #777;padding:7px;text-align:right;font-size:12px}th{background:#eee}.meta,.muted{color:#555}@page{margin:16mm 12mm 20mm;${executivePrint?`@bottom-center{content:"صفحة " counter(page);font-size:10px;color:#555} @bottom-left{content:"تاريخ الطبع: ${printedAt}";font-size:10px;color:#555}`:""}}${executivePrint?`.rc-executive-header{display:flex!important;align-items:center;justify-content:space-between;direction:rtl;break-inside:avoid}.rc-executive-header h2{text-align:right!important;font-size:16px!important;margin:0!important}.rc-executive-header img{width:66px;height:66px;object-fit:contain}`:""}</style></head><body>${paper.outerHTML}
 
 </body></html>`);
  doc.close();
@@ -4099,6 +4420,9 @@ function emciaRenderDailyPayments(){
 }
 setInterval(()=>{if(document.querySelector('#daily.page.active'))emciaLoadDailyReminders(window.dailyDate||emciaLocalDay(),true)},15000);
 
+function emciaDailyDateLabel(date){
+ return new Intl.DateTimeFormat(LANG==="fr"?"fr-MA":LANG==="en"?"en-GB":"ar-MA-u-nu-latn",{dateStyle:"full",timeZone:"UTC"}).format(new Date(date+"T12:00:00Z"));
+}
 function daily(){
  let date=window.dailyDate||emciaLocalDay(),day=dayAr(date),sessions=db.sch.filter(s=>s.active!==false&&s.day===day).sort((a,b)=>a.start.localeCompare(b.start));
  let unfinished=sessions.filter(s=>!sessionAttendanceStatus(s,date).done);
@@ -4106,7 +4430,7 @@ function daily(){
  let abs=repeatedAbsences(date);
  let m=date.slice(0,7),debtors=0,debtTotal=0;
  db.e.filter(e=>emciaBillingHistory(e)&&e.start&&e.start.slice(0,7)<=m).forEach(e=>{let debt=monthRange(e.start,m).reduce((z,mm)=>{let due=dueForEnrollmentMonth(e,mm),paid=emciaMonthlyPaid(e.sid,e.gid,mm);return z+Math.max(0,due-paid)},0);if(debt>0){debtors++;debtTotal+=debt}});
- $("#daily").innerHTML=`<div class="card"><div class="row"><div><label>التاريخ</label><input type="date" value="${date}" onchange="window.dailyDate=this.value;daily()"></div><div><b>${day}</b></div></div></div>
+ $("#daily").innerHTML=`<div class="card"><label for="emcia-daily-date">التاريخ</label><div class="emcia-daily-date-picker"><time datetime="${date}">${esc(emciaDailyDateLabel(date))}</time><span aria-hidden="true">▾</span><input id="emcia-daily-date" type="date" value="${date}" onchange="window.dailyDate=this.value;daily()"></div></div>
  <div class="grid daily-stats-grid"><div class="card"><div class="muted">حصص اليوم</div><div class="kpi">${sessions.length}</div></div><div class="card"><div class="muted">حضور غير مكتمل</div><div class="kpi">${unfinished.length}</div></div><div class="card"><div class="muted">تنبيهات السعة</div><div class="kpi">${capacity.length}</div></div><div class="card"><div class="muted">غياب متكرر هذا الشهر</div><div class="kpi">${abs.length}</div></div><div class="card"><div class="muted">حالات متأخرة في الأداء</div><div class="kpi">${debtors}</div><div class="muted">${money(debtTotal)}</div></div><button type="button" class="card daily-payment-count" id="daily-payment-count-card" onclick="emciaOpenDailyPayments()" aria-controls="daily-payment-panel" title="${tr('عرض متعلمي حصص اليوم الذين لديهم مستحقات شهرية')}"><div class="muted">${tr('تنبيهات أداء اليوم')}</div><div class="kpi" id="daily-payment-count-value" aria-live="polite">${emciaDailyPaymentRows(date).length}</div><div class="muted" id="daily-payment-count-total">${money(emciaDailyPaymentRows(date).reduce((sum,row)=>sum+row.remaining,0))}</div></button></div>
  <div class="card"><h3>برنامج اليوم</h3>${sessions.length?`<table><tr><th>الوقت</th><th>الفوج</th><th>الأستاذ</th><th>القاعة</th><th>المسجلون</th><th>الحضور</th><th></th></tr>${sessions.map(s=>{let g=by(db.g,s.gid),r=by(db.rooms,s.rid),st=sessionAttendanceStatus(s,date);return`<tr><td>${s.start}–${s.end}</td><td>${esc(g?g.n:"—")}</td><td>${esc(g?objName(by(db.t,g.tid)):"—")}</td><td>${esc(r?r.n:"—")}</td><td>${st.n}${r?` / ${r.cap}`:""}</td><td><b>${st.label}</b></td><td><button onclick="goAttendance('${date}','${s.gid}','m:${s.id}')">تسجيل الحضور</button></td></tr>`}).join("")}</table>`:"<p class='muted'>لا توجد حصص مبرمجة لهذا اليوم.</p>"}</div>
  ${emciaDailyPaymentPanel(date)}${emciaObligationAlertsHTML(date)}<div class="card"><h3>التنبيهات التشغيلية</h3>${unfinished.length?`<p><b>الحضور:</b> ${unfinished.length} حصة لم يكتمل تسجيل حضورها.</p>`:"<p>✓ تسجيل الحضور مكتمل للحصص المسجلة اليوم.</p>"}${capacity.length?`<p><b>السعة:</b> ${capacity.map(x=>`${esc(x.g.n)} (${x.n}/${x.r.cap} في ${esc(x.r.n)})`).join("، ")}</p>`:"<p>✓ لا يوجد تجاوز لسعة القاعات في حصص اليوم.</p>"}${abs.length?`<p><b>الغياب المتكرر:</b></p><table><tr><th>المتعلم</th><th>الفوج</th><th>مرات الغياب هذا الشهر</th></tr>${abs.map(x=>`<tr><td>${esc(objName(x.s))}</td><td>${esc(x.g.n)}</td><td>${x.n}</td></tr>`).join("")}</table>`:"<p>✓ لا توجد حالياً حالات غياب غير مبرر متكرر (3 مرات فأكثر) هذا الشهر.</p>"}<p><b>المتابعة المالية:</b> ${debtors} تسجيل/حالة بها مبالغ متبقية إلى غاية ${m} بإجمالي ${money(debtTotal)}. <button onclick="show('arrears')">فتح المتأخرات</button></p></div>`;emciaRenderDailyPayments();emciaLoadDailyReminders(date);applyLang()
@@ -5511,6 +5835,13 @@ div[title^="المستحقات:"]:hover,div[title^="المحصل:"]:hover{filter
 header .emcia-display-controls{justify-content:center;margin:8px 0 0}
 header .emcia-display-controls button,#authGate .emcia-display-controls button{display:inline-flex;align-items:center;justify-content:center;width:42px;min-width:42px;height:42px;padding:0;margin:0;border:1px solid #b9c9d8;border-radius:9px;background:#edf4f9;color:#153753;font-weight:750;line-height:1}
 #authGate{direction:inherit}
+.emcia-language-menu{position:relative;z-index:6}
+.emcia-language-menu summary{display:grid;place-items:center;width:42px;height:42px;cursor:pointer;list-style:none;border:1px solid #b9c9d8;border-radius:9px;background:#edf4f9;color:#153753}
+.emcia-language-menu summary::-webkit-details-marker{display:none}
+.emcia-language-options{position:absolute;inset-inline-end:0;top:calc(100% + 5px);min-width:132px;display:grid;gap:4px;padding:5px;border:1px solid var(--line);border-radius:9px;background:var(--card);box-shadow:0 5px 14px #0003}
+header .emcia-language-options button,#authGate .emcia-language-options button{width:100%;justify-content:flex-start;padding-inline:10px;white-space:nowrap}
+.emcia-language-options button[aria-pressed="true"]{outline:2px solid #479ac7;outline-offset:-2px}
+[data-theme="dark"] .emcia-language-menu summary{background:#22374a;color:#dceaf5;border-color:var(--line)}
 #authGate .emcia-login-logo{width:min(100%,200px);height:auto}
 #workspace .emcia-home-hero .emcia-official-logo{width:min(100%,240px);height:auto}
 #authGate .emcia-login-logo[hidden]{display:none}
@@ -5527,6 +5858,28 @@ html[dir="ltr"] #authGate .emcia-password-field input{text-align:left}
 [data-theme="dark"] #authGate .emcia-password-field .emcia-eye-button svg{stroke:currentColor!important}
 [data-theme="dark"] main .emcia-sticky-table-scroll :is(th,td).emcia-sticky-identity{background:var(--card)!important;color:var(--txt)!important}
 [data-theme="dark"] main .emcia-sticky-table-scroll th.emcia-sticky-identity{background:#1e2f40!important}
+/* Keep legible ink on light surfaces that retain their own background. */
+[data-theme="dark"] main :is(.warn,.emcia-review-summary>div,.emcia-review-table :is(th,td):last-child,.emcia-week-grid,#emciaSchedulePopup){color:#19344e}
+[data-theme="dark"] #schedule .emcia-week-grid td[onclick]{color:#19344e}
+[data-theme="dark"] .emcia-review-status.pending{color:#bfd0de}
+[data-theme="dark"] .emcia-review-status.changed{color:#ffc676}
+[data-theme="dark"] .emcia-review-status.confirmed{color:#69d8ac}
+[data-theme="dark"] main .emcia-enroll-discount,
+[data-theme="dark"] main .emcia-enroll-discount :is(h4,label,.muted){color:#19344e}
+[data-theme="dark"] main .emcia-enroll-discount input[readonly]{color:var(--txt)}
+[data-theme="dark"] main .emcia-unified-accounts :is(th,td:nth-child(n+5)){color:#19344e}
+[data-theme="dark"] main .blank-attendance{background:#fff}
+[data-theme="dark"] main .blank-attendance :is(h3,th,td){color:#192b3b}
+[data-theme="dark"] main .blank-attendance .emcia-sticky-table-scroll .emcia-sticky-identity{background:#f1f5fa!important;color:#192b3b!important}
+.emcia-daily-date-picker{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;width:fit-content;max-width:100%;min-height:44px;margin-top:5px;padding:7px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--txt)}
+.emcia-daily-date-picker time{font-weight:700;overflow-wrap:anywhere}
+.emcia-daily-date-picker input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.emcia-daily-date-picker input::-webkit-calendar-picker-indicator{position:absolute;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
+.emcia-daily-date-picker:focus-within{outline:2px solid #479ac7;outline-offset:2px}
+.emcia-sticky-table-scroll.emcia-adjustments-history>table{width:max-content;min-width:100%}
+.emcia-adjustments-history :is(th,td){white-space:nowrap}
+.emcia-adjustments-history .emcia-sticky-identity{white-space:normal}
+
 }
 /* Dark theme */
 [data-theme="dark"]{--nav:#0c1a28;--bg:#0e1620;--card:#182635;--line:#2b3f52;--txt:#e8eff5;--muted:#9db4c6;--ok:#2fbf8f;--bad:#e0685a;color-scheme:dark}
@@ -5581,33 +5934,54 @@ var MOON='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="cu
 var SUN='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
 function applyTheme(theme){
  root.dataset.theme=theme;
- const dark=theme==="dark", french=root.lang==="fr";
+ const dark=theme==="dark";
  document.querySelectorAll("[data-toggle-theme]").forEach(button=>{
   button.innerHTML=dark?SUN:MOON;
-  const label=french?(dark?"Passer au mode clair":"Passer au mode sombre"):(dark?"التبديل إلى الوضع النهاري":"التبديل إلى الوضع الليلي");
+  const labels={ar:["التبديل إلى الوضع الليلي","التبديل إلى الوضع النهاري"],fr:["Passer au mode sombre","Passer au mode clair"],en:["Switch to dark mode","Switch to light mode"]};
+  const label=labels[root.lang][Number(dark)];
   button.setAttribute("aria-label",label);
   button.title=label;
  });
 }
+const loginEnglish={
+ "مرحبًا بكم في EMCIA": "Welcome to EMCIA",
+ "نظام تدبير المؤسسة": "Institution management system",
+ "البريد الإلكتروني": "Email",
+ "كلمة المرور": "Password",
+ "دخول إلى الحساب": "Sign in",
+ "نسيت كلمة المرور؟": "Forgot your password?",
+ "أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.": "Enter your account email to receive a password reset link.",
+ "إرسال رابط الاستعادة": "Send reset link",
+ "اختر كلمة مرور جديدة (8 أحرف على الأقل).": "Choose a new password (at least 8 characters).",
+ "كلمة المرور الجديدة": "New password",
+ "تأكيد كلمة المرور": "Confirm password",
+ "حفظ كلمة المرور الجديدة": "Save new password",
+ "الموسم الدراسي 2026–2027": "School year 2026–2027",
+ "البيانات محفوظة بأمان في النظام السحابي للمؤسسة.": "Data is stored in the institution’s cloud system."
+};
 function syncDisplayLanguage(){
- const french=root.lang==="fr";
- document.querySelectorAll("[data-toggle-language]").forEach(button=>{
-  button.textContent=french?"ع":"F";
-  button.lang=french?"ar":"fr";
-  button.setAttribute("aria-label",french?"العربية":"Français");
-  button.title=button.getAttribute("aria-label");
+ const language=root.lang;
+ const labels={ar:"اللغة",fr:"Langue",en:"Language"};
+ document.querySelectorAll("[data-language-summary]").forEach(summary=>{
+  summary.setAttribute("aria-label",labels[language]);
+  summary.title=labels[language];
  });
+ document.querySelectorAll("[data-language]").forEach(button=>button.setAttribute("aria-pressed",String(button.dataset.language===language)));
  document.querySelectorAll("#authGate [data-fr],#authGate [data-fr-placeholder]").forEach(element=>{
   const attribute=element.hasAttribute("data-fr-placeholder");
   element.dataset.loginAr??=attribute?element.placeholder:element.textContent;
-  const text=french?(attribute?element.dataset.frPlaceholder:element.dataset.fr):element.dataset.loginAr;
+  const original=element.dataset.loginAr;
+  const text=language==="fr"?(attribute?element.dataset.frPlaceholder:element.dataset.fr):language==="en"?(loginEnglish[original]||original):original;
   if(attribute)element.placeholder=text;else element.textContent=text;
  });
  applyTheme(root.dataset.theme==="dark"?"dark":"light");
 }
 window.emciaSyncDisplayLanguage=syncDisplayLanguage;
-try{root.lang=localStorage.getItem("emcia_lang")==="fr"?"fr":"ar"}catch(e){}
-root.dir=root.lang==="fr"?"ltr":"rtl";
+try{
+ const stored=localStorage.getItem("emcia_lang");
+ root.lang=stored==="fr"||stored==="en"?stored:"ar";
+}catch(e){}
+root.dir=root.lang==="ar"?"rtl":"ltr";
 root.dataset.theme=storedTheme()==="dark"?"dark":"light";
 syncDisplayLanguage();
 document.querySelectorAll("[data-toggle-theme]").forEach(button=>button.addEventListener("click",()=>{
@@ -5615,14 +5989,27 @@ document.querySelectorAll("[data-toggle-theme]").forEach(button=>button.addEvent
  try{localStorage.setItem("emcia_theme",next)}catch(e){}
  applyTheme(next);
 }));
-document.querySelectorAll("[data-toggle-language]").forEach(button=>button.addEventListener("click",()=>{
- const next=root.lang==="fr"?"ar":"fr";
- if(typeof window.setLang==="function"){window.setLang(next);return}
- try{localStorage.setItem("emcia_lang",next)}catch(e){}
- root.lang=next;
- root.dir=next==="fr"?"ltr":"rtl";
- syncDisplayLanguage();
-}));
+document.querySelectorAll(".emcia-language-menu").forEach(menu=>{
+ const summary=menu.querySelector("summary");
+ menu.addEventListener("click",event=>{
+  const button=event.target.closest("[data-language]");
+  if(!button)return;
+  const next=button.dataset.language;
+  menu.open=false;
+  summary.focus();
+  if(typeof window.setLang==="function"){window.setLang(next);return}
+  try{localStorage.setItem("emcia_lang",next)}catch(e){}
+  root.lang=next;
+  root.dir=next==="ar"?"rtl":"ltr";
+  syncDisplayLanguage();
+ });
+ menu.addEventListener("keydown",event=>{
+  if(event.key==="Escape"&&menu.open){menu.open=false;summary.focus()}
+ });
+ document.addEventListener("pointerdown",event=>{
+  if(menu.open&&!menu.contains(event.target))menu.open=false;
+ });
+});
 /* ---- Toasts (replace native alert) ---- */
 function toastBox(){var c=document.getElementById("emcia-toasts");if(!c){c=document.createElement("div");c.id="emcia-toasts";c.setAttribute("aria-live","polite");document.body.appendChild(c)}return c}
 window.emciaToast=function(msg,type,stayOpen){
