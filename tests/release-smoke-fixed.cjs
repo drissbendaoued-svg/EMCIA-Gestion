@@ -274,14 +274,14 @@ assert.ok(w.eval("scheduleConflict({...db.sch[0],start:'15:00',end:'16:00'},'m1'
   // Additional income: direct save, batch save, lower table, monthly totals and persisted reload.
   data=make();seed(data);w.eval("show('expenses')");
   const fillIncome=(cat,amount,date='2026-11-14')=>{
-   for(const[id,value]of Object.entries({oc:cat,oa:amount,om:date,oiGroup:'g1',oiStudent:'s1',oiReceipt:'EXTRA-1',on:'رسوم اختبار'}))d.getElementById(id).value=value;
+   for(const[id,value]of Object.entries({oc:cat,oa:amount,om:date,oiReceipt:'EXTRA-1',on:'رسوم اختبار'}))d.getElementById(id).value=value;
   };
-  fillIncome('التسجيل','37.50');d.querySelector('button[onclick="addOther()"]').click();
-  assert.equal(w.eval('db.oi.length'),1);assert.equal(w.eval('db.oi[0].a'),37.5);assert.equal(w.eval('db.oi[0].sid'),'s1');
+  fillIncome('الكتب','37.50');d.querySelector('button[onclick="addOther()"]').click();
+  assert.equal(w.eval('db.oi.length'),1);assert.equal(w.eval('db.oi[0].a'),37.5);assert.equal(w.eval('db.oi[0].sid'),null);
   assert.match(d.querySelector('#oiRegistered').textContent,/EXTRA-1/);assert.equal(d.querySelector('#oiRegisteredTotal').textContent,'37.50 DH');
-  fillIncome('التأمين (مبالغ محصلة)','12.25');d.querySelector('button[onclick="emciaExtraAdd()"]').click();
+  fillIncome('الترجمة','12.25');d.querySelector('button[onclick="emciaExtraAdd()"]').click();
   assert.equal(w.eval('db.oi.length'),1);assert.match(d.querySelector('#oiDraft').textContent,/12.25/);
-  fillIncome('التسجيل','20');d.querySelector('button[onclick="emciaExtraAdd()"]').click();
+  fillIncome('الكتب','20');d.querySelector('button[onclick="emciaExtraAdd()"]').click();
   d.querySelector('button[onclick="addOther()"]').click();assert.equal(w.eval('db.oi.length'),3);
   assert.equal(d.querySelector('#oiRegisteredTotal').textContent,'69.75 DH');assert.equal(w.dashboardStats('2026-11').other,69.75);
   w.eval("window.bm='2026-11';budget()");assert.match(d.querySelector('#budget').textContent,/69.75/);
@@ -303,7 +303,7 @@ assert.ok(w.eval("scheduleConflict({...db.sch[0],start:'15:00',end:'16:00'},'m1'
   // Empty, negative and invalid dates do not change stored amounts or dates.
   const incomeBefore=w.eval('JSON.stringify(db.oi)');
   for(const inputs of [['-1'],[''],['50','2026-02-30']]){answersIncome=inputs;w.eval("editSimple('oi',db.oi[0].id)");assert.equal(w.eval('JSON.stringify(db.oi)'),incomeBefore)}
-  fillIncome('التسجيل','-5');w.addOther();assert.equal(w.eval('db.oi.length'),3);
+  fillIncome('الكتب','-5');w.addOther();assert.equal(w.eval('db.oi.length'),3);
   d.querySelector('#oa').value='';d.querySelector('#oc').value='';w.addOther();assert.equal(w.eval('db.oi.length'),3);
   // Delete updates totals, and legacy month-only records remain included in reports.
   w.eval("delTx('oi',db.oi[0].id)");assert.equal(w.dashboardStats('2026-12').other,0);assert.equal(d.querySelector('#oiRegisteredTotal').textContent,'32.25 DH');
@@ -311,7 +311,7 @@ assert.ok(w.eval("scheduleConflict({...db.sch[0],start:'15:00',end:'16:00'},'m1'
   assert.equal(w.dashboardStats('2026-11').other,39.25);
   w.eval("window.emciaOperationsMonth='2026-11';show('financeoperations')");
   const incomeCards=()=>[...d.querySelectorAll('#financeoperations .emcia-flow-income h3')].map(node=>node.textContent);
-  assert.deepEqual(incomeCards(),['32.25 DH','7.00 DH']);
+  assert.deepEqual(incomeCards(),['0.00 DH','39.25 DH']);
   assert.equal(d.querySelector('#financeoperations .emcia-flow-balance h3').textContent,'34.25 DH');
   assert.match(d.querySelector('#financeoperations details:last-child').textContent,/مداخيل إضافية من المتعلمين/);
   const operationsMonth=d.querySelector('#emciaOperationsMonth');
@@ -444,7 +444,7 @@ assert.ok(w.eval("scheduleConflict({...db.sch[0],start:'15:00',end:'16:00'},'m1'
   // Learner files show linked extras beside tuition and include each amount once in actual collections.
   dom.window.close();
   const learnerData=fixtures();
-  learnerData.p=[{id:'tuition',sid:'s1',gid:'g1',a:200,date:'2026-11-12',allocMonth:'2026-11',receiptNo:'BOOK-1'}];
+  learnerData.p=[{id:'tuition',sid:'s1',gid:'g1',a:200,date:'2026-11-12',allocMonth:'2026-11',receiptNo:'BOOK-1',allocations:[{month:'2026-11',amount:100},{month:'2026-12',amount:100}]}];
   learnerData.s.push({id:'s-other',n:'متعلم آخر',active:true});
   op={id:'main',revision:1,payload:learnerData};
   fin={id:'main',revision:1,payload:{oi:[
@@ -463,7 +463,31 @@ assert.ok(w.eval("scheduleConflict({...db.sch[0],start:'15:00',end:'16:00'},'m1'
    assert.match(history.textContent,/COPIES/);
    assert.doesNotMatch(history.textContent,/OTHER|GENERAL/);
    assert.equal(d.querySelector('#studentCollected .kpi').textContent,'325.00 DH');
-   assert.equal(w.eval("emciaAccountRows('2026-11',{sid:'s1'})[0].paid"),200);
+   assert.equal(d.querySelectorAll('.student-file-metrics .card').length,8);
+   assert.match(history.querySelector('[data-receipt-mode="monthly"]').textContent,/2026-11 · 100\.00 DH2026-12 · 100\.00 DH/);
+   assert.equal(w.eval("emciaAccountRows('2026-11',{sid:'s1'})[0].paid"),100);
+   if(learnerRole==='director'){
+    w.eval("show('payments')");
+    const mode=d.querySelector('#paymentEntryMode');mode.value='extra';mode.dispatchEvent(new w.Event('change',{bubbles:true}));
+    const form=d.querySelector('#learnerExtraPayment');
+    for(const [key,value] of Object.entries({extraLearner:'s1',extraCategory:'أخرى',extraAmount:'15',extraDate:'2026-11-14',extraReceipt:'BOOK-1',extraMethod:'transfer',extraNote:'وثيقة إضافية'}))d.getElementById(key).value=value;
+    d.querySelector('#extraCategory').dispatchEvent(new w.Event('change',{bubbles:true}));
+    assert.equal(form.elements.customCategory.hidden,false);
+    form.elements.customCategory.value='وثيقة';
+    const submit=()=>form.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
+    submit();assert.match(alerts.pop(),/رقم التوصيل مستعمل سابقاً/);
+    d.querySelector('#extraReceipt').value='SEPARATE-BOOK';
+    submit();await saved(w);
+    assert.equal(fin.payload.oi.at(-1).sid,'s1');
+    assert.equal(fin.payload.oi.at(-1).method,'transfer');
+    assert.match(d.querySelector('#unifiedPayments tr[data-mode="extra"]').textContent,/وثيقة|الكتب والنسخ/);
+    assert.match(d.querySelector('#unifiedPayments').textContent,/SEPARATE-BOOK/);
+    w.eval("show('expenses')");
+    assert.doesNotMatch(d.querySelector('#oiRegistered').textContent,/SEPARATE-BOOK|BOOK-1/);
+    assert.match(d.querySelector('#oiRegistered').textContent,/GENERAL/);
+    // Restore the independent snapshot so the same history is also exercised as a secretary.
+    fin={...fin,payload:{...fin.payload,oi:fin.payload.oi.filter(x=>x.receiptNo!=='SEPARATE-BOOK')}};
+   }
    dom.window.close();
   }
   assert.deepEqual(errors,[]);

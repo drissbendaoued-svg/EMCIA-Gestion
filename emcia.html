@@ -330,6 +330,10 @@ html[dir="ltr"] #mobileNavToggle{margin-right:auto;margin-left:8px}
 .wl-phone{display:inline-flex;align-items:center;gap:6px;padding:9px 10px;background:#eaf2f8;border:1px solid #9fb3c8;border-radius:9px;text-decoration:none;color:#123b54;font-weight:650;min-height:42px}
 .wl-phone>span{font-size:11px;font-weight:400}
 .wl-plan{margin-top:12px}.wl-plan>summary{cursor:pointer;font-weight:650}
+#studentfile .student-file-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(5px,1.5vw,12px);margin:12px 0}
+#studentfile .student-file-metrics .card{min-width:0;margin:0;padding:clamp(5px,1.4vw,13px);text-align:center;display:grid;align-content:center;gap:4px;overflow-wrap:anywhere}
+#studentfile .student-file-metrics .muted{font-size:clamp(10px,2.8vw,14px);line-height:1.25}
+#studentfile .student-file-metrics .kpi{font-size:clamp(14px,4.3vw,25px);line-height:1.18}
 </style>
 
 <style>
@@ -1410,6 +1414,17 @@ Object.assign(I18N,{
  "مداخيل غير مرتبطة بمتعلم": "Recettes sans apprenant associé",
  "مداخيل إضافية من المتعلمين": "Recettes supplémentaires des apprenants",
  "سجل أداءات المتعلم": "Historique des paiements de l’apprenant",
+ "المداخيل الإضافية للمتعلم": "Recettes supplémentaires de l’apprenant",
+ "الهدف المخصص له": "Affectation du paiement",
+ "واجبات الدراسة": "Frais de cours",
+ "مداخيل عامة": "Recettes générales",
+ "حدد نوع المدخول": "Précisez la nature de la recette",
+ "اختر المتعلم وأدخل نوع المدخول والمبلغ وتاريخ الأداء ورقم التوصيل.": "Sélectionnez l’apprenant et indiquez la nature, le montant, la date et le numéro du reçu.",
+ "حفظ أداء المتعلم الإضافي": "Enregistrer le paiement supplémentaire",
+ "الفوج (اختياري)": "Groupe (facultatif)",
+ "الترجمة": "Traduction",
+ "مبيعات": "Ventes",
+ "مؤشرات المتعلم": "Indicateurs de l’apprenant",
  "مدخول إضافي": "Recette supplémentaire",
  "صندوق العهدة": "Caisse de fonds",
  "طلبات الشواهد — حفظ مسودة سحابية": "Demandes de certificats — brouillon enregistré en ligne",
@@ -2618,6 +2633,17 @@ const I18N_EN={
  "مداخيل غير مرتبطة بمتعلم": "Income not linked to a learner",
  "مداخيل إضافية من المتعلمين": "Additional learner income",
  "سجل أداءات المتعلم": "Learner payment history",
+ "المداخيل الإضافية للمتعلم": "Additional learner payments",
+ "الهدف المخصص له": "Payment allocation",
+ "واجبات الدراسة": "Tuition payments",
+ "مداخيل عامة": "General income",
+ "حدد نوع المدخول": "Specify the income type",
+ "اختر المتعلم وأدخل نوع المدخول والمبلغ وتاريخ الأداء ورقم التوصيل.": "Select a learner and enter the income type, amount, date, and receipt number.",
+ "حفظ أداء المتعلم الإضافي": "Save additional learner payment",
+ "الفوج (اختياري)": "Group (optional)",
+ "الترجمة": "Translation",
+ "مبيعات": "Sales",
+ "مؤشرات المتعلم": "Learner metrics",
  "مدخول إضافي": "Additional income",
  "صندوق العهدة": "Petty cash box",
  "طلبات الشواهد — حفظ مسودة سحابية": "Certificate requests — cloud-saved draft",
@@ -5673,16 +5699,33 @@ function emciaAccountDebtLines(e,m){
  return emciaAccountRows(m,{sid:e.sid,gid:e.gid,through:true}).filter(r=>r.mode===mode).flatMap(r=>r.details.filter(x=>x.rem>0).map(x=>({mm:x.mm,due:x.due,paid:x.paid,rem:x.rem})));
 }
 function emciaStudentReceiptsHTML(sid,extras){
+ const sessionPurposes=new Map();
+ if(db.sp.some(p=>p.sid===sid)){
+  const {allocations,credits}=emciaSessionLedger();
+  for(const {receipt,lesson,amount} of allocations){
+   if(receipt.sid!==sid)continue;
+   const lines=sessionPurposes.get(receipt.id)||[];
+   lines.push(lesson.date+" · "+money(amount));sessionPurposes.set(receipt.id,lines);
+  }
+  for(const {receipt,amount} of credits){
+   if(receipt.sid!==sid)continue;
+   const lines=sessionPurposes.get(receipt.id)||[];
+   lines.push("الرصيد المسبق / الزائد · "+money(amount));sessionPurposes.set(receipt.id,lines);
+  }
+ }
  const rows=[
-  ...db.p.filter(p=>p.sid===sid).map(p=>({...p,mode:"monthly"})),
+  ...db.p.filter(p=>p.sid===sid||(!p.sid&&by(db.e,p.eid)?.sid===sid)).map(p=>({...p,mode:"monthly",gid:p.gid||by(db.e,p.eid)?.gid})),
   ...db.sp.filter(p=>p.sid===sid).map(p=>({...p,mode:"session"})),
   ...extras.map(p=>({...p,mode:"extra",date:p.date||p.month}))
  ].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
  return `<div class="card" id="studentReceiptHistory"><h3>سجل أداءات المتعلم</h3><div class="tablewrap"><table>
- <thead><tr><th>التاريخ</th><th>الفوج</th><th>نوع الأداء</th><th>المبلغ المقبوض</th><th>التوصيل</th><th>ملاحظة</th></tr></thead>
- <tbody>${rows.map(p=>`<tr data-receipt-mode="${p.mode}"><td>${esc(p.date||"—")}</td><td>${esc(by(db.g,p.gid)?.n||"—")}</td>
- <td>${p.mode==="extra"?esc(p.cat||"مدخول إضافي"):emciaAccountMode(p.mode)}</td><td>${money(p.netAfterRefund??p.a)}</td>
- <td>${esc(p.receiptNo||"—")}</td><td>${esc(p.mode==="extra"?p.note||"—":"—")}</td></tr>`).join("")}</tbody></table></div></div>`;
+ <thead><tr><th>التاريخ</th><th>نوع الأداء</th><th>الهدف المخصص له</th><th>المبلغ المقبوض</th><th>التوصيل</th><th>الفوج</th><th>طريقة الأداء</th><th>ملاحظة</th></tr></thead>
+ <tbody>${rows.map(p=>{
+  const monthly=p.mode==="monthly"?paymentAllocations(p).filter(x=>x.month):[];
+  const purpose=p.mode==="extra"?[p.cat||"مدخول إضافي"]:p.mode==="session"?(sessionPurposes.get(p.id)||[]):monthly.map(x=>monthly.length>1?x.month+" · "+money(x.amount):x.month);
+  return `<tr data-receipt-mode="${p.mode}"><td>${esc(p.date||"—")}</td><td>${p.mode==="extra"?"مدخول إضافي":emciaAccountMode(p.mode)}</td><td>${purpose.map(esc).join("<br>")||"—"}</td>
+ <td>${money(p.netAfterRefund??p.a)}</td><td>${esc(p.receiptNo||"—")}</td><td>${esc(by(db.g,p.gid)?.n||"—")}</td><td>${p.method?paymentMethodLabel(p.method):"—"}</td><td>${esc(p.note||"—")}</td></tr>`;
+ }).join("")}</tbody></table></div></div>`;
 }
 
 function emciaSessionBalancesHTML(month,sid=''){
@@ -5716,15 +5759,58 @@ function emciaAddSessionPayment(){
  db.sp.push({id:uid(),sid,gid,enrollmentId:e.id,a,date,receiptNo,paymentTiming,method:$("#spmethod").value,note:$("#spnote").value,createdAt:new Date().toISOString()});
  save();payments();$("#ps").value=sid;emciaSessionPaymentSelection();emciaRefreshUnifiedPaymentHistory("session");
 }
-function emciaChangePaymentMode(mode){window.emciaPaymentMode=mode;window.pg="";payments()}
+function emciaChangePaymentMode(mode){
+ const sid=$("#ps")?.value||"",gid=window.pg||"";
+ window.emciaPaymentMode=mode;window.pg="";payments();
+ if(mode==="extra"&&sid){
+  if(by(db.g,gid))$("#extraGroup").value=gid;
+  emciaExtraSelect();$("#extraLearner").value=sid;
+ }
+ applyLang();
+}
+function emciaLearnerExtraForm(){
+ return `<form id="learnerExtraPayment" onsubmit="event.preventDefault();emciaSaveLearnerExtra(this)">
+ <div class="oi-compact-grid">
+  <div><label for="extraLearnerSearch">البحث باسم المتعلم</label><input id="extraLearnerSearch" oninput="emciaExtraSelect()" autocomplete="off"></div>
+  <div><label for="extraLearner">المتعلم</label><select id="extraLearner" name="learner" required></select></div>
+  <div><label for="extraGroup">الفوج (اختياري)</label><select id="extraGroup" name="group" onchange="emciaExtraSelect()"><option value="">— جميع الأفواج —</option>${opts(db.g)}</select></div>
+ </div>
+ <div class="oi-compact-grid">
+  <div><label for="extraCategory">نوع المدخول</label><select id="extraCategory" name="category" required onchange="const field=this.form.elements.customCategory;field.hidden=this.value!=='أخرى';field.required=!field.hidden">
+   <option value="">— اختر المدخول —</option>${["التسجيل","التأمين (مبالغ محصلة)","الامتحانات","الكتب","النسخ","الكتب والنسخ","أخرى"].map(cat=>`<option value="${cat}">${cat}</option>`).join("")}
+  </select><input name="customCategory" aria-label="حدد نوع المدخول" placeholder="حدد نوع المدخول" hidden></div>
+  <div><label for="extraAmount">المبلغ المقبوض</label><input id="extraAmount" name="amount" type="number" min="0.01" step="0.01" required></div>
+  <div><label for="extraDate">تاريخ الأداء الفعلي</label><input id="extraDate" name="paidOn" type="date" value="${emciaLocalDay()}" required></div>
+ </div>
+ <div class="oi-compact-grid">
+  <div><label for="extraReceipt">رقم التوصيل</label><input id="extraReceipt" name="receiptNo" required></div>
+  <div><label for="extraMethod">طريقة الأداء</label><select id="extraMethod" name="paymentMethod"><option value="cash">نقداً</option><option value="transfer">تحويل بنكي</option><option value="cheque">شيك</option><option value="other">أخرى</option></select></div>
+  <div><label for="extraNote">ملاحظة</label><input id="extraNote" name="note"></div>
+ </div>
+ <button type="submit">حفظ أداء المتعلم الإضافي</button></form>`;
+}
+function emciaSaveLearnerExtra(form){
+ const fields=form.elements,sid=fields.learner.value,gid=fields.group.value;
+ const cat=(fields.category.value==="أخرى"?fields.customCategory.value:fields.category.value).trim();
+ const a=Number(fields.amount.value),date=fields.paidOn.value,receiptNo=fields.receiptNo.value.trim();
+ if(!by(db.s,sid)||!cat||!Number.isFinite(a)||a<=0||!emciaValidDate(date)||!receiptNo)
+  return alert("اختر المتعلم وأدخل نوع المدخول والمبلغ وتاريخ الأداء ورقم التوصيل.");
+ if(gid&&!db.e.some(e=>e.sid===sid&&e.gid===gid))return alert("اختر المتعلم");
+ if([...db.p,...db.sp,...db.oi].some(p=>(p.receiptNo||"").trim()===receiptNo))return alert("رقم التوصيل مستعمل سابقاً");
+ if(!confirm("حفظ المداخيل الإضافية بمجموع "+money(a)+"؟"))return;
+ const record={id:uid(),sid,gid:gid||null,cat,a,date,month:date.slice(0,7),receiptNo,method:fields.paymentMethod.value,note:fields.note.value.trim()};
+ emciaStoreIncome([record]);payments();applyLang();
+}
 function payments(){
  const mode=window.emciaPaymentMode||"monthly";
  let gid=window.pg||"", eligible=gid?db.e.filter(e=>e.gid===gid&&emciaBillingHistory(e)).map(e=>by(db.s,e.sid)).filter(Boolean):[];
  const availableGroups=db.g.filter(g=>g.active&&db.e.some(e=>e.gid===g.id&&emciaBillingHistory(e)));
  if(gid&&!availableGroups.some(g=>g.id===gid)){gid='';window.pg='';eligible=[]}
 
- $("#payments").innerHTML=`<div class="card"><h3>تسجيل الأداء — التحصيل الفعلي</h3><p class="muted">هذه الواجهة مخصصة فقط للمبالغ التي قبضتها المؤسسة فعلياً من المتعلم.</p><div class="row emcia-payment-pairs"><div><label>الفوج</label><select onchange="emciaChangePaymentGroup(this.value)"><option value="">— اختر فوجا —</option>${opts(availableGroups,gid)}</select></div><div><label>المتعلم</label><select id="ps" onchange="emciaSelectPaymentStudent()"><option value="">— اختر متعلما —</option>${opts(eligible)}</select></div><div><label>البحث باسم المتعلم</label><input id="paymentStudentSearch" placeholder="اكتب الاسم" value="${esc(window.emciaPaymentSearch||'')}" autocomplete="off" oninput="emciaFilterPaymentStudents()" style="margin-bottom:6px"></div><div id="regularPaymentBox" style="display:${mode==="session"?"none":"grid"}"><div><label>المبلغ المؤدى فعلياً</label><input id="pa" type="number" placeholder="المبلغ المقبوض"></div><div><label>تاريخ الأداء الفعلي</label><input id="pd" type="date" value="${today()}"></div><div><label>شهر الاستحقاق</label><input id="pam" type="month" value="${nowMonth()}" onchange="emciaSettlementPanel()"></div><div><label>رقم التوصيل</label><input id="preceipt" placeholder="مثال: 125 أو 125/1"></div><div><label>طريقة الأداء</label><select id="pmethod" onchange="togglePaymentReference()"><option value="cash" selected>نقداً</option><option value="transfer">تحويل بنكي</option><option value="cheque">شيك</option><option value="other">أخرى</option></select></div><div id="prefWrap" style="display:none"><label>مرجع العملية</label><input id="pref" placeholder="مرجع التحويل / الشيك / العملية"></div><div><label for="pty">نوع الأداء</label><select id="pty" onchange="toggleCompositePayment()"><option value="payment">أداء شهري</option><option value="partial">أداء جزئي</option><option value="settlement">تسوية</option><option value="composite">أداء مركب</option><option value="arrears">متأخرات</option></select></div><div id="pSettlement" class="card" hidden></div><div id="pcompWrap" style="display:none"><label>توزيع مبلغ التوصيل على الأشهر</label><div id="pcompRows"></div><button type="button" class="secondary" onclick="addCompositeRow()">+ إضافة شهر</button><div id="pcompSummary" class="muted" style="margin-top:8px"></div></div><div><label for="pnote">ملاحظة</label><input id="pnote" placeholder="ملاحظة"></div><button id="paymentSubmit" onclick="addPayment()">تسجيل الأداء</button><details id="paymentReceiptHelp"><summary>إرشادات التوصيل المشترك</summary><p>سجّل حصة كل متعلم فقط، مع لاحقة مختلفة للرقم: 125/1، 125/2. لا تكرر المبلغ الإجمالي.</p></details></div></div><div id="sessionPaymentBox" class="card" style="display:${mode==="session"?"block":"none"}"><h3>دفعات الحصص</h3><p class="muted">سجل مستقل للمبالغ المقبوضة فعلياً. تظهر المقبوضات في التقارير والصندوق، وتُوزّع حصص الأستاذ والمؤسسة بعد إنجاز الحصة وتحصيل مقابلها. المبلغ المسبق يبقى رصيداً للمتعلم.</p><div class="row"><div><label>المبلغ المقبوض</label><input id="spa" type="number" min="0.01" step="0.01"></div><div><label>تاريخ القبض</label><input id="spd" type="date" value="${today()}"></div><div><label>رقم التوصيل</label><input id="spr"></div><div><label>نوع الدفعة</label><select id="spt"><option value="instant">فوري</option><option value="advance">مسبق</option><option value="later">لاحق</option></select></div><div><label>طريقة الأداء</label><select id="spmethod"><option value="cash">نقداً</option><option value="transfer">تحويل بنكي</option><option value="cheque">شيك</option><option value="other">أخرى</option></select></div><div><label>ملاحظة</label><input id="spnote"></div><button type="button" onclick="emciaAddSessionPayment()">حفظ دفعة الحصص</button></div><div id="sessionPaymentSummary" class="muted"></div><div id="sessionPaymentHistory"></div></div><div class="muted">شهر دخول المال إلى الميزانية يُستخرج تلقائياً من تاريخ الأداء الفعلي. شهر الاستحقاق = الشهر الذي يغطيه الأداء. التخفيض النشط لذلك الشهر يُحتسب تلقائياً عند توزيع حصة الأستاذ والمؤسسة.</div></div>
+ $("#payments").innerHTML=`<div class="card"><h3>تسجيل الأداء — التحصيل الفعلي</h3><p class="muted">هذه الواجهة مخصصة فقط للمبالغ التي قبضتها المؤسسة فعلياً من المتعلم.</p><div class="row"><div><label for="paymentEntryMode">نوع الأداء</label><select id="paymentEntryMode" onchange="emciaChangePaymentMode(this.value)"><option value="monthly">واجبات الدراسة</option><option value="extra" ${mode==="extra"?"selected":""}>المداخيل الإضافية للمتعلم</option></select></div></div>
+ ${mode==="extra"?emciaLearnerExtraForm():`<div class="row emcia-payment-pairs"><div><label>الفوج</label><select onchange="emciaChangePaymentGroup(this.value)"><option value="">— اختر فوجا —</option>${opts(availableGroups,gid)}</select></div><div><label>المتعلم</label><select id="ps" onchange="emciaSelectPaymentStudent()"><option value="">— اختر متعلما —</option>${opts(eligible)}</select></div><div><label>البحث باسم المتعلم</label><input id="paymentStudentSearch" placeholder="اكتب الاسم" value="${esc(window.emciaPaymentSearch||'')}" autocomplete="off" oninput="emciaFilterPaymentStudents()" style="margin-bottom:6px"></div><div id="regularPaymentBox" style="display:${mode==="session"?"none":"grid"}"><div><label>المبلغ المؤدى فعلياً</label><input id="pa" type="number" placeholder="المبلغ المقبوض"></div><div><label>تاريخ الأداء الفعلي</label><input id="pd" type="date" value="${today()}"></div><div><label>شهر الاستحقاق</label><input id="pam" type="month" value="${nowMonth()}" onchange="emciaSettlementPanel()"></div><div><label>رقم التوصيل</label><input id="preceipt" placeholder="مثال: 125 أو 125/1"></div><div><label>طريقة الأداء</label><select id="pmethod" onchange="togglePaymentReference()"><option value="cash" selected>نقداً</option><option value="transfer">تحويل بنكي</option><option value="cheque">شيك</option><option value="other">أخرى</option></select></div><div id="prefWrap" style="display:none"><label>مرجع العملية</label><input id="pref" placeholder="مرجع التحويل / الشيك / العملية"></div><div><label for="pty">نوع الأداء</label><select id="pty" onchange="if(this.value==='extra')emciaChangePaymentMode('extra');else toggleCompositePayment()"><option value="payment">أداء شهري</option><option value="partial">أداء جزئي</option><option value="settlement">تسوية</option><option value="composite">أداء مركب</option><option value="arrears">متأخرات</option><option value="extra">المداخيل الإضافية للمتعلم</option></select></div><div id="pSettlement" class="card" hidden></div><div id="pcompWrap" style="display:none"><label>توزيع مبلغ التوصيل على الأشهر</label><div id="pcompRows"></div><button type="button" class="secondary" onclick="addCompositeRow()">+ إضافة شهر</button><div id="pcompSummary" class="muted" style="margin-top:8px"></div></div><div><label for="pnote">ملاحظة</label><input id="pnote" placeholder="ملاحظة"></div><button id="paymentSubmit" onclick="addPayment()">تسجيل الأداء</button><details id="paymentReceiptHelp"><summary>إرشادات التوصيل المشترك</summary><p>سجّل حصة كل متعلم فقط، مع لاحقة مختلفة للرقم: 125/1، 125/2. لا تكرر المبلغ الإجمالي.</p></details></div></div><div id="sessionPaymentBox" class="card" style="display:${mode==="session"?"block":"none"}"><h3>دفعات الحصص</h3><p class="muted">سجل مستقل للمبالغ المقبوضة فعلياً. تظهر المقبوضات في التقارير والصندوق، وتُوزّع حصص الأستاذ والمؤسسة بعد إنجاز الحصة وتحصيل مقابلها. المبلغ المسبق يبقى رصيداً للمتعلم.</p><div class="row"><div><label>المبلغ المقبوض</label><input id="spa" type="number" min="0.01" step="0.01"></div><div><label>تاريخ القبض</label><input id="spd" type="date" value="${today()}"></div><div><label>رقم التوصيل</label><input id="spr"></div><div><label>نوع الدفعة</label><select id="spt"><option value="instant">فوري</option><option value="advance">مسبق</option><option value="later">لاحق</option></select></div><div><label>طريقة الأداء</label><select id="spmethod"><option value="cash">نقداً</option><option value="transfer">تحويل بنكي</option><option value="cheque">شيك</option><option value="other">أخرى</option></select></div><div><label>ملاحظة</label><input id="spnote"></div><button type="button" onclick="emciaAddSessionPayment()">حفظ دفعة الحصص</button></div><div id="sessionPaymentSummary" class="muted"></div><div id="sessionPaymentHistory"></div></div><div class="muted">شهر دخول المال إلى الميزانية يُستخرج تلقائياً من تاريخ الأداء الفعلي. شهر الاستحقاق = الشهر الذي يغطيه الأداء. التخفيض النشط لذلك الشهر يُحتسب تلقائياً عند توزيع حصة الأستاذ والمؤسسة.</div>`}</div>
  <div class="card"><h3>آخر العمليات — جميع الأداءات</h3><div class="row"><div><label>البحث باسم المتعلم</label><input id="paymentHistorySearch" placeholder="اسم المتعلم" oninput="emciaFilterPaymentHistory()"></div><div><label>الفوج</label><select id="paymentHistoryGroup" onchange="emciaFilterPaymentHistory()"><option value="">جميع الأفواج</option>${opts(db.g,"")}</select></div></div><div style="overflow-x:auto"><table id="unifiedPayments"><tr><th>التاريخ</th><th>المتعلم</th><th>الفوج</th><th>النظام</th><th>المبلغ</th><th>رقم التوصيل</th><th>طريقة الأداء</th><th>الاستحقاق / النوع</th><th>إجراء</th></tr>${emciaUnifiedPaymentRows()}</table></div><p class="muted">دفعات الحصص مدرجة في المقبوضات المالية، وتوزيعها مرتبط بالحصص المنجزة. عدد الدفعات المسجلة بالحصة: ${db.sp.length}.</p></div>`;
+ if(mode==="extra")emciaExtraSelect();
 }
 function emciaEditSessionPayment(id){
  const p=db.sp.find(x=>x.id===id);if(!p)return alert("لم يُعثر على الدفعة");
@@ -5751,11 +5837,12 @@ function emciaDeleteSessionPayment(id){
 }
 function emciaUnifiedPaymentRows(){
  const rows=db.p.map(p=>({p,mode:"monthly"})).concat(db.sp.map(p=>({p,mode:"session"})));
- rows.sort((x,y)=>(y.p.date||"").localeCompare(x.p.date||"")||(y.p.createdAt||"").localeCompare(x.p.createdAt||""));
+ rows.push(...db.oi.filter(p=>p.sid&&!p.voidedAt&&!p.cancelledAt).map(p=>({p,mode:"extra"})));
+ rows.sort((x,y)=>(y.p.date||y.p.month||"").localeCompare(x.p.date||x.p.month||"")||(y.p.createdAt||"").localeCompare(x.p.createdAt||""));
  return rows.map(({p,mode})=>{
-  const action=mode==="session"?'<button title="تعديل دفعة الحصص" onclick="emciaEditSessionPayment(\''+p.id+'\')">✏️</button><button class="danger" title="حذف دفعة الحصص" onclick="emciaDeleteSessionPayment(\''+p.id+'\')">🗑️</button>':'<button onclick="editPayment(\''+p.id+'\')">✏️</button><button class="danger" onclick="delTx(\'p\',\''+p.id+'\')">🗑️</button>';
-  const category=mode==="session"?({instant:"فوري",advance:"مسبق",later:"لاحق"}[p.paymentTiming]||"دفعة حصص"):((p.type==="settlement"?"تسوية — ":"")+(p.allocMonth||"—")+(+p.creditAmount>0?" — رصيد للمراجعة: "+money(p.creditAmount):""));
-  return '<tr data-mode="'+mode+'" data-sid="'+esc(p.sid||'')+'" data-gid="'+esc(p.gid||'')+'"><td>'+esc(p.date||"—")+'</td><td>'+esc(name(db.s,p.sid))+'</td><td>'+esc(groupCompactName(by(db.g,p.gid)))+'</td><td>'+(mode==="session"?"بالحصة":"شهري")+'</td><td>'+money(p.a)+'</td><td>'+esc(p.receiptNo||"—")+'</td><td>'+esc(paymentMethodLabel(p.method))+'</td><td>'+esc(category)+'</td><td class="actions">'+action+'</td></tr>';
+  const action=mode==="extra"?'<button onclick="editSimple(\'oi\',\''+p.id+'\')">✏️</button><button class="danger" onclick="delTx(\'oi\',\''+p.id+'\')">🗑️</button>':mode==="session"?'<button title="تعديل دفعة الحصص" onclick="emciaEditSessionPayment(\''+p.id+'\')">✏️</button><button class="danger" title="حذف دفعة الحصص" onclick="emciaDeleteSessionPayment(\''+p.id+'\')">🗑️</button>':'<button onclick="editPayment(\''+p.id+'\')">✏️</button><button class="danger" onclick="delTx(\'p\',\''+p.id+'\')">🗑️</button>';
+  const category=mode==="extra"?p.cat||"مدخول إضافي":mode==="session"?({instant:"فوري",advance:"مسبق",later:"لاحق"}[p.paymentTiming]||"دفعة حصص"):((p.type==="settlement"?"تسوية — ":"")+(p.allocMonth||"—")+(+p.creditAmount>0?" — رصيد للمراجعة: "+money(p.creditAmount):""));
+  return '<tr data-mode="'+mode+'" data-sid="'+esc(p.sid||'')+'" data-gid="'+esc(p.gid||'')+'"><td>'+esc(p.date||p.month||"—")+'</td><td>'+esc(name(db.s,p.sid))+'</td><td>'+esc(groupCompactName(by(db.g,p.gid)))+'</td><td>'+(mode==="extra"?"مدخول إضافي":mode==="session"?"بالحصة":"شهري")+'</td><td>'+money(p.a)+'</td><td>'+esc(p.receiptNo||"—")+'</td><td>'+esc(mode==="extra"&&!p.method?"—":paymentMethodLabel(p.method))+'</td><td>'+esc(category)+'</td><td class="actions">'+action+'</td></tr>';
  }).join("");
 }
 function emciaRefreshUnifiedPaymentHistory(mode){
@@ -6010,9 +6097,9 @@ function saveTeacherSettlement(){
 }
 let emciaExtraDraft=[];
 function emciaExtraSelect(){
- const g=document.getElementById("oiGroup")?.value||"",q=(document.getElementById("oiSearch")?.value||"").trim().toLowerCase(),el=document.getElementById("oiStudent");if(!el)return;
+ const g=$("#extraGroup")?.value||"",q=($("#extraLearnerSearch")?.value||"").trim().toLowerCase(),el=$("#extraLearner");if(!el)return;
  const old=el.value,ids=new Set(db.e.filter(e=>e.gid===g).map(e=>e.sid));
- const students=db.s.filter(x=>(!g||ids.has(x.id))&&(!q||objName(x).toLowerCase().startsWith(q)));
+ const students=db.s.filter(x=>(!g||ids.has(x.id))&&[x.n,x.nAr,x.nFr].join(" ").toLowerCase().includes(q));
  el.innerHTML='<option value="">— اختر المتعلم —</option>'+students.map(x=>'<option value="'+esc(x.id)+'">'+esc(objName(x))+'</option>').join('');
  if(students.some(x=>x.id===old))el.value=old;
 }
@@ -6102,11 +6189,18 @@ function emciaLinkObligationExpense(){
 }
 
 function expenses(){
+ const generalIncome=db.oi.filter(x=>!x.sid);
  $("#expenses").innerHTML=emciaObligationsHTML()+`<div class="grid"><details class="card" id="expenseEntryPanel" ${window.pendingObligation?'open':''}><summary style="cursor:pointer;font-weight:750">المصاريف</summary><div class="row"><select id="xc"><option value="">— اختر المصروف —</option>${expenseCats.map(x=>`<option>${x}</option>`)}</select><select id="xt"><option value="fixed">ثابت</option><option value="variable">متغير</option></select><input id="xa" type="number" placeholder="المبلغ"><input id="xd" type="date" value="${emciaLocalDay()}"><input id="xn" placeholder="ملاحظة"><button onclick="addExpense()">إضافة مصروف</button></div></details>
- <details class="card" id="incomeEntryPanel" ${emciaExtraDraft.length?'open':''}><summary style="cursor:pointer;font-weight:750">مداخيل أخرى</summary><p class="muted">سجّل رسوم التسجيل والتأمين والكتب والنسخ هنا منفصلة عن واجبات الدراسة، حتى لا تدخل في مستحقات الأستاذ. مبالغ التأمين المحصلة تُتابع على حدة إلى حين تسويتها مع الجهة المعنية، ولا تُعد ربحاً صافياً تلقائياً. اذكر اسم المتعلم ورقم التوصيل في الملاحظة.</p><div class="oi-compact-grid"><div><label>الفوج</label><select id="oiGroup" onchange="emciaExtraSelect()"><option value="">— جميع الأفواج —</option>${db.g.map(g=>`<option value="${esc(g.id)}">${esc(g.n)}</option>`).join("")}</select></div><div><label>المتعلم</label><select id="oiStudent"></select></div><div><label>بداية الاسم</label><input id="oiSearch" oninput="emciaExtraSelect()" placeholder="بحث بالاسم"></div></div><div class="oi-compact-grid"><div><label>نوع المدخول</label><select id="oc"><option value="">— اختر المدخول —</option><option>التسجيل</option><option>التأمين (مبالغ محصلة)</option><option>الامتحانات</option><option>الكتب والنسخ</option><option>أخرى</option></select></div><div><label>المبلغ</label><input id="oa" type="number" min="0.01" step="0.01" placeholder="درهم"></div><div><label>تاريخ الأداء</label><input id="om" type="date" value="${today()}"></div></div><div class="oi-compact-grid"><div><label>رقم التوصيل</label><input id="oiReceipt" placeholder="رقم التوصيل"></div><div><label>التفاصيل</label><input id="on" placeholder="تعيين الرسوم"></div><div class="oi-action"><button type="button" onclick="emciaExtraAdd()">+ أضف مدخولاً</button></div></div><div id="oiDraft"></div><button type="button" onclick="addOther()">حفظ المداخيل المضافة</button></details></div>
- <details class="card" id="oiRegistered"><summary style="cursor:pointer;font-weight:750">المداخيل الأخرى المسجلة</summary><table><tr><th>تاريخ الأداء</th><th>المتعلم</th><th>المصدر</th><th>المبلغ</th><th>التوصيل</th><th>ملاحظة</th><th></th></tr>${db.oi.slice().reverse().map(x=>`<tr><td>${esc(x.date||x.month||"—")}</td><td>${x.sid?esc(name(db.s,x.sid)):"—"}</td><td>${esc(x.cat)}</td><td>${money(x.a)}</td><td>${esc(x.receiptNo||"—")}</td><td>${esc(x.note||"")}</td><td class="actions"><button onclick="editSimple('oi','${x.id}')">✏️</button><button class="danger" onclick="delTx('oi','${x.id}')">🗑️</button></td></tr>`).join("")}<tfoot><tr><th colspan="3">إجمالي المداخيل المسجلة — جميع الأشهر</th><th id="oiRegisteredTotal">${money(db.oi.reduce((sum,x)=>sum+(+x.a||0),0))}</th><td colspan="3"></td></tr></tfoot></table></details>
+ <details class="card" id="incomeEntryPanel" ${emciaExtraDraft.length?'open':''}><summary>مداخيل عامة</summary>
+ <p class="muted">مداخيل غير مرتبطة بمتعلم</p>
+ <div class="oi-compact-grid"><div><label for="oc">نوع المدخول</label><select id="oc"><option value="">— اختر المدخول —</option>${["النسخ","الكتب","الترجمة","مبيعات","أخرى"].map(cat=>`<option value="${cat}">${cat}</option>`).join("")}</select></div><div><label for="oa">المبلغ</label><input id="oa" type="number" min="0.01" step="0.01" placeholder="درهم"></div><div><label for="om">تاريخ الأداء</label><input id="om" type="date" value="${emciaLocalDay()}"></div></div>
+ <div class="oi-compact-grid"><div><label for="oiReceipt">رقم التوصيل</label><input id="oiReceipt"></div><div><label for="on">ملاحظة</label><input id="on"></div><div class="oi-action"><button type="button" onclick="emciaExtraAdd()">+ أضف مدخولاً</button></div></div>
+ <div id="oiDraft"></div><button type="button" onclick="addOther()">حفظ المداخيل المضافة</button></details></div>
+ <details class="card" id="oiRegistered"><summary>المداخيل الأخرى المسجلة</summary><div class="tablewrap"><table><thead><tr><th>تاريخ الأداء</th><th>المصدر</th><th>المبلغ</th><th>التوصيل</th><th>ملاحظة</th><th>الإجراء</th></tr></thead>
+ <tbody>${generalIncome.slice().reverse().map(x=>`<tr><td>${esc(x.date||x.month||"—")}</td><td>${esc(x.cat)}</td><td>${money(x.a)}</td><td>${esc(x.receiptNo||"—")}</td><td>${esc(x.note||"")}</td><td class="actions"><button onclick="editSimple('oi','${x.id}')">✏️</button><button class="danger" onclick="delTx('oi','${x.id}')">🗑️</button></td></tr>`).join("")}</tbody>
+ <tfoot><tr><th colspan="2">إجمالي المداخيل المسجلة — جميع الأشهر</th><th id="oiRegisteredTotal">${money(generalIncome.reduce((sum,x)=>sum+(+x.a||0),0))}</th><td colspan="3"></td></tr></tfoot></table></div></details>
  <details class="card" id="expenseRecordsPanel"><summary style="cursor:pointer;font-weight:750">المصاريف المسجلة</summary><table><tr><th>التاريخ</th><th>الفئة</th><th>النوع</th><th>المبلغ</th><th>ملاحظة</th><th></th></tr>${db.x.slice().reverse().map(x=>`<tr><td>${esc(x.date||x.month)}</td><td>${esc(x.cat)}</td><td>${x.type==="fixed"?"ثابت":"متغير"}</td><td>${money(x.a)}</td><td>${esc(x.note||"")}</td><td class="actions"><button onclick="editSimple('x','${x.id}')">✏️</button><button class="danger" onclick="delTx('x','${x.id}')">🗑️</button></td></tr>`).join("")}</table></details>`;
- emciaExtraSelect();emciaExtraRender();
+ emciaExtraRender();
 }
 function addExpense(){
  const cat=$('#xc').value,a=Number($('#xa').value),date=$('#xd').value,pending=window.pendingObligation;
@@ -6126,13 +6220,15 @@ function addOther(){
   if(emciaExtraDraft.length===before)return;
  }
  if(!emciaExtraDraft.length)return alert("أدخل نوع المدخول والمبلغ أو أضف مدخولاً إلى اللائحة");
- let sid=document.getElementById("oiStudent").value,gid=document.getElementById("oiGroup").value;
- if(gid&&!sid)return alert("اختر المتعلم");
  let date=document.getElementById("om").value,month=date.slice(0,7),receiptNo=document.getElementById("oiReceipt").value.trim(),note=document.getElementById("on").value,batchId=uid();
  if(!emciaValidDate(date))return alert("حدد تاريخ أداء صحيحاً باليوم والشهر والسنة");
  if(!confirm("حفظ المداخيل الإضافية بمجموع "+money(emciaExtraDraft.reduce((z,x)=>z+x.a,0))+"؟"))return;
- const created=emciaExtraDraft.map(x=>({id:uid(),batchId,sid:sid||null,gid:gid||null,cat:x.cat,a:x.a,date,month,receiptNo,note}));
- db.oi.push(...created);emciaExtraDraft=[];save();created.forEach(x=>window.EMCIA_CLOUD_SYNC?.saveCash('oi','insert',x));expenses();
+ const created=emciaExtraDraft.map(x=>({id:uid(),batchId,sid:null,gid:null,cat:x.cat,a:x.a,date,month,receiptNo,note}));
+ emciaExtraDraft=[];emciaStoreIncome(created);expenses();
+}
+function emciaStoreIncome(records){
+ db.oi.push(...records);save();
+ records.forEach(record=>window.EMCIA_CLOUD_SYNC?.saveCash("oi","insert",record));
 }
 function emciaAccountingMonth(record){return record.month||(record.date||"").slice(0,7)}
 function editSimple(arr,id){
@@ -6736,11 +6832,21 @@ function studentfile(){
  let c={present:0,absent:0,late:0,excused:0,leftEarly:0};att.forEach(a=>{if(c[a.status]!=null)c[a.status]++});
  $("#studentfile").innerHTML=lookup+`
  <div class="card"><h3>${esc(objName(s))}</h3>${s.studyStatus==="stopped"?`<p>متوقف عن الدراسة منذ ${esc(s.stoppedOn||"")}</p>`:""}${pays.some(p=>+p.creditAmount>0)?`<p class="muted">رصيد يحتاج مراجعة أو إرجاعاً: ${money(pays.reduce((n,p)=>n+(+p.creditAmount||0),0))}</p>`:""}<table><tr><th>الهاتف</th><td>${esc(s.ph||"—")}</td><th>ولي الأمر / الهاتف</th><td>${esc(s.parent||"—")}</td></tr><tr><th>المستوى</th><td>${esc(s.level||"—")}</td><th>تاريخ التسجيل بالمؤسسة</th><td>${esc(s.joined||"—")}</td></tr><tr><th>ملاحظات</th><td colspan="3">${esc(s.note||"—")}</td></tr></table></div>
- <div class="grid"><div class="card"><div class="muted">الأفواج النشطة</div><div class="kpi">${ens.filter(e=>emciaEnrollmentDate(e,today())).length}</div></div><div class="card"><div class="muted">إجمالي الاستحقاق</div><div class="kpi">${money(due)}</div></div><div class="card"><div class="muted">المخصص للدراسة</div><div class="kpi">${money(paid)}</div></div><div class="card"><div class="muted">المتبقي</div><div class="kpi">${money(totals.debt)}</div></div><div class="card"><div class="muted">الغياب</div><div class="kpi">${c.absent}</div></div><div class="card"><div class="muted">التأخر</div><div class="kpi">${c.late}</div></div></div>
- <div class="grid"><div class="card" id="studentCollected"><div class="muted">المقبوض فعلياً</div><div class="kpi">${money(totals.cash+extraCash)}</div>${extraCash?`<small class="muted">مداخيل إضافية ${money(extraCash)}</small>`:""}</div><div class="card"><div class="muted">الرصيد المسبق / الزائد</div><div class="kpi">${money(totals.credit)}</div></div><div class="card"><div class="muted">الحصص المنجزة</div><div class="kpi">${accounts.reduce((n,r)=>n+r.lessons,0)}</div></div></div>
+ <div class="student-file-metrics" aria-label="مؤشرات المتعلم">
+ ${[
+  ["المقبوض فعلياً",money(totals.cash+extraCash),"studentCollected"],
+  ["إجمالي الاستحقاق",money(due)],
+  ["المخصص للدراسة",money(paid)],
+  ["المتبقي",money(totals.debt)],
+  ["الأفواج النشطة",ens.filter(e=>emciaEnrollmentDate(e,cutoff)).length],
+  ["الرصيد المسبق / الزائد",money(totals.credit)],
+  ["الحصص المنجزة",accounts.reduce((n,r)=>n+r.lessons,0)],
+  ["الغياب",c.absent]
+ ].map(([label,value,id])=>`<div class="card"${id?` id="${id}"`:""}><div class="muted">${label}</div><bdi class="kpi">${value}</bdi></div>`).join("")}
+ </div>
+ ${emciaStudentReceiptsHTML(sid,extras)}
  <div class="card"><h3>التسجيلات والأفواج</h3>${ens.length?`<table><tr><th>الفوج</th><th>الأستاذ</th><th>بداية الدراسة</th><th>الحالة</th></tr>${ens.map(e=>{let g=by(db.g,e.gid);return`<tr><td>${esc(g?g.n:"—")}</td><td>${esc(g?objName(by(db.t,g.tid)):"—")}</td><td>${esc(e.start||"—")}</td><td>${e.end?"متوقف — "+esc(e.end):e.active?"نشط":"متوقف"}</td></tr>`}).join("")}</table>`:"<p>لا توجد تسجيلات.</p>"}</div>
  <div class="card"><h3>المتأخرات الحالية</h3><p class="muted">تبدأ المحاسبة من نونبر 2026، وتُحسب المستحقات بعد تطبيق التخفيضات السارية. تبقى تواريخ التسجيل وسجلات الأداءات التاريخية محفوظة دون إنشاء متأخرات عن الأشهر السابقة.</p>${debts.length?`<table><tr><th>الشهر</th><th>الفوج</th><th>المستحق</th><th>المؤدى</th><th>المتبقي</th></tr>${debts.map(x=>{let g=by(db.g,x.e.gid);return`<tr><td>${x.mm}</td><td>${esc(g?g.n:"—")}</td><td>${money(x.d)}</td><td>${money(x.pa)}</td><td><b>${money(x.rem)}</b></td></tr>`}).join("")}</table>`:"<p>✓ لا توجد متأخرات حالية.</p>"}</div>
- ${emciaStudentReceiptsHTML(sid,extras)}
  ${emciaAccountsHTML("",{sid})}
  <div class="card"><h3>الحضور والغياب</h3><p><b>حاضر:</b> ${c.present} | <b>غائب:</b> ${c.absent} | <b>متأخر:</b> ${c.late} | <b>بعذر:</b> ${c.excused}</p>${att.length?`<table><tr><th>التاريخ</th><th>الفوج</th><th>الحالة</th><th>ملاحظة</th></tr>${att.slice(0,30).map(a=>{let g=by(db.g,a.gid),lab={present:"حاضر",absent:"غائب",late:"متأخر",excused:"غياب بعذر"}[a.status]||"—";return`<tr><td>${a.date}</td><td>${esc(g?g.n:"—")}</td><td>${lab}</td><td>${esc(a.note||"")}</td></tr>`}).join("")}</table>`:"<p>لا توجد سجلات حضور بعد.</p>"}</div>
  <div class="card"><div class="row"><button onclick="show('payments')">فتح الأداءات</button><button onclick="show('attendance')">فتح الحضور والغياب</button><button onclick="show('arrears')">فتح المتأخرات</button></div></div>`;applyLang()
