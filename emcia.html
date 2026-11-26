@@ -834,6 +834,7 @@ const $=s=>document.querySelector(s), money=n=>(+n||0).toFixed(2)+" DH", uid=()=
 const nowMonth=()=>new Date().toISOString().slice(0,7), today=()=>new Date().toISOString().slice(0,10);
 let raw={}; try{raw=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){}
 let db={
+ monthlyAdjustmentDues:Array.isArray(raw.monthlyAdjustmentDues)?raw.monthlyAdjustmentDues:[],
  receiptReviews:raw.receiptReviews&&typeof raw.receiptReviews==="object"&&!Array.isArray(raw.receiptReviews)?raw.receiptReviews:{},reviewEvents:Array.isArray(raw.reviewEvents)?raw.reviewEvents:[],
  subj:Array.isArray(raw.subj)?raw.subj:[], t:Array.isArray(raw.t)?raw.t:[], s:Array.isArray(raw.s)?raw.s:[], g:Array.isArray(raw.g)?raw.g:[],
  e:Array.isArray(raw.e)?raw.e:[], p:Array.isArray(raw.p)?raw.p:[], sp:Array.isArray(raw.sp)?raw.sp:[], sc:Array.isArray(raw.sc)?raw.sc:[], at2:Array.isArray(raw.at2)?raw.at2:[], tp:Array.isArray(raw.tp)?raw.tp:[], adj:Array.isArray(raw.adj)?raw.adj:[], cash:Array.isArray(raw.cash)?raw.cash:[], shifts:Array.isArray(raw.shifts)?raw.shifts:[], tatt:Array.isArray(raw.tatt)?raw.tatt:[], wait:Array.isArray(raw.wait)?raw.wait:[], wls:Array.isArray(raw.wls)?raw.wls:[],
@@ -855,7 +856,7 @@ db.e=db.e.map(o=>({...o,fee:o.fee==null?null:+o.fee,reason:o.reason||"",start:o.
 db.p=db.p.map(o=>({...o,date:o.date||today(),receiptMonth:o.receiptMonth||o.m||nowMonth(),allocMonth:o.allocMonth||o.m||nowMonth(),type:o.type||"payment",note:o.note||""}));
 db.tp=db.tp.map(o=>({...o,month:o.month||nowMonth(),amount:+o.amount||0,date:o.date||today(),method:o.method||"cash",note:o.note||""}));
 db.p=db.p.map(o=>({...o,receiptNo:o.receiptNo||"",method:o.method||"cash",paymentRef:o.paymentRef||""}));
-db.adj=db.adj.map(o=>({...o,month:o.month||nowMonth(),countedDays:+o.countedDays||0,originalPaid:+o.originalPaid||0,approvedDue:+o.approvedDue||0,refund:+o.refund||0,date:o.date||today()}));
+db.adj=db.adj.map(o=>({...o,month:o.month||nowMonth(),countedDays:+o.countedDays||0,originalPaid:+o.originalPaid||0,approvedDue:o.approvedDue==null||o.approvedDue===""?null:Number(o.approvedDue),refund:+o.refund||0,date:o.date||today()}));
 function save(){db.reviewEvents=Object.entries(db.receiptReviews||{}).map(([id,review])=>({id,...review}));emciaRepricePayments(db,emciaPaymentSplitCore);localStorage.setItem(KEY,JSON.stringify(db));window.EMCIA_CLOUD_SYNC?.save(db);window.emciaUpdateAlertCounter?.();window.emciaUpdateCorrectionBadge?.();if(document.getElementById("daily-payment-alerts-content"))emciaRenderDailyPayments();setTimeout(applyLang,0)}
 function teacherDueOf(p){return +(p?.d??p?.t??0)||0}
 const by=(a,id)=>a.find(x=>x.id===id);
@@ -4727,7 +4728,7 @@ function emciaSettlementDraft(){
 function emciaSaveBillingAgreement(){
  const x=emciaSettlementDraft();if(!x)return alert('راجع معلومات التسوية');
  if(adjustmentTeacherPaid(by(db.g,x.e.gid)?.tid,x.agreement.month))return alert('سبق أداء مستحقات الأستاذ لهذا الشهر؛ راجع التسوية الاستثنائية أولاً.');
- if(db.adj.some(a=>db.p.some(p=>p.id===a.pid&&p.sid===x.e.sid&&p.gid===x.e.gid&&allocatedAmountForMonth(p,x.agreement.month)>0)))return alert('توجد تسوية استثنائية مرتبطة بهذا الشهر؛ راجعها أولاً.');
+ if(emciaApprovedMonthlyDue(x.e,x.agreement.month)!==null)return alert('توجد تسوية استثنائية مرتبطة بهذا الشهر؛ راجعها أولاً.');
  x.e.monthlySettlements=[...(x.e.monthlySettlements||[]).filter(a=>a.month!==x.agreement.month),x.agreement];save();emciaSettlementPanel();alert('حُفظ استحقاق التسوية دون تسجيل أي مبلغ مقبوض جديد.');
 }
 function emciaSettlementPreview(){const h=$('#settlePreview');if(!h)return;const x=emciaSettlementDraft();h.textContent=x?`المستحق بعد التخفيض: ${money(x.split.due)} — المؤدى سابقاً: ${money(x.paid)} — المتبقي: ${money(x.remaining)}`:'راجع الفترة وعدد الحصص وثمن الحصة؛ يجب أن تكون داخل شهر الاستحقاق وفترة التسجيل.'}
@@ -5783,7 +5784,7 @@ function addPayment(){
  if(type==='settlement'){
   const draft=emciaSettlementDraft();if(!draft)return alert('راجع معلومات التسوية');
   if(adjustmentTeacherPaid(by(db.g,gid)?.tid,am))return alert('سبق أداء مستحقات الأستاذ لهذا الشهر. راجع قسم التسوية الاستثنائية أولاً.');
-  if(db.adj.some(x=>db.p.some(p=>p.id===x.pid&&p.sid===sid&&p.gid===gid&&p.allocMonth===am)))return alert('هذا الشهر مرتبط بتسوية استثنائية سابقة؛ راجعها قبل تعديل الاستحقاق.');
+  if(emciaApprovedMonthlyDue(en,am)!==null)return alert('هذا الشهر مرتبط بتسوية استثنائية سابقة؛ راجعها قبل تعديل الاستحقاق.');
   if(draft.paid+a>draft.split.due+0.01)return alert('المبلغ يتجاوز المتبقي في التسوية. راجع المؤدى السابق أو المبلغ المقبوض.');
   draft.e.monthlySettlements=[...(draft.e.monthlySettlements||[]).filter(x=>x.month!==am),draft.agreement];
  }
@@ -5794,7 +5795,7 @@ function addPayment(){
 }
 function editPayment(id){
  const p=by(db.p,id);if(!p)return;
- if(adjustmentForPayment(id))return alert('هذا الأداء مرتبط بتسوية استثنائية؛ عدله من قسم التسوية الاستثنائية.');
+ if(p.adjustmentId||adjustmentForPayment(id))return alert('هذا الأداء مرتبط بتسوية استثنائية؛ عدله من قسم التسوية الاستثنائية.');
  const rn=prompt('رقم التوصيل',p.receiptNo||'');if(rn===null)return;
  const receiptNo=rn.trim();if(!receiptNo||[...db.p,...db.sp].some(x=>x.id!==id&&(x.receiptNo||'').trim()===receiptNo))return alert('رقم التوصيل غير صحيح أو مستعمل');
  const method=prompt('طريقة الأداء: cash / transfer / cheque / other',p.method||'cash');if(method===null)return;
@@ -5821,6 +5822,12 @@ const expenseCats=["المدير","المحاسبة","الكاتبة الصبا�
 
 
 function adjustmentForPayment(pid){return db.adj.find(x=>x.pid===pid)}
+function adjustmentReferenceDue(p,g,m,existing){
+ const saved=existing?.baseDue;
+ if(saved!=null&&saved!==""&&Number.isFinite(Number(saved))&&Number(saved)>=0)return Number(saved);
+ const e=emciaBillingEnrollment(db.e,p.sid,p.gid,m,p.enrollmentId||p.eid);
+ return +p.dueAfterDiscount||dueForEnrollmentMonth(e,m,{beforeAdjustment:true})||+g?.f||0;
+}
 function adjustmentTeacherPaid(tid,m){
  let rec=teacherSettlement(tid,m);
  return !!(rec&&(+rec.amount||0)>0)
@@ -5846,7 +5853,7 @@ function adjustments(){
  let groups=db.g.filter(g=>g.active!==false),{gid,sid,m,g,tid,teacher,payments,pid,p,att}=adjustmentContext();
  let students=gid?db.e.filter(e=>e.gid===gid).map(e=>by(db.s,e.sid)).filter(Boolean).filter((x,i,a)=>a.findIndex(y=>y.id===x.id)===i).sort((a,b)=>objName(a).localeCompare(objName(b),"ar")):[];
  let existing=p?adjustmentForPayment(p.id):null,settled=tid?adjustmentTeacherPaid(tid,m):false;
- let baseDue=p?(+p.dueAfterDiscount||dueForEnrollmentMonth(enrollmentFor(sid,gid),m)||+g?.f||0):0;
+ let baseDue=p?adjustmentReferenceDue(p,g,m,existing):0;
  let days=existing?+existing.countedDays||0:28;
  let approved=baseDue*(Math.max(0,Math.min(28,days))/28);
  let refund=p?Math.max(0,(+p.a||0)-approved):0;
@@ -5871,8 +5878,8 @@ function adjustmentPreviewHTML(baseDue,paid,days,rate){
  return `<div class="grid" style="margin-top:12px"><div class="card"><div class="muted">القيمة اليومية ÷ 28</div><div class="kpi">${money(daily)}</div></div><div class="card"><div class="muted">المستحق بعد التسوية</div><div class="kpi">${money(approved)}</div></div><div class="card"><div class="muted">المبلغ المقترح إرجاعه</div><div class="kpi">${money(refund)}</div></div><div class="card"><div class="muted">صافي المبلغ المحتفظ به</div><div class="kpi">${money(net)}</div></div><div class="card"><div class="muted">مستحق الأستاذ بعد التسوية</div><div class="kpi">${money(teacher)}</div></div><div class="card"><div class="muted">حصة EMCIA بعد التسوية</div><div class="kpi">${money(emcia)}</div></div></div>`
 }
 function adjPreview(){
- let {g,p}=adjustmentContext();if(!p)return;
- let baseDue=+p.dueAfterDiscount||dueForEnrollmentMonth(enrollmentFor(p.sid,p.gid),p.allocMonth)||+g?.f||0;
+ let {g,m,p}=adjustmentContext();if(!p)return;
+ let baseDue=adjustmentReferenceDue(p,g,m,adjustmentForPayment(p.id));
  let days=+($("#adjDays")?.value||0);
  $("#adjPreview").innerHTML=adjustmentPreviewHTML(baseDue,+p.a||0,days,+g?.r||0)
 }
@@ -5882,12 +5889,12 @@ function saveExceptionalAdjustment(){
  let days=+($("#adjDays")?.value||0);if(days<0||days>28)return alert("عدد الأيام المحتسبة يجب أن يكون بين 0 و28");
  let notice=$("#adjNotice")?.value||"",last=$("#adjLast")?.value||"",reason=$("#adjReason")?.value||"other",note=$("#adjNote")?.value||"",date=$("#adjDate")?.value||today();
  if(!notice)return alert("أدخل تاريخ إبلاغ المؤسسة بالتوقف");
- let baseDue=+p.dueAfterDiscount||dueForEnrollmentMonth(enrollmentFor(sid,gid),m)||+g.f||0;
+ let old=adjustmentForPayment(p.id);
+ let baseDue=adjustmentReferenceDue(p,g,m,old);
  let approved=baseDue*(days/28),refund=Math.max(0,(+p.a||0)-approved),net=Math.max(0,(+p.a||0)-refund),rate=+g.r||0;
  let teacher=net*rate/100,emcia=net-teacher;
  if(refund<=0&&!confirm("الحساب الحالي لا ينتج عنه مبلغ مسترجع. هل تريد حفظ التسوية رغم ذلك؟"))return;
  if(!confirm(`المؤدى أصلاً: ${money(p.a)}\nالأيام المحتسبة: ${days}/28\nالمستحق بعد التسوية: ${money(approved)}\nالمبلغ المسترجع: ${money(refund)}\nمستحق الأستاذ بعد التسوية: ${money(teacher)}\n\nهل تعتمد هذه التسوية؟`))return;
- let old=adjustmentForPayment(p.id);
  if(!p._preAdjustment)p._preAdjustment={d:teacherDueOf(p),e:+p.e||0};
  p.d=teacher;p.e=emcia;p.refund=refund;p.netAfterRefund=net;p.adjustmentId=old?.id||"";
  let data={pid:p.id,sid,gid,tid,month:m,lastAttendance:last,noticeDate:notice,countedDays:days,reason,note,date,originalPaid:+p.a||0,baseDue,approvedDue:approved,refund,net,teacherDue:teacher,emciaShare:emcia,updatedAt:new Date().toISOString()};
@@ -7200,9 +7207,29 @@ function showDebt(eid){
  alert(`${objName(s)} — ${g.n}\n\n${body}`)
 }
 
-function dueForEnrollmentMonth(e,m){
+function emciaApprovedMonthlyDue(e,m){
+ const adjustments=db.adj?.length?db.adj:db.monthlyAdjustmentDues||[];
+ let latest=null;
+ for(const adjustment of adjustments){
+  if(adjustment.sid!==e.sid||adjustment.gid!==e.gid||adjustment.month!==m||
+     !Number.isFinite(adjustment.approvedDue)||adjustment.approvedDue<0)continue;
+  const receipt=db.p.find(p=>p.id===adjustment.pid&&p.adjustmentId===adjustment.id&&
+   p.sid===e.sid&&p.gid===e.gid&&p.allocMonth===m&&!p.voidedAt&&!p.cancelledAt);
+  if(!receipt)continue;
+  const monthlyEnrollments=db.e.filter(row=>row.billingMode!=="session");
+  const enrollment=emciaBillingEnrollment(monthlyEnrollments,e.sid,e.gid,m,receipt.enrollmentId||receipt.eid);
+  if(enrollment?.id!==e.id)continue;
+  if(!latest||(adjustment.updatedAt||"")>=(latest.updatedAt||""))latest=adjustment;
+ }
+ return latest==null?null:Math.round(latest.approvedDue*100)/100;
+}
+function dueForEnrollmentMonth(e,m,{beforeAdjustment=false}={}){
  if(!m||m<EMCIA_ACCOUNTING_START_MONTH||!emciaEnrollmentMonth(e,m)||e.billingMode==="session")return 0;
  if(e.end&&e.end.slice(0,7)===m&&e.stopMonthCharge!=="yes")return 0;
+ if(!beforeAdjustment){
+  const approved=emciaApprovedMonthlyDue(e,m);
+  if(approved!==null)return approved;
+ }
  const terms=emciaMonthlyTerms(by(db.g,e.gid),e,m),discount=activeDiscount(e,m);
  return Math.max(0,Math.round((terms.base-(discount?.amount||0)*terms.factor)*100)/100);
 }
@@ -7700,7 +7727,11 @@ async function loadCloudSnapshot(){
 }
 async function cloudFetch(){
  const snapshot=await loadCloudSnapshot(),op=snapshot.operational;
- if(!canFinance()){const cash=await request(api+'/rest/v1/rpc/emcia_cash_snapshot_v1',{method:'POST',headers:headers(),body:JSON.stringify({p_id:cloudId})});snapshot.financial={revision:cash.financial_revision,payload:{x:cash.x,oi:cash.oi}};}
+ if(!canFinance()){
+  const cash=await request(api+'/rest/v1/rpc/emcia_cash_snapshot_v1',{method:'POST',headers:headers(),body:JSON.stringify({p_id:cloudId})});
+  snapshot.financial={revision:cash.financial_revision,payload:{x:cash.x,oi:cash.oi}};
+  op.payload={...op.payload,monthlyAdjustmentDues:cash.monthly_adjustment_dues};
+ }
  const fin=snapshot.financial;
  opRevision=Number(op.revision)||0;finRevision=Number(fin?.revision)||0;
  legacyFinancialIds=op.payload?._legacyFinancialIds||Object.fromEntries(['g','e','p','sc'].map(k=>[k,(op.payload?.[k]||[]).map(row=>row.id)]));
