@@ -1409,6 +1409,8 @@ Object.assign(I18N,{
  "الأداءات الدراسية والمداخيل الإضافية المرتبطة بالمتعلمين": "Paiements des cours et recettes supplémentaires liées aux apprenants",
  "مداخيل غير مرتبطة بمتعلم": "Recettes sans apprenant associé",
  "مداخيل إضافية من المتعلمين": "Recettes supplémentaires des apprenants",
+ "سجل أداءات المتعلم": "Historique des paiements de l’apprenant",
+ "مدخول إضافي": "Recette supplémentaire",
  "صندوق العهدة": "Caisse de fonds",
  "طلبات الشواهد — حفظ مسودة سحابية": "Demandes de certificats — brouillon enregistré en ligne",
  "طلبات مستبعدة بسبب عدم الالتحاق: 0": "Demandes exclues pour non-inscription : 0",
@@ -2615,6 +2617,8 @@ const I18N_EN={
  "الأداءات الدراسية والمداخيل الإضافية المرتبطة بالمتعلمين": "Tuition and additional income linked to learners",
  "مداخيل غير مرتبطة بمتعلم": "Income not linked to a learner",
  "مداخيل إضافية من المتعلمين": "Additional learner income",
+ "سجل أداءات المتعلم": "Learner payment history",
+ "مدخول إضافي": "Additional income",
  "صندوق العهدة": "Petty cash box",
  "طلبات الشواهد — حفظ مسودة سحابية": "Certificate requests — cloud-saved draft",
  "طلبات مستبعدة بسبب عدم الالتحاق: 0": "Requests excluded for non-enrollment: 0",
@@ -5668,9 +5672,17 @@ function emciaAccountDebtLines(e,m){
  const mode=e.billingMode==="session"?"session":"monthly";
  return emciaAccountRows(m,{sid:e.sid,gid:e.gid,through:true}).filter(r=>r.mode===mode).flatMap(r=>r.details.filter(x=>x.rem>0).map(x=>({mm:x.mm,due:x.due,paid:x.paid,rem:x.rem})));
 }
-function emciaStudentReceiptsHTML(sid){
- const rows=db.p.filter(p=>p.sid===sid).map(p=>({...p,mode:"monthly"})).concat(db.sp.filter(p=>p.sid===sid).map(p=>({...p,mode:"session"}))).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
- return '<div class="card"><h3>سجل الأداءات — الشهري والحصص</h3><table><tr><th>التاريخ</th><th>الفوج</th><th>نظام الأداء</th><th>المبلغ المقبوض</th><th>التوصيل</th></tr>'+rows.map(p=>'<tr><td>'+esc(p.date||"—")+'</td><td>'+esc(by(db.g,p.gid)?.n||"—")+'</td><td>'+emciaAccountMode(p.mode)+'</td><td>'+money(p.netAfterRefund??p.a)+'</td><td>'+esc(p.receiptNo||"—")+'</td></tr>').join("")+'</table></div>';
+function emciaStudentReceiptsHTML(sid,extras){
+ const rows=[
+  ...db.p.filter(p=>p.sid===sid).map(p=>({...p,mode:"monthly"})),
+  ...db.sp.filter(p=>p.sid===sid).map(p=>({...p,mode:"session"})),
+  ...extras.map(p=>({...p,mode:"extra",date:p.date||p.month}))
+ ].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+ return `<div class="card" id="studentReceiptHistory"><h3>سجل أداءات المتعلم</h3><div class="tablewrap"><table>
+ <thead><tr><th>التاريخ</th><th>الفوج</th><th>نوع الأداء</th><th>المبلغ المقبوض</th><th>التوصيل</th><th>ملاحظة</th></tr></thead>
+ <tbody>${rows.map(p=>`<tr data-receipt-mode="${p.mode}"><td>${esc(p.date||"—")}</td><td>${esc(by(db.g,p.gid)?.n||"—")}</td>
+ <td>${p.mode==="extra"?esc(p.cat||"مدخول إضافي"):emciaAccountMode(p.mode)}</td><td>${money(p.netAfterRefund??p.a)}</td>
+ <td>${esc(p.receiptNo||"—")}</td><td>${esc(p.mode==="extra"?p.note||"—":"—")}</td></tr>`).join("")}</tbody></table></div></div>`;
 }
 
 function emciaSessionBalancesHTML(month,sid=''){
@@ -6714,16 +6726,23 @@ function studentfile(){
  if(!s){$("#studentfile").innerHTML=lookup+emciaStudentFileEmptyHTML(students);applyLang();return}
  let ens=db.e.filter(e=>e.sid===sid),activeEns=ens.filter(emciaBillingHistory),pays=db.p.concat(db.sp).filter(p=>p.sid===sid||ens.some(e=>e.id===p.eid)).sort((a,b)=>(b.date||"").localeCompare(a.date||"")),att=emciaAttendanceRecords().filter(a=>a.sid===sid).sort((a,b)=>b.date.localeCompare(a.date));
  const accounts=emciaAccountRows("",{sid}),totals=emciaAccountTotals(accounts);
+ const extras=(db.oi||[]).filter(p=>p.sid===sid&&!p.voidedAt&&!p.cancelledAt);
+ const cutoff=today();
+ const extraCash=extras.reduce((sum,p)=>{
+  const date=p.date||p.month||"";
+  return date>=EMCIA_ACCOUNTING_START_MONTH&&date<=cutoff?sum+(Number(p.a)||0):sum;
+ },0);
  let due=totals.due,paid=totals.paid,debts=accounts.flatMap(r=>r.details.filter(x=>x.rem>0).map(x=>({e:{gid:r.gid},mm:x.mm,d:x.due,pa:x.paid,rem:x.rem})));
  let c={present:0,absent:0,late:0,excused:0,leftEarly:0};att.forEach(a=>{if(c[a.status]!=null)c[a.status]++});
  $("#studentfile").innerHTML=lookup+`
  <div class="card"><h3>${esc(objName(s))}</h3>${s.studyStatus==="stopped"?`<p>متوقف عن الدراسة منذ ${esc(s.stoppedOn||"")}</p>`:""}${pays.some(p=>+p.creditAmount>0)?`<p class="muted">رصيد يحتاج مراجعة أو إرجاعاً: ${money(pays.reduce((n,p)=>n+(+p.creditAmount||0),0))}</p>`:""}<table><tr><th>الهاتف</th><td>${esc(s.ph||"—")}</td><th>ولي الأمر / الهاتف</th><td>${esc(s.parent||"—")}</td></tr><tr><th>المستوى</th><td>${esc(s.level||"—")}</td><th>تاريخ التسجيل بالمؤسسة</th><td>${esc(s.joined||"—")}</td></tr><tr><th>ملاحظات</th><td colspan="3">${esc(s.note||"—")}</td></tr></table></div>
  <div class="grid"><div class="card"><div class="muted">الأفواج النشطة</div><div class="kpi">${ens.filter(e=>emciaEnrollmentDate(e,today())).length}</div></div><div class="card"><div class="muted">إجمالي الاستحقاق</div><div class="kpi">${money(due)}</div></div><div class="card"><div class="muted">المخصص للدراسة</div><div class="kpi">${money(paid)}</div></div><div class="card"><div class="muted">المتبقي</div><div class="kpi">${money(totals.debt)}</div></div><div class="card"><div class="muted">الغياب</div><div class="kpi">${c.absent}</div></div><div class="card"><div class="muted">التأخر</div><div class="kpi">${c.late}</div></div></div>
- <div class="grid"><div class="card"><div class="muted">المقبوض فعلياً</div><div class="kpi">${money(totals.cash)}</div></div><div class="card"><div class="muted">الرصيد المسبق / الزائد</div><div class="kpi">${money(totals.credit)}</div></div><div class="card"><div class="muted">الحصص المنجزة</div><div class="kpi">${accounts.reduce((n,r)=>n+r.lessons,0)}</div></div></div>
+ <div class="grid"><div class="card" id="studentCollected"><div class="muted">المقبوض فعلياً</div><div class="kpi">${money(totals.cash+extraCash)}</div>${extraCash?`<small class="muted">مداخيل إضافية ${money(extraCash)}</small>`:""}</div><div class="card"><div class="muted">الرصيد المسبق / الزائد</div><div class="kpi">${money(totals.credit)}</div></div><div class="card"><div class="muted">الحصص المنجزة</div><div class="kpi">${accounts.reduce((n,r)=>n+r.lessons,0)}</div></div></div>
  <div class="card"><h3>التسجيلات والأفواج</h3>${ens.length?`<table><tr><th>الفوج</th><th>الأستاذ</th><th>بداية الدراسة</th><th>الحالة</th></tr>${ens.map(e=>{let g=by(db.g,e.gid);return`<tr><td>${esc(g?g.n:"—")}</td><td>${esc(g?objName(by(db.t,g.tid)):"—")}</td><td>${esc(e.start||"—")}</td><td>${e.end?"متوقف — "+esc(e.end):e.active?"نشط":"متوقف"}</td></tr>`}).join("")}</table>`:"<p>لا توجد تسجيلات.</p>"}</div>
  <div class="card"><h3>المتأخرات الحالية</h3><p class="muted">تبدأ المحاسبة من نونبر 2026، وتُحسب المستحقات بعد تطبيق التخفيضات السارية. تبقى تواريخ التسجيل وسجلات الأداءات التاريخية محفوظة دون إنشاء متأخرات عن الأشهر السابقة.</p>${debts.length?`<table><tr><th>الشهر</th><th>الفوج</th><th>المستحق</th><th>المؤدى</th><th>المتبقي</th></tr>${debts.map(x=>{let g=by(db.g,x.e.gid);return`<tr><td>${x.mm}</td><td>${esc(g?g.n:"—")}</td><td>${money(x.d)}</td><td>${money(x.pa)}</td><td><b>${money(x.rem)}</b></td></tr>`}).join("")}</table>`:"<p>✓ لا توجد متأخرات حالية.</p>"}</div>
- ${emciaStudentReceiptsHTML(sid)}
- ${emciaAccountsHTML("",{sid})}<div class="card"><h3>المداخيل الإضافية</h3>${db.oi.filter(x=>x.sid===sid).length?`<table><tr><th>تاريخ الأداء</th><th>النوع</th><th>المبلغ</th><th>التوصيل</th><th>ملاحظة</th></tr>${db.oi.filter(x=>x.sid===sid).slice().reverse().map(x=>`<tr><td>${esc(x.date||x.month||"")}</td><td>${esc(x.cat||"")}</td><td>${money(x.a)}</td><td>${esc(x.receiptNo||"")}</td><td>${esc(x.note||"")}</td></tr>`).join("")}</table>`:"<p>لا توجد مداخيل إضافية مسجلة.</p>"}</div>\n <div class="card"><h3>الحضور والغياب</h3><p><b>حاضر:</b> ${c.present} | <b>غائب:</b> ${c.absent} | <b>متأخر:</b> ${c.late} | <b>بعذر:</b> ${c.excused}</p>${att.length?`<table><tr><th>التاريخ</th><th>الفوج</th><th>الحالة</th><th>ملاحظة</th></tr>${att.slice(0,30).map(a=>{let g=by(db.g,a.gid),lab={present:"حاضر",absent:"غائب",late:"متأخر",excused:"غياب بعذر"}[a.status]||"—";return`<tr><td>${a.date}</td><td>${esc(g?g.n:"—")}</td><td>${lab}</td><td>${esc(a.note||"")}</td></tr>`}).join("")}</table>`:"<p>لا توجد سجلات حضور بعد.</p>"}</div>
+ ${emciaStudentReceiptsHTML(sid,extras)}
+ ${emciaAccountsHTML("",{sid})}
+ <div class="card"><h3>الحضور والغياب</h3><p><b>حاضر:</b> ${c.present} | <b>غائب:</b> ${c.absent} | <b>متأخر:</b> ${c.late} | <b>بعذر:</b> ${c.excused}</p>${att.length?`<table><tr><th>التاريخ</th><th>الفوج</th><th>الحالة</th><th>ملاحظة</th></tr>${att.slice(0,30).map(a=>{let g=by(db.g,a.gid),lab={present:"حاضر",absent:"غائب",late:"متأخر",excused:"غياب بعذر"}[a.status]||"—";return`<tr><td>${a.date}</td><td>${esc(g?g.n:"—")}</td><td>${lab}</td><td>${esc(a.note||"")}</td></tr>`}).join("")}</table>`:"<p>لا توجد سجلات حضور بعد.</p>"}</div>
  <div class="card"><div class="row"><button onclick="show('payments')">فتح الأداءات</button><button onclick="show('attendance')">فتح الحضور والغياب</button><button onclick="show('arrears')">فتح المتأخرات</button></div></div>`;applyLang()
 }
 

@@ -441,6 +441,31 @@ assert.ok(w.eval("scheduleConflict({...db.sch[0],start:'15:00',end:'16:00'},'m1'
   assert.equal(w.emciaPotentialDuplicatePayments().length,2);
   w.eval("db.p.pop();db.p[0].allocMonth='2027-01'");
   assert.equal(w.emciaPotentialDuplicatePayments().length,2);
+  // Learner files show linked extras beside tuition and include each amount once in actual collections.
+  dom.window.close();
+  const learnerData=fixtures();
+  learnerData.p=[{id:'tuition',sid:'s1',gid:'g1',a:200,date:'2026-11-12',allocMonth:'2026-11',receiptNo:'BOOK-1'}];
+  learnerData.s.push({id:'s-other',n:'متعلم آخر',active:true});
+  op={id:'main',revision:1,payload:learnerData};
+  fin={id:'main',revision:1,payload:{oi:[
+   {id:'books',sid:'s1',gid:'g1',a:100,date:'2026-11-12',receiptNo:'BOOK-1',cat:'الكتب والنسخ',note:'ملاحظة المتعلم'},
+   {id:'legacy',sid:'s1',a:25,month:'2026-11',cat:'النسخ',receiptNo:'COPIES'},
+   {id:'different',sid:'s-other',a:999,date:'2026-11-13',receiptNo:'OTHER'},
+   {id:'unlinked',a:888,date:'2026-11-13',receiptNo:'GENERAL'}
+  ]}};
+  for(const learnerRole of ['director','secretary_morning']){
+   role=learnerRole;dom=createDOM();w=await login(dom);d=w.document;
+   w.eval("window.sfSid='s1';show('studentfile')");
+   const history=d.querySelector('#studentReceiptHistory');
+   assert.equal(history.querySelectorAll('[data-receipt-mode="extra"]').length,2);
+   assert.equal(history.querySelectorAll('[data-receipt-mode="monthly"]').length,1);
+   assert.match(history.textContent,/الكتب والنسخ.*100\.00 DH.*BOOK-1.*ملاحظة المتعلم/s);
+   assert.match(history.textContent,/COPIES/);
+   assert.doesNotMatch(history.textContent,/OTHER|GENERAL/);
+   assert.equal(d.querySelector('#studentCollected .kpi').textContent,'325.00 DH');
+   assert.equal(w.eval("emciaAccountRows('2026-11',{sid:'s1'})[0].paid"),200);
+   dom.window.close();
+  }
   assert.deepEqual(errors,[]);
   console.log('PASS: actual DOM attendance handlers, independent sessions, lesson completion, receipt add/edit, cloud reload, strict dates, duplicate receipts, cash, schedule conflicts, stable IDs, legacy compatibility, atomic conflict rollback, advances, late/partial payments, discount bearers, individual balances, reports, teacher privacy, daily payment reminders/filtering/deduplication, lesson-based monthly settlements, dated study stops, preserved historical arrears, future credits re-enrollment gaps, additional-income direct/batch entry, decimal totals, month edits, deletion, legacy monthly reports, recurring institutional obligations, partial payments, linked existing expenses, calendar edges, versioned terms, financial privacy and accountant/director reload. Mock writes:',writes);
  }finally{dom.window.close()}
