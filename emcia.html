@@ -320,9 +320,9 @@ html[dir="ltr"] #mobileNavToggle{margin-right:auto;margin-left:8px}
 .oi-compact-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:8px 0;align-items:end}.oi-compact-grid>div{min-width:0}.oi-compact-grid label{display:block;font-size:12px;margin:0 0 4px}.oi-compact-grid input,.oi-compact-grid select{width:100%;min-width:0;max-width:100%;padding:8px 5px;font-size:clamp(11px,2.7vw,14px);height:39px}.oi-compact-grid .oi-action button{width:100%;min-width:0;padding:8px 3px;font-size:clamp(10px,2.5vw,13px);min-height:39px;white-space:normal}
 
 /* Waiting cohorts: contact-first cards fit narrow phones. */
-.wl-cohort>summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;font-weight:700}
+.wl-cohort>summary{cursor:pointer;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 8px;align-items:baseline;text-align:start;font-weight:700}
 .wl-cohort>summary::before{content:"▸"}.wl-cohort[open]>summary::before{content:"▾"}
-.wl-cohort>summary span{font-size:12px;color:var(--muted)}
+.wl-cohort>summary span{grid-column:2;font-size:12px;color:var(--muted)}
 .wl-person{padding:12px 0;border-bottom:1px solid var(--line);min-width:0}
 .wl-person-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px}
 .wl-person-head>span{font-size:12px;color:var(--muted)}
@@ -1070,6 +1070,8 @@ function applyLang(){
    if(el.dataset.uiArPh===undefined && /[\u0600-\u06ff]/.test(p))el.dataset.uiArPh=p;
    if(el.dataset.uiArPh!==undefined)el.setAttribute("placeholder",LANG==="fr"?tr(el.dataset.uiArPh):el.dataset.uiArPh);
  });
+ const dateLabel=document.querySelector(".emcia-daily-date-picker time");
+ if(dateLabel)dateLabel.textContent=emciaDailyDateLabel(dateLabel.dateTime);
  emciaFormatMetrics(document.getElementById('appWorkspace'));
 }
 function setLang(v){
@@ -2466,7 +2468,7 @@ function enroll(){
  <div id="specialFeeBox" class="hidden"><label>استحقاق استثنائي للشهر الأول</label><input id="ef" type="number" placeholder="المبلغ المستحق لهذا الشهر فقط"></div>
  <button onclick="addEnroll()">تسجيل في الفوج</button></div>
  <p id="eSessionBillingNote" class="muted hidden">الأداء بالحصة: لا تُنشأ واجبات شهرية لهذا التسجيل. تسجيل الحصص والأداءات سيُفعّل في مرحلة لاحقة.</p>
- <div class="card" style="margin-top:12px;background:#f8fbff"><h4>التخفيض (اختياري)</h4><div class="row">
+ <div class="card emcia-enroll-discount" style="margin-top:12px;background:#f8fbff"><h4>التخفيض (اختياري)</h4><div class="row">
  <div><label id="ediscLabel">قيمة التخفيض الشهري</label><input id="edisc" type="number" min="0" value="0"></div>
  <div><label>من يتحمل التخفيض؟</label><select id="edbear" onchange="toggleCustomDiscount()"><option value="none">—</option><option value="teacher">الأستاذ</option><option value="emcia">المؤسسة</option><option value="half">50٪</option><option value="proportional">حسب النسبة المئوية</option><option value="custom">توزيع مخصص</option></select></div>
  <div><label>بداية التخفيض</label><input id="edstart" type="month" value="${nowMonth()}"></div>
@@ -3184,7 +3186,7 @@ function adjustments(){
  <div class="row"><div><label>سبب التوقف المقبول</label><select id="adjReason"><option value="health" ${existing?.reason==="health"?"selected":""}>ظرف صحي</option><option value="social" ${existing?.reason==="social"?"selected":""}>ظرف اجتماعي</option><option value="family" ${existing?.reason==="family"?"selected":""}>ظرف عائلي</option><option value="move" ${existing?.reason==="move"?"selected":""}>انتقال</option><option value="admin" ${existing?.reason==="admin"?"selected":""}>قرار إداري</option><option value="other" ${existing?.reason==="other"?"selected":""}>أخرى</option></select></div><div style="flex:2"><label>ملاحظة القرار</label><input id="adjNote" value="${esc(existing?.note||"")}" placeholder="سبب قبول التسوية أو توضيحات إضافية"></div></div>
  <div id="adjPreview">${adjustmentPreviewHTML(baseDue,+p.a||0,days,g?.r||0)}</div>
  <button ${settled?"disabled":""} onclick="saveExceptionalAdjustment()">${existing?"تحديث التسوية":"اعتماد التسوية والاسترجاع"}</button></div>`:`${gid&&sid?`<div class="card"><p class="muted">${payments.length?"اختر الأداء الذي تريد تسويته.":"لا توجد أداءات مسجلة لهذا المتعلم في الفوج والشهر المحددين."}</p></div>`:""}`}
- <div class="card"><h3>آخر التسويات الاستثنائية</h3><table><tr><th>التاريخ</th><th>المتعلم</th><th>الفوج</th><th>الشهر</th><th>الأيام المحتسبة</th><th>المؤدى أصلاً</th><th>المستحق بعد التسوية</th><th>المسترجع</th></tr>${db.adj.slice().reverse().slice(0,50).map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(objName(by(db.s,x.sid)))}</td><td>${esc(groupCompactName(by(db.g,x.gid)))}</td><td>${esc(x.month)}</td><td>${x.countedDays}/28</td><td>${money(x.originalPaid)}</td><td>${money(x.approvedDue)}</td><td>${money(x.refund)}</td></tr>`).join("")}</table></div>`;
+ <div class="card"><h3>آخر التسويات الاستثنائية</h3><div class="emcia-sticky-table-scroll emcia-adjustments-history" tabindex="0" aria-label="آخر التسويات الاستثنائية"><table><tr><th>التاريخ</th><th class="emcia-sticky-identity" scope="col">المتعلم</th><th>الفوج</th><th>الشهر</th><th>الأيام المحتسبة</th><th>المؤدى أصلاً</th><th>المستحق بعد التسوية</th><th>المسترجع</th></tr>${db.adj.slice().reverse().slice(0,50).map(x=>`<tr><td>${esc(x.date)}</td><td class="emcia-sticky-identity">${esc(objName(by(db.s,x.sid)))}</td><td>${esc(groupCompactName(by(db.g,x.gid)))}</td><td>${esc(x.month)}</td><td>${x.countedDays}/28</td><td>${money(x.originalPaid)}</td><td>${money(x.approvedDue)}</td><td>${money(x.refund)}</td></tr>`).join("")}</table></div></div>`;
 }
 function adjustmentPreviewHTML(baseDue,paid,days,rate){
  days=Math.max(0,Math.min(28,+days||0));baseDue=+baseDue||0;paid=+paid||0;rate=+rate||0;
@@ -4099,6 +4101,9 @@ function emciaRenderDailyPayments(){
 }
 setInterval(()=>{if(document.querySelector('#daily.page.active'))emciaLoadDailyReminders(window.dailyDate||emciaLocalDay(),true)},15000);
 
+function emciaDailyDateLabel(date){
+ return new Intl.DateTimeFormat(LANG==="fr"?"fr-MA":"ar-MA-u-nu-latn",{dateStyle:"full",timeZone:"UTC"}).format(new Date(date+"T12:00:00Z"));
+}
 function daily(){
  let date=window.dailyDate||emciaLocalDay(),day=dayAr(date),sessions=db.sch.filter(s=>s.active!==false&&s.day===day).sort((a,b)=>a.start.localeCompare(b.start));
  let unfinished=sessions.filter(s=>!sessionAttendanceStatus(s,date).done);
@@ -4106,7 +4111,7 @@ function daily(){
  let abs=repeatedAbsences(date);
  let m=date.slice(0,7),debtors=0,debtTotal=0;
  db.e.filter(e=>emciaBillingHistory(e)&&e.start&&e.start.slice(0,7)<=m).forEach(e=>{let debt=monthRange(e.start,m).reduce((z,mm)=>{let due=dueForEnrollmentMonth(e,mm),paid=emciaMonthlyPaid(e.sid,e.gid,mm);return z+Math.max(0,due-paid)},0);if(debt>0){debtors++;debtTotal+=debt}});
- $("#daily").innerHTML=`<div class="card"><div class="row"><div><label>التاريخ</label><input type="date" value="${date}" onchange="window.dailyDate=this.value;daily()"></div><div><b>${day}</b></div></div></div>
+ $("#daily").innerHTML=`<div class="card"><label for="emcia-daily-date">التاريخ</label><div class="emcia-daily-date-picker"><time datetime="${date}">${esc(emciaDailyDateLabel(date))}</time><span aria-hidden="true">▾</span><input id="emcia-daily-date" type="date" value="${date}" onchange="window.dailyDate=this.value;daily()"></div></div>
  <div class="grid daily-stats-grid"><div class="card"><div class="muted">حصص اليوم</div><div class="kpi">${sessions.length}</div></div><div class="card"><div class="muted">حضور غير مكتمل</div><div class="kpi">${unfinished.length}</div></div><div class="card"><div class="muted">تنبيهات السعة</div><div class="kpi">${capacity.length}</div></div><div class="card"><div class="muted">غياب متكرر هذا الشهر</div><div class="kpi">${abs.length}</div></div><div class="card"><div class="muted">حالات متأخرة في الأداء</div><div class="kpi">${debtors}</div><div class="muted">${money(debtTotal)}</div></div><button type="button" class="card daily-payment-count" id="daily-payment-count-card" onclick="emciaOpenDailyPayments()" aria-controls="daily-payment-panel" title="${tr('عرض متعلمي حصص اليوم الذين لديهم مستحقات شهرية')}"><div class="muted">${tr('تنبيهات أداء اليوم')}</div><div class="kpi" id="daily-payment-count-value" aria-live="polite">${emciaDailyPaymentRows(date).length}</div><div class="muted" id="daily-payment-count-total">${money(emciaDailyPaymentRows(date).reduce((sum,row)=>sum+row.remaining,0))}</div></button></div>
  <div class="card"><h3>برنامج اليوم</h3>${sessions.length?`<table><tr><th>الوقت</th><th>الفوج</th><th>الأستاذ</th><th>القاعة</th><th>المسجلون</th><th>الحضور</th><th></th></tr>${sessions.map(s=>{let g=by(db.g,s.gid),r=by(db.rooms,s.rid),st=sessionAttendanceStatus(s,date);return`<tr><td>${s.start}–${s.end}</td><td>${esc(g?g.n:"—")}</td><td>${esc(g?objName(by(db.t,g.tid)):"—")}</td><td>${esc(r?r.n:"—")}</td><td>${st.n}${r?` / ${r.cap}`:""}</td><td><b>${st.label}</b></td><td><button onclick="goAttendance('${date}','${s.gid}','m:${s.id}')">تسجيل الحضور</button></td></tr>`}).join("")}</table>`:"<p class='muted'>لا توجد حصص مبرمجة لهذا اليوم.</p>"}</div>
  ${emciaDailyPaymentPanel(date)}${emciaObligationAlertsHTML(date)}<div class="card"><h3>التنبيهات التشغيلية</h3>${unfinished.length?`<p><b>الحضور:</b> ${unfinished.length} حصة لم يكتمل تسجيل حضورها.</p>`:"<p>✓ تسجيل الحضور مكتمل للحصص المسجلة اليوم.</p>"}${capacity.length?`<p><b>السعة:</b> ${capacity.map(x=>`${esc(x.g.n)} (${x.n}/${x.r.cap} في ${esc(x.r.n)})`).join("، ")}</p>`:"<p>✓ لا يوجد تجاوز لسعة القاعات في حصص اليوم.</p>"}${abs.length?`<p><b>الغياب المتكرر:</b></p><table><tr><th>المتعلم</th><th>الفوج</th><th>مرات الغياب هذا الشهر</th></tr>${abs.map(x=>`<tr><td>${esc(objName(x.s))}</td><td>${esc(x.g.n)}</td><td>${x.n}</td></tr>`).join("")}</table>`:"<p>✓ لا توجد حالياً حالات غياب غير مبرر متكرر (3 مرات فأكثر) هذا الشهر.</p>"}<p><b>المتابعة المالية:</b> ${debtors} تسجيل/حالة بها مبالغ متبقية إلى غاية ${m} بإجمالي ${money(debtTotal)}. <button onclick="show('arrears')">فتح المتأخرات</button></p></div>`;emciaRenderDailyPayments();emciaLoadDailyReminders(date);applyLang()
@@ -5527,6 +5532,28 @@ html[dir="ltr"] #authGate .emcia-password-field input{text-align:left}
 [data-theme="dark"] #authGate .emcia-password-field .emcia-eye-button svg{stroke:currentColor!important}
 [data-theme="dark"] main .emcia-sticky-table-scroll :is(th,td).emcia-sticky-identity{background:var(--card)!important;color:var(--txt)!important}
 [data-theme="dark"] main .emcia-sticky-table-scroll th.emcia-sticky-identity{background:#1e2f40!important}
+/* Keep legible ink on light surfaces that retain their own background. */
+[data-theme="dark"] main :is(.warn,.emcia-review-summary>div,.emcia-review-table :is(th,td):last-child,.emcia-week-grid,#emciaSchedulePopup){color:#19344e}
+[data-theme="dark"] #schedule .emcia-week-grid td[onclick]{color:#19344e}
+[data-theme="dark"] .emcia-review-status.pending{color:#bfd0de}
+[data-theme="dark"] .emcia-review-status.changed{color:#ffc676}
+[data-theme="dark"] .emcia-review-status.confirmed{color:#69d8ac}
+[data-theme="dark"] main .emcia-enroll-discount,
+[data-theme="dark"] main .emcia-enroll-discount :is(h4,label,.muted){color:#19344e}
+[data-theme="dark"] main .emcia-enroll-discount input[readonly]{color:var(--txt)}
+[data-theme="dark"] main .emcia-unified-accounts :is(th,td:nth-child(n+5)){color:#19344e}
+[data-theme="dark"] main .blank-attendance{background:#fff}
+[data-theme="dark"] main .blank-attendance :is(h3,th,td){color:#192b3b}
+[data-theme="dark"] main .blank-attendance .emcia-sticky-table-scroll .emcia-sticky-identity{background:#f1f5fa!important;color:#192b3b!important}
+.emcia-daily-date-picker{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;width:fit-content;max-width:100%;min-height:44px;margin-top:5px;padding:7px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--txt)}
+.emcia-daily-date-picker time{font-weight:700;overflow-wrap:anywhere}
+.emcia-daily-date-picker input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.emcia-daily-date-picker input::-webkit-calendar-picker-indicator{position:absolute;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
+.emcia-daily-date-picker:focus-within{outline:2px solid #479ac7;outline-offset:2px}
+.emcia-sticky-table-scroll.emcia-adjustments-history>table{width:max-content;min-width:100%}
+.emcia-adjustments-history :is(th,td){white-space:nowrap}
+.emcia-adjustments-history .emcia-sticky-identity{white-space:normal}
+
 }
 /* Dark theme */
 [data-theme="dark"]{--nav:#0c1a28;--bg:#0e1620;--card:#182635;--line:#2b3f52;--txt:#e8eff5;--muted:#9db4c6;--ok:#2fbf8f;--bad:#e0685a;color-scheme:dark}
