@@ -1,31 +1,39 @@
 <!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EMCIA — شهادة صادرة</title><style>
-*{box-sizing:border-box}body{margin:0;background:#edf2f7;color:#102a43;font-family:Tahoma,Arial,sans-serif}.toolbar{padding:12px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.toolbar button{padding:12px 22px;background:#102a43;color:white;border:0;border-radius:9px;font:inherit}.status{text-align:center;padding:8px}.paper{width:min(96vw,1120px);min-height:650px;aspect-ratio:297/210;margin:14px auto;background:linear-gradient(130deg,#fff,#fffdf7);border:9px double #b89a55;box-shadow:0 8px 30px #102a4322;padding:30px 45px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;gap:8px}.paper img{max-height:76px;max-width:60%;object-fit:contain}.org{font-size:20px}.paper h1{font-size:30px;color:#173a5e;margin:5px 0;border-bottom:1px solid #b89a55;padding-bottom:10px}.body{font-size:20px;line-height:1.75;max-width:96%;white-space:pre-line;overflow-wrap:normal;word-break:normal}.date{font-size:18px}.footer{display:flex;width:100%;justify-content:space-between;gap:20px;align-items:end;font-size:15px}.footer>div{flex:1}.stamp{border:1px dashed #b89a55;border-radius:50%;width:150px;height:75px;margin:12px auto 0;display:grid;place-items:center;color:#7d8791;font-size:13px}.ref{font-family:Arial,sans-serif;direction:ltr;unicode-bidi:isolate;font-weight:bold}.qr-area{display:flex;align-items:center;gap:8px;justify-content:center;flex-direction:column;font-size:11px}.qr-area img{width:92px;height:92px;max-width:none;max-height:none}.qr-area a{font-size:11px;overflow-wrap:anywhere}.warning{font-size:12px;color:#687887}.hidden{display:none!important}
+*{box-sizing:border-box}body{margin:0;background:#edf2f7;color:#102a43;font-family:Tahoma,Arial,sans-serif}.toolbar{padding:12px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.toolbar button{padding:12px 22px;background:#102a43;color:white;border:0;border-radius:9px;font:inherit}.toolbar select{padding:12px 14px;border:1px solid #102a43;border-radius:9px;font:inherit;background:white;color:#102a43}.status{text-align:center;padding:8px}.paper{width:min(96vw,1120px);min-height:650px;aspect-ratio:297/210;margin:14px auto;background:linear-gradient(130deg,#fff,#fffdf7);border:9px double #b89a55;box-shadow:0 8px 30px #102a4322;padding:30px 45px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;gap:8px}.paper img{max-height:76px;max-width:60%;object-fit:contain}.org{font-size:20px}.paper h1{font-size:30px;color:#173a5e;margin:5px 0;border-bottom:1px solid #b89a55;padding-bottom:10px}.body{font-size:20px;line-height:1.75;max-width:96%;white-space:pre-line;overflow-wrap:normal;word-break:normal}.date{font-size:18px}.footer{display:flex;width:100%;justify-content:space-between;gap:20px;align-items:end;font-size:15px}.footer>div{flex:1}.stamp{border:1px dashed #b89a55;border-radius:50%;width:150px;height:75px;margin:12px auto 0;display:grid;place-items:center;color:#7d8791;font-size:13px}.ref{font-family:Arial,sans-serif;direction:ltr;unicode-bidi:isolate;font-weight:bold}.qr-area{display:flex;align-items:center;gap:8px;justify-content:center;flex-direction:column;font-size:11px}.qr-area img{width:92px;height:92px;max-width:none;max-height:none}.qr-area a{font-size:11px;overflow-wrap:anywhere}.warning{font-size:12px;color:#687887}.hidden{display:none!important}
 @media print{@page{size:A4 landscape;margin:8mm}html,body{width:100%;height:auto;background:white}.toolbar,.status{display:none!important}.paper{width:100%;height:180mm;aspect-ratio:auto;min-height:0;max-height:180mm;margin:0;padding:6mm 10mm;border:2mm double #b89a55;box-shadow:none;break-inside:avoid;page-break-inside:avoid;overflow:hidden}.paper img{height:22mm}.paper h1{font-size:22pt}.body{font-size:14pt;line-height:1.6;max-width:96%}.paper img{height:19mm}.org{font-size:13pt}.date{font-size:12pt}.footer{margin-top:2mm;font-size:10pt}.stamp{height:16mm;width:32mm;margin-top:2mm}.qr-area img{width:21mm;height:21mm}.qr-area a{display:none}.warning{font-size:8pt}}
-</style></head><body><div class="toolbar"><button id="print" disabled>طباعة / حفظ PDF</button><button id="back">العودة إلى التطبيق</button></div><p id="status" class="status">جار التحقق من سجل الشهادة...</p><section id="paper" class="paper hidden"><img src="EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA"><div class="org">أمسية للثقافة والتربية والتكوين</div><h1 id="title"></h1><div id="body" class="body"></div><div id="date" class="date"></div><div class="footer"><div><strong>رقم الشهادة / Référence</strong><p id="ref" class="ref"></p></div><div><strong>إدارة المؤسسة — La Direction</strong><div>Signature et cachet de l'établissement</div><div class="stamp">مكان التوقيع والختم</div></div></div><div class="qr-area" id="qr-area" style="display:none"><div id="qr"></div><a id="verify-link" target="_blank" rel="noopener">التحقق من الشهادة / Vérifier</a></div><div class="warning">نسخة للطباعة من سجل الإصدار الإلكتروني — التوقيع والختم غير مدرجين إلكترونيًا. التحقق عبر QR غير مفعل بعد.</div></section><script>
+</style></head><body><div class="toolbar"><select id="dlang" title="Language / Langue"><option value="ar">العربية</option><option value="fr">Français</option><option value="en">English</option><option value="bi">العربية + Français</option></select><button id="print" disabled>طباعة / حفظ PDF</button><button id="back">العودة إلى التطبيق</button></div><p id="status" class="status">جار التحقق من سجل الشهادة...</p><section id="paper" class="paper hidden"><img src="EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA"><div class="org">أمسية للثقافة والتربية والتكوين</div><h1 id="title"></h1><div id="body" class="body"></div><div id="date" class="date"></div><div class="footer"><div><strong>رقم الشهادة / Référence</strong><p id="ref" class="ref"></p></div><div><strong>إدارة المؤسسة — La Direction</strong><div>Signature et cachet de l'établissement</div><div class="stamp">مكان التوقيع والختم</div></div></div><div class="qr-area" id="qr-area" style="display:none"><div id="qr"></div><a id="verify-link" target="_blank" rel="noopener">التحقق من الشهادة / Vérifier</a></div><div class="warning">نسخة للطباعة من سجل الإصدار الإلكتروني — التوقيع والختم غير مدرجين إلكترونيًا. التحقق عبر QR غير مفعل بعد.</div></section><script>
 (function(){
  const $=id=>document.getElementById(id), status=$('status');
- $('back').onclick=()=>{location.href='EMCIA_Certification_Issuance_Test.html?v=7'};
- const params=new URLSearchParams(location.search),requestId=params.get('request');
- if(!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/.test(requestId||'')){status.textContent='مرجع الطلب غير صالح';return}
- const auth=JSON.parse(sessionStorage.getItem('emcia_auth_session_v2')||'null');
- if(!auth?.access_token||auth.expiresAt<=Date.now()){status.textContent='انتهت جلسة الدخول. افتح التطبيق وسجل الدخول مجددًا.';return}
- const api='https://gfhmkijxiinoqkxhicza.supabase.co/rest/v1/certificates?select=certificate_number,issued_at,subject_kind,certificate_type,language,immutable_snapshot,verification_token&request_id=eq.'+encodeURIComponent(requestId)+'&limit=1';
- const types={attendance:['شهادة متابعة الدراسة / المواظبة','Attestation de scolarité / assiduité'],completion:['شهادة إتمام المستوى','Attestation de fin de niveau'],participation:['شهادة المشاركة','Attestation de participation'],work:['شهادة العمل','Attestation de travail'],experience:['شهادة الخبرة','Attestation d’expérience'],appreciation:['شهادة التقدير','Attestation de reconnaissance']};
- fetch(api,{headers:{apikey:'sb_publishable_AZWNmDjlNPpADgPFYwH3oA_71o4ABTM',Authorization:'Bearer '+auth.access_token}})
- .then(async r=>{if(!r.ok)throw Error('تعذر التحقق من صلاحية عرض الشهادة');return r.json()})
- .then(rows=>{
-  const c=rows[0];if(!c)throw Error('الشهادة غير موجودة أو غير متاحة لهذا الحساب');
-  const details=c.immutable_snapshot?.details||{},name=details.subject_name;
-  if(!name)throw Error('اسم المستفيد غير محفوظ في سجل الإصدار');
-  const [ar,fr]=types[c.certificate_type]||['شهادة','Attestation'];
-  const lang=c.language, title=lang==='fr'?fr:lang==='bi'?ar+' / '+fr:ar;
+ const CHROME={
+  ar:{print:'طباعة / حفظ PDF',back:'العودة إلى التطبيق',loading:'جار التحقق من سجل الشهادة...',badref:'مرجع الطلب غير صالح',session:'انتهت جلسة الدخول. افتح التطبيق وسجل الدخول مجددًا.',fetchfail:'تعذر التحقق من صلاحية عرض الشهادة',notfound:'الشهادة غير موجودة أو غير متاحة لهذا الحساب',noname:'اسم المستفيد غير محفوظ في سجل الإصدار',ready:'معاينة شهادة وفق الهوية الحديثة وصياغة إدارة المؤسسة. راجع اكتمال بيانات التكوين قبل الاستعمال الرسمي.',warning:'نسخة للطباعة من سجل الإصدار الإلكتروني — التوقيع والختم غير مدرجين إلكترونيًا. التحقق عبر QR غير مفعل بعد.',verify:'التحقق من الشهادة / Vérifier',qrfallback:'رابط التحقق متاح أسفل الشهادة',dlang:'لغة العرض'},
+  fr:{print:'Imprimer / Enregistrer PDF',back:'Retour à l’application',loading:'Vérification du registre du certificat...',badref:'Référence de demande invalide',session:'Session expirée. Ouvrez l’application et reconnectez-vous.',fetchfail:'Impossible de vérifier l’autorisation d’affichage du certificat',notfound:'Certificat introuvable ou non disponible pour ce compte',noname:'Le nom du bénéficiaire n’est pas enregistré dans le registre d’émission',ready:'Aperçu du certificat selon la nouvelle identité et la formulation de la direction. Vérifiez les données de formation avant tout usage officiel.',warning:'Copie d’impression du registre d’émission électronique — signature et cachet non inclus électroniquement. La vérification par QR n’est pas encore activée.',verify:'Vérifier le certificat / Verify',qrfallback:'Lien de vérification disponible au bas du certificat',dlang:'Langue d’affichage'},
+  en:{print:'Print / Save PDF',back:'Back to the app',loading:'Checking the certificate record...',badref:'Invalid request reference',session:'Session expired. Open the app and sign in again.',fetchfail:'Could not verify permission to view this certificate',notfound:'Certificate not found or not available for this account',noname:'The beneficiary name is not stored in the issuance record',ready:'Preview of a certificate using the current identity and the management’s wording. Check that the training details are complete before official use.',warning:'Print copy from the electronic issuance record — signature and stamp are not included electronically. QR verification is not enabled yet.',verify:'Verify certificate / التحقق',qrfallback:'Verification link available at the bottom of the certificate',dlang:'Display language'}
+ };
+ let lang='ar', certificate=null, statusKey='loading';
+ const showStatus=key=>{statusKey=key;status.textContent=C()[key]};
+ const C=()=>CHROME[lang]||CHROME.ar;
+ function applyChrome(){
+  $('print').textContent=C().print;$('back').textContent=C().back;$('dlang').title=C().dlang;
+  const w=document.querySelector('.warning');if(w)w.textContent=C().warning;
+  const vl=$('verify-link');if(vl)vl.textContent=C().verify;
+  document.documentElement.lang=lang==='bi'?'ar':lang;
+  $('dlang').setAttribute('aria-label',C().dlang);
+  document.documentElement.dir=(lang==='ar'||lang==='bi')?'rtl':'ltr';
+ }
+ const types={attendance:['شهادة متابعة الدراسة / المواظبة','Attestation de scolarité / assiduité','Certificate of attendance'],completion:['شهادة إتمام المستوى','Attestation de fin de niveau','Certificate of level completion'],participation:['شهادة المشاركة','Attestation de participation','Certificate of participation'],work:['شهادة العمل','Attestation de travail','Work certificate'],experience:['شهادة الخبرة','Attestation d’expérience','Certificate of experience'],appreciation:['شهادة التقدير','Attestation de reconnaissance','Certificate of appreciation']};
+ function render(c){
+  const details=c.immutable_snapshot?.details||{},name=String(details.subject_name||'').trim();
+  if(!name){showStatus('noname');return false}
+  const [ar,fr,en]=types[c.certificate_type]||['شهادة','Attestation','Certificate'];
+  const title=lang==='fr'?fr:lang==='en'?en:lang==='bi'?ar+' / '+fr:ar;
   $('title').textContent=title;
   const orgAr='تشهد إدارة مؤسسة أمسية للثقافة والتربية والتكوين (EMCIA) بأن ';
-  const orgFr="La direction de l’EMCIA – Association pour la Culture, l’Éducation et la Formation – atteste que ";
+  const orgFr='La direction de l’EMCIA – Association pour la Culture, l’Éducation et la Formation – atteste que ';
+  const orgEn='The management of EMCIA – Association for Culture, Education and Training – certifies that ';
   const parts=String(name).split('/').map(x=>x.trim()).filter(Boolean);
   const arName=parts.find(x=>Array.from(x).some(ch=>ch.charCodeAt(0)>=1536&&ch.charCodeAt(0)<=1791))||String(name).trim();
   const frName=parts.find(x=>/[A-Za-z]/.test(x))||String(name).trim();
-  const subjectAr='السيد(ة) '+arName,subjectFr='M./Mme '+frName;
+  const subjectAr='السيد(ة) '+arName,subjectFr='M./Mme '+frName,subjectEn='Mr./Ms. '+frName;
   const course=String(details.course_name||details.subject||details.training||'').trim();
   const level=String(details.level||'').trim();
   const start=String(details.start_date||'').trim(),end=String(details.end_date||'').trim();
@@ -33,40 +41,74 @@
   const isolate=d=>String.fromCharCode(8294)+safeDate(d)+String.fromCharCode(8297);
   const arContext=(course?' في '+course:'')+(level?'، المستوى '+level:'')+(start&&end?'، خلال الفترة من '+isolate(start)+' إلى '+isolate(end):'');
   const frContext=(course?' en '+course:'')+(level?', niveau '+level:'')+(start&&end?', du '+start+' au '+end:'');
+  const enContext=(course?' in '+course:'')+(level?', level '+level:'')+(start&&end?', from '+start+' to '+end:'');
   const hasEvidence=Boolean(course&&start&&end);
-  let arBody,frBody;
+  let arBody,frBody,enBody;
   if(c.certificate_type==='attendance'&&hasEvidence){
-    arBody=orgAr+subjectAr+' قد تابع(ت) تكوينًا'+arContext+'.\nسُلّمت هذه الشهادة للمعني(ة) بالأمر للإدلاء بها عند الحاجة.';
-    frBody=orgFr+subjectFr+' a suivi une formation'+frContext+'.\nLa présente attestation est délivrée à l’intéressé(e) pour servir et valoir ce que de droit.';
+   arBody=orgAr+subjectAr+' قد تابع(ت) تكوينًا'+arContext+'.\nسُلّمت هذه الشهادة للمعني(ة) بالأمر للإدلاء بها عند الحاجة.';
+   frBody=orgFr+subjectFr+' a suivi une formation'+frContext+'.\nLa présente attestation est délivrée à l’intéressé(e) pour servir et valoir ce que de droit.';
+   enBody=orgEn+subjectEn+' has attended a training course'+enContext+'.\nThis certificate is issued to the interested party for use where required.';
   }else if(c.certificate_type==='completion'&&hasEvidence&&details.completion_confirmed===true){
-    arBody=orgAr+subjectAr+' قد أتم(ت) التكوين'+arContext+'.\nسُلّمت هذه الشهادة بناءً على البيانات المعتمدة لدى المؤسسة.';
-    frBody=orgFr+subjectFr+' a achevé la formation'+frContext+'.\nLe présent certificat est délivré conformément aux données validées par l’établissement.';
+   arBody=orgAr+subjectAr+' قد أتم(ت) التكوين'+arContext+'.\nسُلّمت هذه الشهادة بناءً على البيانات المعتمدة لدى المؤسسة.';
+   frBody=orgFr+subjectFr+' a achevé la formation'+frContext+'.\nLe présent certificat est délivré conformément aux données validées par l’établissement.';
+   enBody=orgEn+subjectEn+' has completed the training course'+enContext+'.\nThis certificate is issued in accordance with the data validated by the establishment.';
   }else{
-    arBody='تشهد إدارة مؤسسة أمسية للثقافة والتربية والتكوين (EMCIA) بأن هذه الشهادة مسجلة باسم '+arName+'، تحت عنوان «'+ar+'».\nتُستكمل البيانات الخاصة بالتكوين أو المدة قبل استعمالها كإثبات تفصيلي.';
-    frBody="La direction de l’EMCIA confirme que ce document est enregistré au nom de "+frName+" sous l’intitulé « "+fr+" ».\nLes informations relatives à la formation ou à sa durée doivent être complétées avant toute utilisation comme justificatif détaillé.";
+   arBody='تشهد إدارة مؤسسة أمسية للثقافة والتربية والتكوين (EMCIA) بأن هذه الشهادة مسجلة باسم '+arName+'، تحت عنوان «'+ar+'».\nتُستكمل البيانات الخاصة بالتكوين أو المدة قبل استعمالها كإثبات تفصيلي.';
+   frBody='La direction de l’EMCIA confirme que ce document est enregistré au nom de '+frName+' sous l’intitulé « '+fr+' ».\nLes informations relatives à la formation ou à sa durée doivent être complétées avant toute utilisation comme justificatif détaillé.';
+   enBody='The management of EMCIA confirms that this document is registered in the name of '+frName+' under the title “'+en+'”.\nThe training and duration details must be completed before any use as detailed proof.';
   }
-  $('body').textContent=lang==='fr'?frBody:lang==='bi'?arBody+'\n'+frBody:arBody;
-  $('paper').dir=lang==='fr'?'ltr':'rtl';
-  if(lang==='ar'&&arName){const node=$('body');const content=node.textContent;const pieces=content.split(arName);if(pieces.length>1){node.textContent='';pieces.forEach((part,i)=>{if(i){const strong=document.createElement('strong');strong.textContent=arName;node.append(strong)}node.append(document.createTextNode(part))})}}
-
-  $('date').textContent=(lang==='fr'?'Date de délivrance : ':'تاريخ الإصدار: ')+new Date(c.issued_at).toLocaleDateString('fr-MA',{year:'numeric',month:'2-digit',day:'2-digit'});
-  const arOnly=lang==='ar',frOnly=lang==='fr';
-  document.querySelector('.org').textContent=frOnly?'EMCIA – Association pour la Culture, l’Éducation et la Formation':'أمسية للثقافة والتربية والتكوين';
-  document.querySelectorAll('.footer strong')[0].textContent=arOnly?'رقم الشهادة':frOnly?'Référence':'رقم الشهادة / Référence';
-  document.querySelectorAll('.footer strong')[1].textContent=arOnly?'إدارة المؤسسة':frOnly?'La Direction':'إدارة المؤسسة — La Direction';
-  document.querySelector('.footer>div:nth-child(2)>div').textContent=arOnly?'التوقيع وختم المؤسسة':frOnly?'Signature et cachet de l’établissement':'التوقيع والختم / Signature et cachet';
-  document.querySelector('.stamp').textContent=arOnly?'مكان التوقيع والختم':frOnly?'Signature et cachet':'مكان التوقيع والختم';
+  const bodyText=lang==='fr'?frBody:lang==='en'?enBody:lang==='bi'?arBody+'\n'+frBody:arBody;
+  $('body').textContent=bodyText;
+  $('paper').dir=(lang==='ar'||lang==='bi')?'rtl':'ltr';
+  const dispName=lang==='ar'?arName:frName;
+  if(lang!=='bi'&&dispName){const node=$('body');const content=node.textContent;const pieces=content.split(dispName);if(pieces.length>1){node.textContent='';pieces.forEach((part,i)=>{if(i){const strong=document.createElement('strong');strong.textContent=dispName;node.append(strong)}node.append(document.createTextNode(part))})}}
+  const dateLocale=lang==='en'?'en-GB':'fr-MA';
+  const dateLabel=lang==='fr'?'Date de délivrance : ':lang==='en'?'Issue date: ':'تاريخ الإصدار: ';
+  $('date').textContent=dateLabel+new Date(c.issued_at).toLocaleDateString(dateLocale,{year:'numeric',month:'2-digit',day:'2-digit'});
+  const arOnly=lang==='ar',frOnly=lang==='fr',enOnly=lang==='en';
+  document.querySelector('.org').textContent=arOnly?'أمسية للثقافة والتربية والتكوين':frOnly?'EMCIA – Association pour la Culture, l’Éducation et la Formation':enOnly?'EMCIA – Association for Culture, Education and Training':'أمسية للثقافة والتربية والتكوين';
+  document.querySelectorAll('.footer strong')[0].textContent=arOnly?'رقم الشهادة':frOnly?'Référence':enOnly?'Reference':'رقم الشهادة / Référence';
+  document.querySelectorAll('.footer strong')[1].textContent=arOnly?'إدارة المؤسسة':frOnly?'La Direction':enOnly?'The Management':'إدارة المؤسسة — La Direction';
+  document.querySelector('.footer>div:nth-child(2)>div').textContent=arOnly?'التوقيع وختم المؤسسة':frOnly?'Signature et cachet de l’établissement':enOnly?'Signature and stamp of the establishment':'التوقيع والختم / Signature et cachet';
+  document.querySelector('.stamp').textContent=arOnly?'مكان التوقيع والختم':frOnly?'Signature et cachet':enOnly?'Signature and stamp':'مكان التوقيع والختم';
   $('ref').textContent=c.certificate_number;
+  return true;
+ }
+ $('back').onclick=()=>{location.href='EMCIA_Certification_Issuance_Test.html?v=7'};
+ $('dlang').onchange=e=>{
+  lang=e.target.value;
+  applyChrome();
+  if(certificate&&render(certificate)){
+   showStatus('ready');
+   if($('qr').dataset.fallback==='true')$('qr').textContent=C().qrfallback;
+  }else if(!certificate)showStatus(statusKey);
+ };
+ applyChrome();
+ const params=new URLSearchParams(location.search),requestId=params.get('request');
+ if(!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/.test(requestId||'')){showStatus('badref');return}
+ let auth;
+ try{auth=JSON.parse(sessionStorage.getItem('emcia_auth_session_v2')||'null')}catch(e){}
+ if(!auth?.access_token||!(auth.expiresAt>Date.now())){showStatus('session');return}
+ const api='https://gfhmkijxiinoqkxhicza.supabase.co/rest/v1/certificates?select=certificate_number,issued_at,subject_kind,certificate_type,language,immutable_snapshot,verification_token&request_id=eq.'+encodeURIComponent(requestId)+'&limit=1';
+ fetch(api,{headers:{apikey:'sb_publishable_AZWNmDjlNPpADgPFYwH3oA_71o4ABTM',Authorization:'Bearer '+auth.access_token}})
+ .then(async r=>{if(!r.ok)throw Error('fetchfail');return r.json()})
+ .then(rows=>{
+  const c=rows[0];if(!c){showStatus('notfound');return}
+  lang=(c.language==='fr'||c.language==='en'||c.language==='bi')?c.language:'ar';
+  $('dlang').value=lang;
+  applyChrome();
+  if(!render(c))return;
+  certificate=c;
   if(c.verification_token){
    const url=new URL('EMCIA_Certificate_Verify_Test.html',location.href);
    url.search='?token='+encodeURIComponent(c.verification_token);
    const link=$('verify-link');link.href=url.href;
    $('qr-area').style.display='flex';
    if(typeof QRCode!=='undefined')new QRCode($('qr'),{text:url.href,width:92,height:92,correctLevel:QRCode.CorrectLevel.M});
-   else $('qr').textContent='رابط التحقق متاح أسفل الشهادة';
+   else{$('qr').dataset.fallback='true';$('qr').textContent=C().qrfallback;}
   }
-  $('paper').classList.remove('hidden');$('print').disabled=false;status.textContent='معاينة شهادة وفق الهوية الحديثة وصياغة إدارة المؤسسة. راجع اكتمال بيانات التكوين قبل الاستعمال الرسمي.';
- }).catch(e=>{status.textContent=e.message});
+  $('paper').classList.remove('hidden');$('print').disabled=false;showStatus('ready');
+ }).catch(()=>showStatus('fetchfail'));
  $('print').onclick=()=>window.print();
 })();
 </script><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script></body></html>
