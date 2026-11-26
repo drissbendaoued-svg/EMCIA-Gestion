@@ -501,7 +501,7 @@ try{
  }
 }catch(e){}
 </script><style id="emcia-login-refresh">
-main #rcPreview .rc-paper{direction:rtl}
+main #rcPreview .rc-paper{direction:inherit}
 
 #authGate{background:radial-gradient(circle at 15% 8%,#dbeaf4 0,transparent 42%),linear-gradient(160deg,#f3f7fb,#e9f0f7);padding:20px 0;min-height:100svh}
 #authGate .panel{width:min(440px,calc(100% - 32px));max-width:440px;border-radius:24px;padding:clamp(20px,5vw,32px);box-shadow:0 16px 55px rgba(16,42,67,.11);border:1px solid #e6edf4}
@@ -859,7 +859,7 @@ db.adj=db.adj.map(o=>({...o,month:o.month||nowMonth(),countedDays:+o.countedDays
 function save(){db.reviewEvents=Object.entries(db.receiptReviews||{}).map(([id,review])=>({id,...review}));emciaRepricePayments(db,emciaPaymentSplitCore);localStorage.setItem(KEY,JSON.stringify(db));window.EMCIA_CLOUD_SYNC?.save(db);window.emciaUpdateAlertCounter?.();window.emciaUpdateCorrectionBadge?.();if(document.getElementById("daily-payment-alerts-content"))emciaRenderDailyPayments();setTimeout(applyLang,0)}
 function teacherDueOf(p){return +(p?.d??p?.t??0)||0}
 const by=(a,id)=>a.find(x=>x.id===id);
-function objName(o,mode="ui"){if(!o)return "—";let ar=o.nAr||o.n||"",fr=o.nFr||"";if(mode==="both")return [ar,fr].filter(Boolean).join(" / ")||"—";if(mode==="fr")return fr||ar||"—";if(mode==="ar")return ar||fr||"—";return LANG==="fr"?(fr||ar||"—"):(ar||fr||"—")}
+function objName(o,mode="ui"){if(!o)return "—";let ar=o.nAr||o.n||"",fr=o.nFr||"";if(mode==="both")return [ar,fr].filter(Boolean).join(" / ")||"—";if(mode==="fr")return fr||ar||"—";if(mode==="ar")return ar||fr||"—";return LANG==="ar"?(ar||fr||"—"):(fr||ar||"—")}
 function name(a,id,mode="ui"){return objName(by(a,id),mode)}
 db.t.forEach(o=>{if(!o.nAr)o.nAr=o.n||"";if(o.nFr==null)o.nFr=""});
 db.s.forEach(o=>{if(!o.nAr)o.nAr=o.n||"";if(o.nFr==null)o.nFr=""});
@@ -1022,7 +1022,7 @@ Object.assign(I18N,{
  "☰ القائمة": "☰ Menu",
  "الإدارة": "Gestion",
  "التدبير اليومي": "Gestion quotidienne",
- "المالية": "Finances",
+ "المالية": "financière",
  "المحاسبة والتدبير": "Comptabilité et gestion",
  "الملفات والمتابعة": "Dossiers et suivi",
  "التقارير والأرشفة": "Rapports et archivage",
@@ -1051,7 +1051,7 @@ Object.assign(I18N,{
  "شهري": "Mensuel",
  "بالحصة": "Par séance",
  "— اختر متعلما —": "— Choisir un apprenant —",
- "رقم التوصيل": "Numéro de reçu",
+ "رقم التوصيل": "N° de reçu",
  "طريقة الأداء": "Mode de paiement",
  "نقداً": "Espèces",
  "تحويل بنكي": "Virement bancaire",
@@ -1065,7 +1065,7 @@ Object.assign(I18N,{
  "إرشادات التوصيل المشترك": "Consignes pour le reçu partagé",
  "سجّل حصة كل متعلم فقط، مع لاحقة مختلفة للرقم: 125/1، 125/2. لا تكرر المبلغ الإجمالي.": "Enregistrez uniquement la part de chaque apprenant, avec un suffixe différent : 125/1, 125/2. Ne répétez pas le montant total.",
  "دفعات الحصص": "Paiements par séance",
- "تاريخ القبض": "Date d'encaissement",
+ "تاريخ القبض": "Date d’encaissement",
  "نوع الدفعة": "Type de versement",
  "فوري": "Immédiat",
  "مسبق": "Anticipé",
@@ -1506,7 +1506,225 @@ Object.assign(I18N,{
  "♻️ استرجاع هذه النسخة": "♻️ Restaurer cette copie",
  "نظام الأداء": "Mode de paiement",
  "عدد السجلات المطابقة": "Nombre d'enregistrements correspondants",
- "اختر مستفيدًا لعرض معلوماته.": "choisissez un bénéficiaire pour voir ses informations."
+ "اختر مستفيدًا لعرض معلوماته.": "choisissez un bénéficiaire pour voir ses informations.",
+ "المتعلمين": "apprenants",
+ "المستفيدون": "Bénéficiaires",
+ "المستفيدين": "bénéficiaires",
+ "المستخدمون": "Utilisateurs",
+ "النشطة": "actives",
+ "الشهرية": "mensuelles",
+ "الشهري": "mensuel",
+ "المالي": "financier",
+ "التشغيلية": "d’exploitation",
+ "الثابتة": "fixes",
+ "المتغيرة": "variables",
+ "المحاسبي": "comptable",
+ "الأصلية": "d’origine",
+ "مقرر": "prévu",
+ "المقررة": "prévues",
+ "الزائد": "Surplus",
+ "الاستلام": "réception",
+ "القيمة": "Valeur",
+ "المؤشر": "Indicateur",
+ "المحصل": "Collecté",
+ "المخصص": "Alloué",
+ "المقبوض": "Encaissé",
+ "المصروف": "la dépense",
+ "الدراسية": "scolaires",
+ "الدراسي": "scolaire",
+ "الدراسة": "scolarité",
+ "حصة": "Part",
+ "عدد": "Nombre",
+ "نسبة": "Taux",
+ "النسبة": "Taux",
+ "نوع": "Type",
+ "طبيعة": "Nature",
+ "حالة": "Statut",
+ "الحالة": "Statut",
+ "مبلغ": "Montant",
+ "فعلياً": "effectivement",
+ "ملاحظة": "Remarque",
+ "الملاحظة": "La remarque",
+ "مستحق": "dû",
+ "مستحقات": "montants dus",
+ "المعتمد": "validé",
+ "المستلم": "reçu",
+ "المشمولة": "concernées",
+ "المستفيدة": "bénéficiaires",
+ "المختار": "choisi",
+ "التوقيع": "Signature",
+ "الأسبوع ": "Semaine ",
+ "الصفحة ": "Page ",
+ " من ": " sur ",
+ "دون تكرار": "sans doublon",
+ "للأستاذ": "pour l’enseignant",
+ "المتعلمون في الصفحة: ": "Apprenants sur la page : ",
+ "مجموع المتعلمين: ": "Total des apprenants : ",
+ "تاريخ الطبع: ": "Date d’impression : ",
+ "سجل الغيابات الأسبوعي — الصفحة ": "Registre d’absences hebdomadaire — page ",
+ "الشهر:": "Mois :",
+ "أولاً: مصاريف المستخدمين والتسيير": "1. Dépenses des utilisateurs et de gestion",
+ "ثانياً: مستحقات الأساتذة": "2. Rémunérations des enseignants",
+ "إجمالي المصاريف التشغيلية ومستحقات الأساتذة: ": "Total des dépenses d’exploitation et rémunérations des enseignants : ",
+ "إجمالي مستحق الأستاذ للصرف: ": "Total à verser à l’enseignant : ",
+ "إقرار بالاستلام:": "Accusé de réception :",
+ "أقر أنا الأستاذ(ة) المذكور(ة) أعلاه أنني استلمت من مؤسسة EMCIA مبلغ ": "Je soussigné(e), l’enseignant(e) mentionné(e) ci-dessus, avoir reçu de l’établissement EMCIA le montant de ",
+ "المبين في هذا الكشف عن الشهر المذكور أعلاه.": "indiqué dans ce relevé pour le mois mentionné ci-dessus.",
+ "الأرقام تعبر عن التخفيضات المقررة وليست التحصيل الفعلي. تقييم القدرة على تقديم تخفيضات إضافية يتطلب بيانات التكاليف.": "Les chiffres représentent les réductions prévues et non l’encaissement réel. Évaluer la capacité à accorder des réductions supplémentaires exige les données de coûts.",
+ "الأستاذ(ة)": "L’enseignant(e)",
+ "الأفواج النشطة ذات التسجيلات": "Groupes actifs avec inscriptions",
+ "البيان /": "Libellé /",
+ "التحصيل والاستحقاقات أعلاه محسوبان حسب الشهر الذي تخصه الواجبات. أما الحركة المالية فحسب شهر القبض؛ لذلك قد تختلف القيم بين القسمين. التقرير للعرض ولا يغيّر السجلات.": "Le montant dû et le collecté ci-dessus sont calculés selon le mois concerné par les frais. La trésorerie, elle, suit le mois d’encaissement ; les valeurs peuvent donc différer entre les deux sections. Le rapport est en lecture seule et ne modifie aucun enregistrement.",
+ "التخفيض الشهري": "Réduction mensuelle",
+ "التخفيض المسجل": "Réduction enregistrée",
+ "التخفيضات الشهرية:": "Réductions mensuelles :",
+ "التخفيضات حسب الفوج": "Réductions par groupe",
+ "التسجيلات المستفيدة": "Inscriptions bénéficiaires",
+ "التسجيلات المشمولة": "Inscriptions concernées",
+ "التقرير الإداري الشهري الشامل": "Rapport administratif mensuel complet",
+ "الحركة المالية": "Trésorerie",
+ "الرصيد المحاسبي للشهر": "Solde comptable du mois",
+ "الرصيد المسبق": "Solde prépayé",
+ "الشهر المختار": "Mois choisi",
+ "المؤشرات الإدارية": "Indicateurs administratifs",
+ "المؤشرات المالية": "Indicateurs financiers",
+ "المبلغ المستلم": "Montant reçu",
+ "المتبقي عن الشهر": "Reste du mois",
+ "المتعلمون المستفيدون دون تكرار": "Apprenants bénéficiaires uniques",
+ "المتعلمون النشطون:": "Apprenants actifs :",
+ "المتعلمون دون تكرار": "Apprenants uniques",
+ "المجموع العام للمصاريف التشغيلية": "Total général des dépenses d’exploitation",
+ "المحصل حسب الاستحقاق": "Collecté selon l’échéance",
+ "المحصل عن استحقاقات الشهر": "Collecté pour les dus du mois",
+ "المستحق حسب شهر الدراسة، والمخصص له من الأداءات حتى تاريخ الكشف. المقبوض حسب تاريخ الأداء ويُحتسب مرة واحدة. الرصيد المسبق لا يمحو ديناً في فوج آخر. حصة الأستاذ والمؤسسة عن الأداء الشهري تُنسب لشهر الاستحقاق المحفوظ، وعن الحصص تُثبت بعد إنجاز الحصة وتحصيل مقابلها.": "Le dû est calculé selon le mois de scolarité, avec la part des paiements allouée jusqu’à la date du relevé. L’encaissé suit la date de paiement et n’est compté qu’une fois. Le solde prépayé n’efface pas une dette dans un autre groupe. La part de l’enseignant et de l’établissement pour un paiement mensuel est rattachée au mois d’échéance enregistré ; pour les séances, elle est confirmée après la tenue de la séance et l’encaissement de sa contrepartie.",
+ "المستحقات عن الشهر": "Dus du mois",
+ "المصاريف التشغيلية حسب شهر تسجيل المصروف؛ مستحقات الأساتذة محسوبة عن شهر الاستحقاق وتشمل حصص المتأخرات المقبوضة فيه. عدد المتعلمين دون تكرار داخل أفواج الأستاذ، وقد يظهر المتعلم لدى أكثر من أستاذ. مجموع الأفواج هو مجموع أفواج الأساتذة، وليس بالضرورة عدد الأفواج الفريدة بالمؤسسة. لا تُضاف مستحقات الأساتذة إلى المصاريف التشغيلية أعلاه حتى لا يحدث احتساب مزدوج.": "Les dépenses d’exploitation suivent le mois d’enregistrement de la dépense ; les rémunérations des enseignants sont calculées sur le mois d’échéance et incluent les parts d’arriérés encaissés durant celui-ci. Le nombre d’apprenants est compté sans doublon au sein des groupes de l’enseignant, mais un même apprenant peut apparaître chez plusieurs enseignants. Le total des groupes est la somme des groupes des enseignants, pas nécessairement le nombre de groupes distincts de l’établissement. Les rémunérations des enseignants ne sont pas ajoutées aux dépenses d’exploitation ci-dessus afin d’éviter un double comptage.",
+ "المصاريف الثابتة": "Dépenses fixes",
+ "المصاريف المتغيرة": "Dépenses variables",
+ "مجموع المصاريف الثابتة": "Total des dépenses fixes",
+ "مجموع المصاريف المتغيرة": "Total des dépenses variables",
+ "المقبوض من أداءات الدراسة": "Encaissé des paiements de scolarité",
+ "المقبوضات حسب تاريخ التحصيل، والمخصص للدراسة حسب شهر الاستحقاق الأصلي. تُحتسب حصة الأستاذ عن شهر الدراسة من الأداءات المخصصة له، ولو قُبضت في شهر سابق، دون احتسابها مرتين.": "Les encaissements suivent la date d’encaissement, et la part allouée à la scolarité suit le mois d’échéance d’origine. La part de l’enseignant pour un mois de scolarité est calculée à partir des paiements qui lui sont alloués, même s’ils ont été encaissés un mois plus tôt, sans être comptée deux fois.",
+ "الواجبات الأصلية": "Frais d’origine",
+ "بيان التسوية والاستلام": "Relevé de règlement et de réception",
+ "تتحمله المؤسسة": "à la charge de l’établissement",
+ "تسجيلات بأداء ناقص أو غير مؤدى": "Inscriptions à paiement partiel ou impayé",
+ "تطور المستحقات والتحصيل خلال ستة أشهر": "Évolution des dus et des encaissements sur six mois",
+ "تفاصيل المستفيدين": "Détails des bénéficiaires",
+ "تقرير قراءة فقط للتخفيضات السارية في الشهر المحدد. كل تسجيل في فوج يحسب مستقلاً.": "Rapport en lecture seule des réductions actives pour le mois choisi. Chaque inscription dans un groupe est calculée indépendamment.",
+ "توقيع الأستاذ": "Signature de l’enseignant",
+ "توقيع وخاتم المؤسسة:": "Signature et cachet de l’établissement :",
+ "حركة القبض وتوزيع المستحقات": "Encaissements et répartition des parts",
+ "حسب الأستاذ": "par enseignant",
+ "حصة المؤسسة من المقبوضات": "Part de l’établissement des encaissements",
+ "حصة متأخرات مقبوضة:": "Part d’arriérés encaissés :",
+ "سجلات الحضور:": "Registres de présence :",
+ "شهر الدراسة:": "Mois de scolarité :",
+ "شهر الدراسة": "mois de scolarité",
+ "شهر الاستحقاق": "Mois d’échéance",
+ "صافي حصة": "Part nette",
+ "عند الأداء": "au paiement",
+ "غيابات الأساتذة والتعويضات": "Absences des enseignants et rattrapages",
+ "في الفترة": "sur la période",
+ "لا توجد تخفيضات سارية وفق الاختيارات.": "Aucune réduction active selon les critères choisis.",
+ "لا توجد تخفيضات مقررة مسجلة لهذا الأستاذ في هذا الشهر.": "Aucune réduction prévue enregistrée pour cet enseignant ce mois-ci.",
+ "لا توجد غيابات أساتذة مسجلة خلال هذا الشهر.": "Aucune absence d’enseignant enregistrée durant ce mois.",
+ "لا توجد مصاريف مسجلة لهذه الفئة خلال الشهر.": "Aucune dépense enregistrée pour cette catégorie durant le mois.",
+ "لا توجد تسجيلات لهذا الأستاذ خلال الشهر.": "Aucune inscription pour cet enseignant durant le mois.",
+ "لم يؤد بعد": "Pas encore payé",
+ "مؤشر حركة الأموال خلال شهر القبض": "Indicateur de trésorerie du mois d’encaissement",
+ "مجموع المستخدمون": "Total utilisateurs",
+ "مداخيل الدراسة": "Recettes de scolarité",
+ "مستحقات الأساتذة من المقبوضات": "Rémunérations des enseignants issues des encaissements",
+ "مستحقات الدراسة:": "Dûs de scolarité :",
+ "نسبة التحصيل": "Taux d’encaissement",
+ "نسبة التخفيض المالي": "Taux de réduction financière",
+ "نسبة التسجيلات المستفيدة": "Taux d’inscriptions bénéficiaires",
+ "يتحمله الأساتذة": "à la charge des enseignants",
+ "يتحمله الأستاذ (مقرر)": "à la charge de l’enseignant (prévu)",
+ "التخفيض الذي": "Réduction qui",
+ "أداءات شهر الدراسة": "paiements du mois de scolarité",
+ "أداءات متأخرة قُبضت خلال ": "Paiements en retard encaissés durant ",
+ "مستحقات متأخرة قُبضت هذا الشهر": "Arriérés encaissés ce mois-ci",
+ "بيان مستقل حسب تاريخ القبض وشهر الاستحقاق الأصلي.": "Relevé indépendant selon la date d’encaissement et le mois d’échéance d’origine.",
+ "إجمالي التخفيضات التي يتحملها الأستاذ:": "Total des réductions à la charge de l’enseignant :",
+ "ملاحظة التسوية:": "Note de règlement :",
+ "مطابقة مستحقات الأستاذ — فروق تحتاج مراجعة": "Rapprochement des rémunérations de l’enseignant — écarts à vérifier",
+ "المبالغ أدناه للمراجعة فقط؛ لا تُعدّل الأداءات أو التسويات المحفوظة.": "Les montants ci-dessous sont fournis pour vérification uniquement ; ils ne modifient ni les paiements ni les règlements enregistrés.",
+ "المسجل من المقبوضات": "Enregistré des encaissements",
+ "الصافي المقرر": "Net prévu",
+ "الفرق": "Écart",
+ "تاريخ التسجيل": "Date d’inscription",
+ "المخصص للدراسة": "Alloué à la scolarité",
+ "المقبوض في الفترة": "Encaissé sur la période",
+ "الرصيد المسبق / الزائد": "Solde prépayé / surplus",
+ "مستحق الأستاذ": "Dû enseignant",
+ "حصة EMCIA": "Part EMCIA",
+ "المبلغ المقبوض": "Montant encaissé",
+ "توزيع الأشهر": "Répartition des mois",
+ "مجموع التوزيع": "Total réparti",
+ "المستحق المعتمد": "Dû validé",
+ "المبلغ المستلم فعلياً": "Montant réellement reçu",
+ "تاريخ الاستلام": "Date de réception",
+ "المستحق الدراسي": "Dû scolaire",
+ "المخصص لشهر الدراسة": "Alloué au mois de scolarité",
+ "المقبوض خلال الشهر": "Encaissé durant le mois",
+ "التخفيض الذي يتحمله الأستاذ (مقرر)": "Réduction à la charge de l’enseignant (prévu)",
+ "صافي حصة الأستاذ (مقرر)": "Part nette de l’enseignant (prévu)",
+ "التخفيض المسجل عند الأداء": "Réduction enregistrée au paiement",
+ "مستحق الأستاذ عن أداءات شهر الدراسة": "Dû de l’enseignant pour les paiements du mois",
+ "المستحقات": "Dus",
+ "الواجبات": "Frais",
+ "تاريخ": "Date",
+ "أداء ناقص أو غير مؤدى": "Paiement partiel ou impayé",
+ "الأداءات المخصصة": "Paiements alloués",
+ "الشهر المخصص": "Mois alloué",
+ "المؤدون بالكامل": "Payés en totalité",
+ "المؤدى للشهر": "Payé pour le mois",
+ "المبلغ المتبقي": "Montant restant",
+ "المخصص للشهر": "Alloué pour le mois",
+ "الواجب المستحق": "Frais dus",
+ "الواجبات المستحقة": "Frais dus",
+ "مجموع الواجبات": "Total des frais",
+ "مبلغ التسبيق": "Montant de l’avance",
+ "حالات الحضور": "Cas de présence",
+ "حالات الغياب": "Cas d’absence",
+ "حالات التأخر": "Cas de retard",
+ "غياب بعذر": "Absence excusée",
+ "المتعلمون المعنيون": "Apprenants concernés",
+ "الأفواج المعنية": "Groupes concernés",
+ "حالات التأخر حسب الشهر والفوج": "Retards par mois et groupe",
+ "إجمالي المتبقي": "Total restant",
+ "عدد المتعلمين": "Nombre d’apprenants",
+ "عدد الأفواج": "Nombre de groupes",
+ "الاسم الكامل للأستاذ": "Nom complet de l’enseignant",
+ "البيان / الملاحظة": "Libellé / remarque",
+ "المستحق المالي": "Dû financier",
+ "طبيعة المصروف": "Nature de la dépense",
+ "نوع المصروف": "Type de dépense",
+ "التقرير المالي للسكرتارية": "Rapport financier du secrétariat",
+ "متابعة أداء واجبات الدراسة للشهر المختار حسب شهر الاستحقاق، دون إظهار حصص الأساتذة أو المؤسسة أو مصاريفها.": "Suivi du paiement des frais de scolarité du mois choisi selon le mois d’échéance, sans afficher les parts des enseignants, de l’établissement ni ses dépenses.",
+ "المتعلمون الذين أدوا واجباتهم كاملة (": "Apprenants ayant payé intégralement (",
+ "المتعلمون الذين بقي بذمتهم مبلغ (": "Apprenants avec un montant restant dû (",
+ "أداء الأفواج حسب الأستاذ": "Paiements des groupes par enseignant",
+ "مجموع أفواج ": "Total des groupes de ",
+ "المجموع العام": "Total général",
+ "مجموع التسبيقات": "Total des avances",
+ "التسبيقات المقبوضة خلال الشهر والمخصصة لأشهر لاحقة (": "Avances encaissées durant le mois et allouées à des mois ultérieurs (",
+ "لا توجد تسبيقات مقبوضة خلال هذا الشهر لأشهر لاحقة.": "Aucune avance encaissée ce mois-ci pour des mois ultérieurs.",
+ "الأرقام في جدول الأساتذة تخص أداء المتعلمين في أفواجهم، ولا تمثل مستحقات الأستاذ الشخصية. قد يتكرر المتعلم بين الأفواج. يُصنف التسجيل مؤدى بالكامل إذا لم يتبق من واجبه شيء؛ ولا تدخل التسبيقات المخصصة لأشهر مقبلة في أداء الشهر الحالي.": "Les chiffres du tableau des enseignants concernent les paiements des apprenants dans leurs groupes et ne représentent pas les rémunérations personnelles des enseignants. Un même apprenant peut apparaître dans plusieurs groupes. Une inscription est classée payée en totalité s’il ne reste rien de son tarif ; les avances allouées à des mois ultérieurs ne comptent pas dans le paiement du mois en cours.",
+ "تقرير الحضور والغياب": "Rapport de présence et d’absence",
+ "ملخص حالات الحضور والغياب المسجلة لكل فوج خلال ": "Résumé des présences et absences enregistrées par groupe durant ",
+ ". الأرقام تمثل عدد سجلات الحالات، وليس عدد المتعلمين الفريدين.": ". Les chiffres représentent le nombre de cas enregistrés, pas le nombre d’apprenants uniques.",
+ "سجل الحضور والغياب": "Registre de présence et d’absence",
+ "الأفواج: ": "Groupes : ",
+ "المسجلين: ": "Inscrits : ",
+ "كشف الأستاذ للطباعة": "Relevé de l’enseignant pour impression",
+ "التقرير المالي": "Rapport financier",
+ "سجل الغياب الفارغ": "Registre de présence vierge",
+ "هذا التقرير المالي متاح للمدير والمحاسب فقط.": "Ce rapport financier est réservé au directeur et au comptable.",
+ "صفحة": "Page",
+ "تاريخ الطبع": "Date d’impression"
 });
 const I18N_EN={
  "ملاحظات": "Notes",
@@ -1534,7 +1752,7 @@ const I18N_EN={
  "☰ القائمة": "☰ Menu",
  "الإدارة": "Administration",
  "التدبير اليومي": "Daily operations",
- "المالية": "Finances",
+ "المالية": "financial",
  "المحاسبة والتدبير": "Accounting & management",
  "الملفات والمتابعة": "Records & follow-up",
  "التقارير والأرشفة": "Reports & archive",
@@ -1589,7 +1807,7 @@ const I18N_EN={
  "المبلغ المؤدى فعلياً": "Amount actually paid",
  "تاريخ الأداء الفعلي": "Actual payment date",
  "شهر الاستحقاق": "Due month",
- "رقم التوصيل": "Receipt number",
+ "رقم التوصيل": "Receipt no.",
  "طريقة الأداء": "Payment method",
  "نقداً": "Cash",
  "تحويل بنكي": "Bank transfer",
@@ -2114,9 +2332,9 @@ const I18N_EN={
  "الرصيد المتاح بعد الادخار": "Balance available after savings",
  "مؤشرات الأساتذة": "Teacher indicators",
  "الترتيب": "Rank",
- "عدد المتعلمين": "Number of learners",
+ "عدد المتعلمين": "Learner count",
  "المقبوضات": "Collections",
- "مستحق الأستاذ": "Teacher's due",
+ "مستحق الأستاذ": "Teacher due",
  "مساهمة أفواجه في حصة EMCIA": "His groups' contribution to EMCIA share",
  "قراءة سريعة": "Quick read",
  "إضافة أستاذ": "Add teacher",
@@ -2241,7 +2459,219 @@ const I18N_EN={
  "خط متصل: حصة EMCIA | متقطع: المصاريف": "Solid line: EMCIA share | dashed: expenses",
  "نظام الأداء": "Payment mode",
  "عدد السجلات المطابقة": "Matching records",
- "اختر مستفيدًا لعرض معلوماته.": "choose a beneficiary to view their details."
+ "اختر مستفيدًا لعرض معلوماته.": "choose a beneficiary to view their details.",
+ "المتعلمين": "learners",
+ "المستفيدون": "Beneficiaries",
+ "المستفيدين": "beneficiaries",
+ "المستخدمون": "Users",
+ "النشطة": "active",
+ "الشهرية": "monthly",
+ "الشهري": "monthly",
+ "المالي": "financial",
+ "التشغيلية": "operating",
+ "الثابتة": "fixed",
+ "المتغيرة": "variable",
+ "المحاسبي": "accounting",
+ "الأصلية": "original",
+ "مقرر": "planned",
+ "المقررة": "planned",
+ "الزائد": "Excess",
+ "الاستلام": "receipt",
+ "القيمة": "Value",
+ "المؤشر": "Indicator",
+ "المحصل": "Collected",
+ "المخصص": "Allocated",
+ "المقبوض": "Collected",
+ "المصروف": "the expense",
+ "الدراسية": "tuition",
+ "الدراسي": "tuition",
+ "الدراسة": "tuition",
+ "حصة": "Share",
+ "عدد": "Count",
+ "نسبة": "Rate",
+ "نوع": "Type",
+ "طبيعة": "Nature",
+ "حالة": "Status",
+ "مبلغ": "Amount",
+ "فعلياً": "actually",
+ "الملاحظة": "The note",
+ "مستحق": "due",
+ "مستحقات": "dues",
+ "المعتمد": "approved",
+ "المستلم": "received",
+ "المشمولة": "covered",
+ "المستفيدة": "benefiting",
+ "المختار": "selected",
+ "التوقيع": "Signature",
+ "الأسبوع ": "Week ",
+ "الصفحة ": "Page ",
+ " من ": " of ",
+ "دون تكرار": "without duplicates",
+ "للأستاذ": "for the teacher",
+ "المتعلمون في الصفحة: ": "Learners on this page: ",
+ "مجموع المتعلمين: ": "Total learners: ",
+ "تاريخ الطبع: ": "Print date: ",
+ "سجل الغيابات الأسبوعي — الصفحة ": "Weekly attendance register — page ",
+ "الشهر:": "Month:",
+ "أولاً: مصاريف المستخدمين والتسيير": "1. User and management expenses",
+ "ثانياً: مستحقات الأساتذة": "2. Teacher dues",
+ "إجمالي المصاريف التشغيلية ومستحقات الأساتذة: ": "Total operating expenses and teacher dues: ",
+ "إجمالي مستحق الأستاذ للصرف: ": "Total payable to the teacher: ",
+ "إقرار بالاستلام:": "Receipt acknowledgment:",
+ "أقر أنا الأستاذ(ة) المذكور(ة) أعلاه أنني استلمت من مؤسسة EMCIA مبلغ ": "I, the above-named teacher, acknowledge having received from EMCIA the amount of ",
+ "المبين في هذا الكشف عن الشهر المذكور أعلاه.": "shown in this statement for the month mentioned above.",
+ "الأرقام تعبر عن التخفيضات المقررة وليست التحصيل الفعلي. تقييم القدرة على تقديم تخفيضات إضافية يتطلب بيانات التكاليف.": "Figures show planned discounts, not actual collection. Assessing the capacity to grant additional discounts requires cost data.",
+ "الأستاذ(ة)": "The teacher",
+ "الأفواج النشطة ذات التسجيلات": "Active groups with enrollments",
+ "البيان /": "Description /",
+ "التحصيل والاستحقاقات أعلاه محسوبان حسب الشهر الذي تخصه الواجبات. أما الحركة المالية فحسب شهر القبض؛ لذلك قد تختلف القيم بين القسمين. التقرير للعرض ولا يغيّر السجلات.": "Due and collected amounts above are computed by the month the fees belong to. Cash flow follows the collection month, so figures may differ between the two sections. The report is read-only and does not change records.",
+ "التخفيض الشهري": "Monthly discount",
+ "التخفيض المسجل": "Recorded discount",
+ "التخفيضات الشهرية:": "Monthly discounts:",
+ "التخفيضات حسب الفوج": "Discounts by group",
+ "التسجيلات المستفيدة": "Benefiting enrollments",
+ "التسجيلات المشمولة": "Covered enrollments",
+ "التقرير الإداري الشهري الشامل": "Comprehensive monthly administrative report",
+ "الحركة المالية": "Cash flow",
+ "الرصيد المحاسبي للشهر": "Accounting balance for the month",
+ "الرصيد المسبق": "Prepaid balance",
+ "الشهر المختار": "Selected month",
+ "المؤشرات الإدارية": "Administrative indicators",
+ "المؤشرات المالية": "Financial indicators",
+ "المبلغ المستلم": "Amount received",
+ "المتبقي عن الشهر": "Remaining for the month",
+ "المتعلمون المستفيدون دون تكرار": "Unique benefiting learners",
+ "المتعلمون النشطون:": "Active learners:",
+ "المتعلمون دون تكرار": "Unique learners",
+ "المجموع العام للمصاريف التشغيلية": "Grand total of operating expenses",
+ "المحصل حسب الاستحقاق": "Collected by due month",
+ "المحصل عن استحقاقات الشهر": "Collected for the month's dues",
+ "المستحق حسب شهر الدراسة، والمخصص له من الأداءات حتى تاريخ الكشف. المقبوض حسب تاريخ الأداء ويُحتسب مرة واحدة. الرصيد المسبق لا يمحو ديناً في فوج آخر. حصة الأستاذ والمؤسسة عن الأداء الشهري تُنسب لشهر الاستحقاق المحفوظ، وعن الحصص تُثبت بعد إنجاز الحصة وتحصيل مقابلها.": "The due is computed by tuition month, with the allocated share of payments up to the statement date. The collected amount follows the payment date and is counted once. A prepaid balance does not clear a debt in another group. The teacher's and institution's shares of a monthly payment are attached to its recorded due month; for sessions, the share is confirmed after the session takes place and is collected.",
+ "المستحقات عن الشهر": "Dues for the month",
+ "المصاريف التشغيلية حسب شهر تسجيل المصروف؛ مستحقات الأساتذة محسوبة عن شهر الاستحقاق وتشمل حصص المتأخرات المقبوضة فيه. عدد المتعلمين دون تكرار داخل أفواج الأستاذ، وقد يظهر المتعلم لدى أكثر من أستاذ. مجموع الأفواج هو مجموع أفواج الأساتذة، وليس بالضرورة عدد الأفواج الفريدة بالمؤسسة. لا تُضاف مستحقات الأساتذة إلى المصاريف التشغيلية أعلاه حتى لا يحدث احتساب مزدوج.": "Operating expenses follow the month the expense was recorded; teacher dues are computed on the due month and include shares of arrears collected within it. Learners are counted once within a teacher's groups, but the same learner may appear under more than one teacher. The group total sums teachers' groups and is not necessarily the number of distinct groups in the institution. Teacher dues are not added to the operating expenses above, to avoid double counting.",
+ "المصاريف الثابتة": "Fixed expenses",
+ "المصاريف المتغيرة": "Variable expenses",
+ "مجموع المصاريف الثابتة": "Total fixed expenses",
+ "مجموع المصاريف المتغيرة": "Total variable expenses",
+ "المقبوض من أداءات الدراسة": "Collected from tuition payments",
+ "المقبوضات حسب تاريخ التحصيل، والمخصص للدراسة حسب شهر الاستحقاق الأصلي. تُحتسب حصة الأستاذ عن شهر الدراسة من الأداءات المخصصة له، ولو قُبضت في شهر سابق، دون احتسابها مرتين.": "Collections follow the collection date, and the share allocated to tuition follows the original due month. The teacher's share for a tuition month is computed from the payments allocated to it, even if collected a month earlier, without being counted twice.",
+ "الواجبات الأصلية": "Original fees",
+ "بيان التسوية والاستلام": "Settlement and receipt statement",
+ "تتحمله المؤسسة": "borne by the institution",
+ "تسجيلات بأداء ناقص أو غير مؤدى": "Enrollments underpaid or unpaid",
+ "تطور المستحقات والتحصيل خلال ستة أشهر": "Six-month trend of dues and collections",
+ "تفاصيل المستفيدين": "Beneficiary details",
+ "تقرير قراءة فقط للتخفيضات السارية في الشهر المحدد. كل تسجيل في فوج يحسب مستقلاً.": "Read-only report of active discounts for the selected month. Each enrollment in a group is computed independently.",
+ "توقيع الأستاذ": "Teacher's signature",
+ "توقيع وخاتم المؤسسة:": "Institution signature and stamp:",
+ "حركة القبض وتوزيع المستحقات": "Collections and share distribution",
+ "حسب الأستاذ": "by teacher",
+ "حصة المؤسسة من المقبوضات": "Institution share of collections",
+ "حصة متأخرات مقبوضة:": "Collected arrears share:",
+ "سجلات الحضور:": "Attendance records:",
+ "شهر الدراسة:": "Tuition month:",
+ "شهر الدراسة": "tuition month",
+ "صافي حصة": "Net share",
+ "عند الأداء": "at payment",
+ "غيابات الأساتذة والتعويضات": "Teacher absences and makeups",
+ "في الفترة": "in the period",
+ "لا توجد تخفيضات سارية وفق الاختيارات.": "No active discounts for the current selection.",
+ "لا توجد تخفيضات مقررة مسجلة لهذا الأستاذ في هذا الشهر.": "No planned discounts recorded for this teacher this month.",
+ "لا توجد غيابات أساتذة مسجلة خلال هذا الشهر.": "No teacher absences recorded this month.",
+ "لا توجد مصاريف مسجلة لهذه الفئة خلال الشهر.": "No expenses recorded for this category this month.",
+ "لا توجد تسجيلات لهذا الأستاذ خلال الشهر.": "No enrollments for this teacher this month.",
+ "لم يؤد بعد": "Not paid yet",
+ "مؤشر حركة الأموال خلال شهر القبض": "Cash movement indicator for the collection month",
+ "مجموع المستخدمون": "Total users",
+ "مداخيل الدراسة": "Tuition income",
+ "مستحقات الأساتذة من المقبوضات": "Teacher dues from collections",
+ "مستحقات الدراسة:": "Tuition dues:",
+ "نسبة التحصيل": "Collection rate",
+ "نسبة التخفيض المالي": "Financial discount rate",
+ "نسبة التسجيلات المستفيدة": "Benefiting enrollment rate",
+ "يتحمله الأساتذة": "borne by teachers",
+ "يتحمله الأستاذ (مقرر)": "borne by the teacher (planned)",
+ "التخفيض الذي": "Discount that",
+ "أداءات شهر الدراسة": "tuition month payments",
+ "أداءات متأخرة قُبضت خلال ": "Late payments collected during ",
+ "مستحقات متأخرة قُبضت هذا الشهر": "Arrears collected this month",
+ "بيان مستقل حسب تاريخ القبض وشهر الاستحقاق الأصلي.": "Independent statement by collection date and original due month.",
+ "إجمالي التخفيضات التي يتحملها الأستاذ:": "Total discounts borne by the teacher:",
+ "ملاحظة التسوية:": "Settlement note:",
+ "مطابقة مستحقات الأستاذ — فروق تحتاج مراجعة": "Teacher dues reconciliation — differences to review",
+ "المبالغ أدناه للمراجعة فقط؛ لا تُعدّل الأداءات أو التسويات المحفوظة.": "The amounts below are for review only; they do not change recorded payments or settlements.",
+ "المسجل من المقبوضات": "Recorded from collections",
+ "الصافي المقرر": "Planned net",
+ "الفرق": "Difference",
+ "تاريخ التسجيل": "Enrollment date",
+ "المخصص للدراسة": "Allocated to tuition",
+ "المقبوض في الفترة": "Collected in period",
+ "الرصيد المسبق / الزائد": "Prepaid / excess",
+ "توزيع الأشهر": "Month allocation",
+ "مجموع التوزيع": "Total allocated",
+ "المستحق المعتمد": "Approved due",
+ "المبلغ المستلم فعلياً": "Amount actually received",
+ "تاريخ الاستلام": "Receipt date",
+ "المستحق الدراسي": "Tuition due",
+ "المخصص لشهر الدراسة": "Allocated to tuition month",
+ "المقبوض خلال الشهر": "Collected during the month",
+ "التخفيض الذي يتحمله الأستاذ (مقرر)": "Discount borne by teacher (planned)",
+ "صافي حصة الأستاذ (مقرر)": "Net teacher share (planned)",
+ "التخفيض المسجل عند الأداء": "Discount recorded at payment",
+ "مستحق الأستاذ عن أداءات شهر الدراسة": "Teacher's due for tuition month payments",
+ "أداء المتعلمين": "Learner payments",
+ "المؤدى": "Paid",
+ "المستحق": "Due",
+ "المستحقات": "Dues",
+ "الواجبات": "Fees",
+ "تاريخ": "Date",
+ "أداء ناقص أو غير مؤدى": "Underpaid or unpaid",
+ "الأداءات المخصصة": "Allocated payments",
+ "الشهر المخصص": "Allocated month",
+ "المؤدون بالكامل": "Fully paid",
+ "المؤدى للشهر": "Paid for the month",
+ "المبلغ المتبقي": "Remaining amount",
+ "المخصص للشهر": "Allocated for the month",
+ "الواجب المستحق": "Fees due",
+ "الواجبات المستحقة": "Fees due",
+ "مجموع الواجبات": "Total fees",
+ "مبلغ التسبيق": "Advance amount",
+ "حالات الحضور": "Present cases",
+ "حالات الغياب": "Absence cases",
+ "حالات التأخر": "Late cases",
+ "غياب بعذر": "Excused absence",
+ "المتعلمون المعنيون": "Learners affected",
+ "الأفواج المعنية": "Groups affected",
+ "حالات التأخر حسب الشهر والفوج": "Late cases by month and group",
+ "عدد الأفواج": "Group count",
+ "الاسم الكامل للأستاذ": "Teacher full name",
+ "البيان / الملاحظة": "Description / note",
+ "المستحق المالي": "Financial due",
+ "طبيعة المصروف": "Expense nature",
+ "نوع المصروف": "Expense type",
+ "التقرير المالي للسكرتارية": "Secretariat financial report",
+ "متابعة أداء واجبات الدراسة للشهر المختار حسب شهر الاستحقاق، دون إظهار حصص الأساتذة أو المؤسسة أو مصاريفها.": "Tracks tuition fee payments for the selected month by due month, without showing teacher or institution shares or its expenses.",
+ "المتعلمون الذين أدوا واجباتهم كاملة (": "Learners who paid in full (",
+ "المتعلمون الذين بقي بذمتهم مبلغ (": "Learners with an outstanding amount (",
+ "أداء الأفواج حسب الأستاذ": "Group payments by teacher",
+ "مجموع أفواج ": "Total for the groups of ",
+ "المجموع العام": "Grand total",
+ "مجموع التسبيقات": "Total advances",
+ "التسبيقات المقبوضة خلال الشهر والمخصصة لأشهر لاحقة (": "Advances collected this month and allocated to later months (",
+ "لا توجد تسبيقات مقبوضة خلال هذا الشهر لأشهر لاحقة.": "No advances collected this month for later months.",
+ "الأرقام في جدول الأساتذة تخص أداء المتعلمين في أفواجهم، ولا تمثل مستحقات الأستاذ الشخصية. قد يتكرر المتعلم بين الأفواج. يُصنف التسجيل مؤدى بالكامل إذا لم يتبق من واجبه شيء؛ ولا تدخل التسبيقات المخصصة لأشهر مقبلة في أداء الشهر الحالي.": "Figures in the teachers table concern learner payments in their groups and do not represent teachers' personal dues. The same learner may appear in several groups. An enrollment is counted as fully paid when nothing of its fee remains; advances allocated to later months do not count toward the current month's payment.",
+ "تقرير الحضور والغياب": "Attendance and absence report",
+ "ملخص حالات الحضور والغياب المسجلة لكل فوج خلال ": "Summary of attendance and absence records per group during ",
+ ". الأرقام تمثل عدد سجلات الحالات، وليس عدد المتعلمين الفريدين.": ". Figures represent the number of recorded cases, not the number of unique learners.",
+ "سجل الحضور والغياب": "Attendance and absence register",
+ "الأفواج: ": "Groups: ",
+ "المسجلين: ": "Enrolled: ",
+ "كشف الأستاذ للطباعة": "Teacher statement for printing",
+ "التقرير المالي": "Financial report",
+ "سجل الغياب الفارغ": "Blank attendance register",
+ "هذا التقرير المالي متاح للمدير والمحاسب فقط.": "This financial report is restricted to the director and the accountant.",
+ "صفحة": "Page",
+ "تاريخ الطبع": "Print date"
 };
 const emciaLanguageKeys={};
 let LANG=document.documentElement.lang;
@@ -2357,30 +2787,55 @@ function emciaFormatMetrics(root){
 }
 
 const emciaLocalizedUI="main,#nav,#emcia-top-controls,#emcia-users-panel";
-const emciaArabicDocument=".rc-paper,.blank-attendance,[data-emcia-arabic]";
+const emciaArabicDocument="[data-emcia-arabic]";
 const emciaOriginalText=new WeakMap();
+function emciaTranslateLabels(root,scope){
+ const labels="button,a,th,h1,h2,h3,h4,p,label,option,b,strong,summary,legend,.k,.muted,.warn,.welcome-season,.subnav-title,.emcia-review-summary small,.emcia-review-status,#certDetails,.page-footer span,.page-title span";
+ root.querySelectorAll(labels).forEach(el=>{
+  if((scope&&!el.closest(scope))||el.closest(emciaArabicDocument))return;
+  const textNodes=[...el.childNodes].filter(node=>node.nodeType===Node.TEXT_NODE);
+  if(el.matches("th")&&(emciaOriginalText.has(el)||(el.children.length>0&&[...el.children].every(child=>child.tagName==="BR")))){
+   // Split headings are safe to rebuild with text nodes and line breaks only.
+   let record=emciaOriginalText.get(el);
+   if(!record){
+    record={original:textNodes.map(node=>node.data),display:null};
+    emciaOriginalText.set(el,record);
+   }
+   const phrase=record.original.join(" ").trim();
+   const translated=tr(phrase);
+   const parts=LANG==="ar"||translated===phrase?record.original:translated.split(/ (?=\S+$)/);
+   if(record.display!==LANG){
+    el.replaceChildren(...parts.flatMap((part,index)=>index?[document.createElement("br"),part]:[part]));
+    record.display=LANG;
+   }
+   return;
+  }
+  for(const node of textNodes){
+   let record=emciaOriginalText.get(node);
+   if(!record||node.data!==record.display){
+    if(!/[\u0600-\u06ff]/.test(node.data))continue;
+    record={original:node.data,display:node.data};
+    emciaOriginalText.set(node,record);
+   }
+   const display=tr(record.original);
+   if(node.data!==display)node.data=display;
+   record.display=display;
+  }
+ });
+}
+function emciaLocalizedDocumentHTML(html){
+ const template=document.createElement("template");
+ template.innerHTML=html;
+ emciaTranslateLabels(template.content);
+ return template.innerHTML;
+}
 function applyLang(){
  document.documentElement.lang=LANG;
  document.documentElement.dir=LANG==="ar"?"rtl":"ltr";
  document.body.classList.toggle("rtl-ui",LANG==="ar");
  document.body.classList.toggle("ltr-ui",LANG!=="ar");
  window.emciaSyncDisplayLanguage?.();
- const labels="button,a,th,h1,h2,h3,h4,p,label,option,b,strong,summary,legend,.muted,.warn,.welcome-season,.subnav-title,.emcia-review-summary small,.emcia-review-status,#certDetails";
- document.querySelectorAll(labels).forEach(el=>{
-   if(!el.closest(emciaLocalizedUI)||el.closest(emciaArabicDocument))return;
-   for(const node of el.childNodes){
-     if(node.nodeType!==Node.TEXT_NODE)continue;
-     let record=emciaOriginalText.get(node);
-     if(!record||node.data!==record.display){
-       if(!/[\u0600-\u06ff]/.test(node.data))continue;
-       record={original:node.data,display:node.data};
-       emciaOriginalText.set(node,record);
-     }
-     const display=tr(record.original);
-     if(node.data!==display)node.data=display;
-     record.display=display;
-   }
- });
+ emciaTranslateLabels(document,emciaLocalizedUI);
  document.querySelectorAll("input[placeholder],textarea[placeholder]").forEach(el=>{
    if(!el.closest(emciaLocalizedUI)||el.closest(emciaArabicDocument))return;
    const value=el.getAttribute("placeholder")||"";
@@ -2394,6 +2849,7 @@ function applyLang(){
 function setLang(lang){
  LANG=lang==="fr"||lang==="en"?lang:"ar";
  try{localStorage.setItem("emcia_lang",LANG)}catch(e){}
+ if(document.querySelector("#reportcenter.active #rcPreview .rc-paper"))rcBuildReport();
  applyLang();
 }
 
@@ -4250,10 +4706,10 @@ function emciaAccountRows(month="",options={}){
 function emciaAccountTotals(rows){
  return rows.reduce((t,r)=>{for(const k of ["due","paid","cash","debt","credit","teacher","emcia","teacherDiscount"])t[k]+=(+r[k]||0);return t},{due:0,paid:0,cash:0,debt:0,credit:0,teacher:0,emcia:0,teacherDiscount:0});
 }
-function emciaAccountMode(mode){return mode==="session"?"بالحصة":"شهري"}
+function emciaAccountMode(mode){const label=mode==="session"?"بالحصة":"شهري";return LANG==="ar"?label:tr(label)}
 function emciaAccountsHTML(month="",options={}){
  const rows=emciaAccountRows(month,options).filter(r=>!options.debtOnly||r.debt>0),t=emciaAccountTotals(rows),privateShares=!!options.shares;
- const accountNumber=n=>Number(n||0).toLocaleString("fr-MA",{minimumFractionDigits:2,maximumFractionDigits:2});
+ const accountNumber=n=>Number(n||0).toLocaleString(LANG==="en"?"en-GB":"fr-MA",{minimumFractionDigits:2,maximumFractionDigits:2});
  const enrollmentDate=r=>db.e.filter(e=>e.sid===r.sid&&e.gid===r.gid&&(e.billingMode==="session"?"session":"monthly")===r.mode&&e.start).map(e=>e.start).sort()[0]||"—";
  return '<div class="card emcia-unified-accounts"><style>.emcia-unified-accounts table{border-collapse:collapse;width:100%}.emcia-unified-accounts th,.emcia-unified-accounts td{border:1px solid #d9dee4!important}.emcia-unified-accounts td:nth-child(n+5),.emcia-unified-accounts tr:last-child th:not(:first-child){background:#f6f7f8!important;text-align:center;font-variant-numeric:tabular-nums}.emcia-unified-accounts th{background:#edf0f3!important;line-height:1.25;vertical-align:middle;text-align:center;white-space:normal!important}.emcia-unified-accounts td{padding:4px 3px!important}@media print{.emcia-unified-accounts>div{overflow:visible!important}.emcia-unified-accounts th,.emcia-unified-accounts td{font-size:9.5px!important;padding:4px 2px!important}.emcia-unified-accounts table{width:100%!important;table-layout:auto!important}.emcia-unified-accounts th{white-space:normal!important}.emcia-unified-accounts td:nth-child(n+5){white-space:nowrap!important}}</style><h3>أداء المتعلمين'+(month?' — '+esc(month):'')+'</h3><p class="muted">المستحق حسب شهر الدراسة، والمخصص له من الأداءات حتى تاريخ الكشف. المقبوض حسب تاريخ الأداء ويُحتسب مرة واحدة. الرصيد المسبق لا يمحو ديناً في فوج آخر. حصة الأستاذ والمؤسسة عن الأداء الشهري تُنسب لشهر الاستحقاق المحفوظ، وعن الحصص تُثبت بعد إنجاز الحصة وتحصيل مقابلها.</p><div style="overflow-x:auto"><table><tr><th>المتعلم</th><th>تاريخ<br>التسجيل</th><th>الفوج</th><th>نظام<br>الأداء</th><th>المستحق</th><th>المخصص<br>للدراسة</th><th>المقبوض<br>في الفترة</th><th>المتبقي</th><th>الرصيد المسبق<br>/ الزائد</th>'+(privateShares?'<th>مستحق<br>الأستاذ</th><th>حصة<br>EMCIA</th>':'')+'</tr>'+rows.map(r=>'<tr data-billing-mode="'+r.mode+'"><td>'+esc(name(db.s,r.sid))+'</td><td>'+esc(enrollmentDate(r))+'</td><td>'+esc(by(db.g,r.gid)?.n||"—")+'</td><td>'+emciaAccountMode(r.mode)+'</td>'+[r.due,r.paid,r.cash,r.debt,r.credit].map(n=>'<td>'+accountNumber(n)+'</td>').join("")+(privateShares?'<td>'+accountNumber(r.teacher)+'</td><td>'+accountNumber(r.emcia)+'</td>':'')+'</tr>').join("")+'<tr><th colspan="4">المجموع</th>'+[t.due,t.paid,t.cash,t.debt,t.credit].map(n=>'<th>'+accountNumber(n)+'</th>').join("")+(privateShares?'<th>'+accountNumber(t.teacher)+'</th><th>'+accountNumber(t.emcia)+'</th>':'')+'</tr></table></div></div>';
 }
@@ -4760,11 +5216,15 @@ function dueInfo(e,m,paid){
 
 function emciaReportMonthLabel(m){
  const months=["يناير","فبراير","مارس","أبريل","ماي","يونيو","يوليوز","غشت","شتنبر","أكتوبر","نونبر","دجنبر"];
- const parts=String(m||"").split("-");return (months[Number(parts[1])-1]||m)+" "+(parts[0]||"");
+ const parts=String(m||"").split("-");
+ if(LANG!=="ar"&&/^\d{4}-(0[1-9]|1[0-2])$/.test(m)){
+  return new Intl.DateTimeFormat(LANG==="fr"?"fr-MA":"en-GB",{month:"long",year:"numeric",timeZone:"UTC"}).format(new Date(m+"-15T12:00:00Z"));
+ }
+ return (months[Number(parts[1])-1]||m)+" "+(parts[0]||"");
 }
 function rcSetReport(title,body){
  let box=$("#rcPreview");if(!box){alert("تعذر تجهيز معاينة التقرير.");return}
- box.innerHTML=`<div class="rc-paper">${["executive","monthly","studentAccounts","receiptAudit","discounts","teacherDetailed","teacher","expenseStatement","financial","arrears","attendance"].includes($("#rcType")?.value)?`<div class="rc-executive-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #bbb;padding-bottom:10px;margin-bottom:12px"><h2 style="font-size:16px;margin:0;text-align:right;flex:1">${esc(title)}</h2><img src="./EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA" style="width:66px;height:66px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'"></div>`:`<h1>EMCIA</h1><h2>${esc(title)}</h2>`}${body}</div>`;
+ box.innerHTML=`<div class="rc-paper">${["executive","monthly","studentAccounts","receiptAudit","discounts","teacherDetailed","teacher","expenseStatement","financial","arrears","attendance"].includes($("#rcType")?.value)?`<div class="rc-executive-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #bbb;padding-bottom:10px;margin-bottom:12px"><h2 style="font-size:16px;margin:0;text-align:start;flex:1">${esc(title)}</h2><img src="./EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA" style="width:66px;height:66px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'"></div>`:`<h1>EMCIA</h1><h2>${esc(title)}</h2>`}${body}</div>`;
  box.style.display="block"
 }
 function rcFileCode(){
@@ -4810,9 +5270,9 @@ function rcDirectPrint(){
  document.body.appendChild(frame);
  let doc=frame.contentWindow.document;
  doc.open();
- const printedAt=new Date().toLocaleDateString("ar-MA",{year:"numeric",month:"2-digit",day:"2-digit"});
+ const printedAt=new Date().toLocaleDateString(LANG==="ar"?"ar-MA":LANG==="fr"?"fr-MA":"en-GB",{year:"numeric",month:"2-digit",day:"2-digit"});
  const executivePrint=["executive","monthly","receiptAudit","discounts","teacherDetailed","expenseStatement","financial","arrears","attendance"].includes($("#rcType")?.value);
- doc.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>EMCIA</title><style>body{font-family:Arial,Tahoma,sans-serif;color:#111;padding:20px}h1,h2{text-align:center}table{width:100%;border-collapse:collapse;margin:10px 0 20px}th,td{border:1px solid #777;padding:7px;text-align:right;font-size:12px}th{background:#eee}.meta,.muted{color:#555}@page{margin:16mm 12mm 20mm;${executivePrint?`@bottom-center{content:"صفحة " counter(page);font-size:10px;color:#555} @bottom-left{content:"تاريخ الطبع: ${printedAt}";font-size:10px;color:#555}`:""}}${executivePrint?`.rc-executive-header{display:flex!important;align-items:center;justify-content:space-between;direction:rtl;break-inside:avoid}.rc-executive-header h2{text-align:right!important;font-size:16px!important;margin:0!important}.rc-executive-header img{width:66px;height:66px;object-fit:contain}`:""}</style></head><body>${paper.outerHTML}
+ doc.write(`<!doctype html><html lang="${LANG}" dir="${LANG==="ar"?"rtl":"ltr"}"><head><meta charset="utf-8"><title>EMCIA</title><style>body{font-family:Arial,Tahoma,sans-serif;color:#111;padding:20px}h1,h2{text-align:center}table{width:100%;border-collapse:collapse;margin:10px 0 20px}th,td{border:1px solid #777;padding:7px;text-align:start;font-size:12px}th{background:#eee}.meta,.muted{color:#555}@page{margin:16mm 12mm 20mm;${executivePrint?`@bottom-center{content:"${LANG==="ar"?"صفحة":tr("صفحة")} " counter(page);font-size:10px;color:#555} @bottom-left{content:"${LANG==="ar"?"تاريخ الطبع":tr("تاريخ الطبع")}: ${printedAt}";font-size:10px;color:#555}`:""}}${executivePrint?`.rc-executive-header{display:flex!important;align-items:center;justify-content:space-between;direction:rtl;break-inside:avoid}.rc-executive-header h2{text-align:right!important;font-size:16px!important;margin:0!important}.rc-executive-header img{width:66px;height:66px;object-fit:contain}`:""}</style></head><body>${paper.outerHTML}
 
 </body></html>`);
  doc.close();
@@ -4839,7 +5299,7 @@ function rcExportExcel(){
 
  paper=document.querySelector("#rcPreview .rc-paper");if(!paper){alert("اعرض التقرير أولاً.");return}
  let title=(paper.querySelector("h2")?paper.querySelector("h2").textContent:"تقرير EMCIA");
- let html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body><h2>${esc(title)}</h2>${paper.innerHTML}</body></html>`;
+ let html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" lang="${LANG}" dir="${LANG==="ar"?"rtl":"ltr"}"><head><meta charset="utf-8"></head><body><h2>${esc(title)}</h2>${paper.innerHTML}</body></html>`;
  rcDownload(new Blob(["\ufeff",html],{type:"application/vnd.ms-excel;charset=utf-8"}),rcFileBase()+".xls")
 }
 function rcDownload(blob,name){
@@ -4867,12 +5327,14 @@ function rcToggleFields(){
    rcClearPreview("اختر اسم الأستاذ لعرض كشفه.");
  }else rcRefreshPreview()
 }
-function rcTable(headers,rows){return `<table><tr>${headers.map(x=>`<th>${x}</th>`).join("")}</tr>${rows.map(r=>`<tr>${r.map(x=>`<td>${x}</td>`).join("")}</tr>`).join("")}</table>`}
+function rcTable(headers,rows){
+ const indicatorTable=/^(المؤشر|مؤشر )/.test(headers[0]);
+ return `<table><tr>${headers.map(x=>`<th>${x}</th>`).join("")}</tr>${rows.map(r=>`<tr>${r.map((x,i)=>`<td${indicatorTable&&i===0?' class="k"':''}>${x}</td>`).join("")}</tr>`).join("")}</table>`;
+}
 
 function emciaBlankAttendanceHTML(m,gid,tid){
  const days=new Date(Number(m.slice(0,4)),Number(m.slice(5,7)),0).getDate();
- const months=['يناير','فبراير','مارس','أبريل','ماي','يونيو','يوليوز','غشت','شتنبر','أكتوبر','نونبر','دجنبر'];
- const monthLabel=(months[Number(m.slice(5,7))-1]||m)+' '+m.slice(0,4);
+ const monthLabel=emciaReportMonthLabel(m);
  const groups=tid?db.g.filter(g=>g.tid===tid):[by(db.g,gid)].filter(Boolean);
  const enrollments=activeEnrollmentsForMonth(m);
  const weeks=[1,2,3,4].map(n=>'<th colspan="7">الأسبوع '+n+'</th>').join('')+'<th colspan="3"></th>';
@@ -4914,7 +5376,7 @@ function emciaBlankAttendanceHTML(m,gid,tid){
   pageBlocks.map(block=>'<div class="group-block"><h3>الفوج: '+esc(block.g.n)+(block.continued?' (تابع)':'')+' — عدد المسجلين: '+block.students.length+'</h3><table>'+head+'<tbody>'+block.students.map(row).join('')+Array.from({length:block.extra||0},()=>row(null)).join('')+'</tbody></table></div>').join('')+
   '<div class="page-footer"><span>المتعلمون في الصفحة: '+pageStudents+' | مجموع المتعلمين: '+totalStudents+'</span><span>تاريخ الطبع: '+new Date().toLocaleDateString('ar-MA')+'</span><span>الصفحة '+(index+1)+'/'+pages.length+'</span></div></section>';
  }).join('');
- return '<style>@page{size:A4 landscape;margin:7mm}.blank-attendance{direction:rtl;font-family:Arial,Tahoma,sans-serif;color:#111;width:100%}.blank-attendance .blank-page{break-after:page;page-break-after:always;position:relative;box-sizing:border-box;padding-bottom:2mm;width:100%}.blank-attendance .blank-page:last-child{break-after:auto;page-break-after:auto}.blank-attendance .page-header{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #bbb;padding-bottom:5px;margin-bottom:7px;min-height:54px}.blank-attendance .page-header img{width:66px;height:54px;object-fit:contain;flex-shrink:0}.blank-attendance .page-title{display:flex;flex-direction:column;gap:4px;font-size:11px}.blank-attendance .page-title strong{font-size:15px}.blank-attendance h3{font-size:10px;margin:6px 0 3px}.blank-attendance .group-block{break-inside:avoid;page-break-inside:avoid}.blank-attendance table{border-collapse:collapse;width:100%;table-layout:fixed;margin:0 0 4px}.blank-attendance th,.blank-attendance td{border:1px solid #d9dee4!important;text-align:center;font-size:8px;padding:1px 0;height:17px;box-sizing:border-box}.blank-attendance th{background:#edf0f3!important;line-height:1.2}.blank-attendance .student,.blank-attendance .student-head{width:22%;text-align:right;padding:1px 4px;font-size:10px;white-space:nowrap}.blank-attendance .payment-col{width:20px}.blank-attendance .unused{background:#f7f8f9!important}.blank-attendance tr{break-inside:avoid}.blank-attendance .page-footer{display:flex;justify-content:space-between;gap:8px;border-top:1px solid #bbb;padding-top:5px;font-size:9px;margin-top:7px;break-inside:avoid}@media print{html,body{margin:0!important;padding:0!important}.rc-paper{margin:0!important;padding:0!important;border:0!important;box-shadow:none!important}.blank-attendance .blank-page{margin:0;padding:0;break-inside:avoid;page-break-inside:avoid}.blank-attendance table{margin:0 0 3px!important}.blank-attendance th,.blank-attendance td{padding:1px 0!important;height:17px!important}}</style><div class="blank-attendance">'+(output||'<p>لا توجد أفواج لهذا الاختيار.</p>')+'</div>';
+ return '<style>@page{size:A4 landscape;margin:7mm}.blank-attendance{direction:inherit;font-family:Arial,Tahoma,sans-serif;color:#111;width:100%}.blank-attendance .blank-page{break-after:page;page-break-after:always;position:relative;box-sizing:border-box;padding-bottom:2mm;width:100%}.blank-attendance .blank-page:last-child{break-after:auto;page-break-after:auto}.blank-attendance .page-header{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #bbb;padding-bottom:5px;margin-bottom:7px;min-height:54px}.blank-attendance .page-header img{width:66px;height:54px;object-fit:contain;flex-shrink:0}.blank-attendance .page-title{display:flex;flex-direction:column;gap:4px;font-size:11px}.blank-attendance .page-title strong{font-size:15px}.blank-attendance h3{font-size:10px;margin:6px 0 3px}.blank-attendance .group-block{break-inside:avoid;page-break-inside:avoid}.blank-attendance table{border-collapse:collapse;width:100%;table-layout:fixed;margin:0 0 4px}.blank-attendance th,.blank-attendance td{border:1px solid #d9dee4!important;text-align:center;font-size:8px;padding:1px 0;height:17px;box-sizing:border-box}.blank-attendance th{background:#edf0f3!important;line-height:1.2}.blank-attendance .student,.blank-attendance .student-head{width:22%;text-align:right;padding:1px 4px;font-size:10px;white-space:nowrap}.blank-attendance .payment-col{width:20px}.blank-attendance .unused{background:#f7f8f9!important}.blank-attendance tr{break-inside:avoid}.blank-attendance .page-footer{display:flex;justify-content:space-between;gap:8px;border-top:1px solid #bbb;padding-top:5px;font-size:9px;margin-top:7px;break-inside:avoid}@media print{html,body{margin:0!important;padding:0!important}.rc-paper{margin:0!important;padding:0!important;border:0!important;box-shadow:none!important}.blank-attendance .blank-page{margin:0;padding:0;break-inside:avoid;page-break-inside:avoid}.blank-attendance table{margin:0 0 3px!important}.blank-attendance th,.blank-attendance td{padding:1px 0!important;height:17px!important}}</style><div class="blank-attendance">'+(output||'<p>لا توجد أفواج لهذا الاختيار.</p>')+'</div>';
 }
 function monthlyTeacherAttendanceHTML(m){
  let rows=db.tatt.filter(r=>r.status==="absent"&&r.date.slice(0,7)===m).sort((a,b)=>b.date.localeCompare(a.date));
@@ -4922,7 +5384,7 @@ function monthlyTeacherAttendanceHTML(m){
 }
 
 function emciaDiscountReportHTML(m){
- const discountNum=n=>Number(n||0).toLocaleString("fr-MA",{minimumFractionDigits:2,maximumFractionDigits:2});
+ const discountNum=n=>Number(n||0).toLocaleString(LANG==="en"?"en-GB":"fr-MA",{minimumFractionDigits:2,maximumFractionDigits:2});
  const discountTable=(headers,rows)=>rcTable(headers.map(h=>String(h).includes(" ")?String(h).split(/\s+/).join("<br>"):h),rows);
  const gid=$("#rcDiscountGroup")?.value||"",tid=$("#rcDiscountTeacher")?.value||"",bearer=$("#rcDiscountBearer")?.value||"";
  const scoped=db.e.filter(e=>emciaEnrollmentMonth(e,m)&&by(db.g,e.gid)&&by(db.s,e.sid)&&(!gid||e.gid===gid)&&(!tid||by(db.g,e.gid).tid===tid));
@@ -4944,7 +5406,7 @@ function emciaReceiptAuditHTML(m){
  if(!emciaCanViewManagement())return '<p>هذا السجل مخصص للمدير والمحاسب.</p>';
  const gid=$("#rcAuditGroup")?.value||"";
  const all=db.p.filter(p=>(p.receiptMonth||(p.date||"").slice(0,7))===m&&(!gid||(p.gid||by(db.e,p.eid)?.gid)===gid));
- const num=n=>Number(n||0).toLocaleString("fr-MA",{minimumFractionDigits:2,maximumFractionDigits:2});
+ const num=n=>Number(n||0).toLocaleString(LANG==="en"?"en-GB":"fr-MA",{minimumFractionDigits:2,maximumFractionDigits:2});
  const rows=all.map(p=>{
   const sid=p.sid||by(db.e,p.eid)?.sid,g=p.gid||by(db.e,p.eid)?.gid,alloc=paymentAllocations(p),gross=Number(p.a)||0;
   const group=by(db.g,g),enrollment=db.e.filter(e=>e.sid===sid&&e.gid===g&&e.start).sort((x,y)=>x.start.localeCompare(y.start))[0];
@@ -4963,7 +5425,7 @@ function emciaReceiptAuditHTML(m){
  (rows.length?rcTable(head,rows):'<p>لا توجد تواصيل في الشهر والفوج المختارين.</p>')+'</div>';
 }
 function emciaExpenseStatementHTML(m){
- const num=n=>Number(n||0).toLocaleString("fr-MA",{minimumFractionDigits:2,maximumFractionDigits:2});
+ const num=n=>Number(n||0).toLocaleString(LANG==="en"?"en-GB":"fr-MA",{minimumFractionDigits:2,maximumFractionDigits:2});
  const staffCats=new Set(["المدير","المحاسبة","الكاتبة الصباحية","الكاتبة المسائية","المنظفة"]);
  const entries=(db.x||[]).filter(x=>emciaAccountingMonth(x)===m);
  const sections=[["المستخدمون",x=>staffCats.has(x.cat)],["المصاريف الثابتة",x=>!staffCats.has(x.cat)&&x.type==="fixed"],["المصاريف المتغيرة",x=>!staffCats.has(x.cat)&&x.type!=="fixed"]];
@@ -5060,7 +5522,7 @@ function rcBuildReport(){
    let teacher=by(db.t,tid);if(!teacher){alert("اختر الأستاذ");return false}
    let html=type==="teacherDetailed"?teacherReportHTML(tid,m):teacherShortReportHTML(tid,m);
    let box=$("#rcPreview");if(!box){alert("تعذر تجهيز معاينة التقرير.");return false}
-   box.innerHTML=`<div class="rc-paper">${type==="teacher"||type==="teacherDetailed"?`<div class="rc-executive-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #bbb;padding-bottom:10px;margin-bottom:12px"><h2 style="font-size:16px;margin:0;text-align:right;flex:1">${type==="teacher"?"كشف الأستاذ للطباعة":"كشف الأستاذ"} — ${esc(emciaReportMonthLabel(m))}</h2><img src="./EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA" style="width:66px;height:66px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'"></div>`:""}${html}</div>`;
+   box.innerHTML=`<div class="rc-paper">${type==="teacher"||type==="teacherDetailed"?`<div class="rc-executive-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #bbb;padding-bottom:10px;margin-bottom:12px"><h2 style="font-size:16px;margin:0;text-align:start;flex:1">${type==="teacher"?"كشف الأستاذ للطباعة":"كشف الأستاذ"} — ${esc(emciaReportMonthLabel(m))}</h2><img src="./EMCIA_Official_Logo-1.jpg" alt="شعار EMCIA" style="width:66px;height:66px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'"></div>`:""}${html}</div>`;
    box.style.display="block";
  } else if(type==="attendance"){
    let rows=db.g.filter(g=>g.active!==false).map(g=>{let a=emciaAttendanceRecords().filter(x=>x.gid===g.id&&x.date.slice(0,7)===m);return[esc(g.n),a.filter(x=>x.status==="present").length,a.filter(x=>x.status==="absent").length,a.filter(x=>x.status==="late").length,a.filter(x=>x.status==="excused").length]});
@@ -5071,7 +5533,7 @@ function rcBuildReport(){
    rcSetReport("التقرير المالي للسكرتارية — "+emciaReportMonthLabel(m),emciaSecretaryFinancialHTML(m));
 
  }
-
+ if(typeof applyLang==="function")applyLang();
  return true
 }
 function emciaAttendanceSummaryHTML(rows,m){
@@ -5082,7 +5544,7 @@ function emciaAttendanceSummaryHTML(rows,m){
  '<table><thead><tr><th>اسم<br>الفوج</th><th>حالات<br>الحضور</th><th>حالات<br>الغياب</th><th>حالات<br>التأخر</th><th>غياب<br>بعذر</th></tr></thead><tbody>'+(body||'<tr><td colspan="5">لا توجد أفواج نشطة.</td></tr>')+'<tr class="total"><th>المجموع العام</th>'+total.map(n=>'<th class="number">'+n+'</th>').join('')+'</tr></tbody></table></div>';
 }
 function emciaSecretaryArrearsHTML(m){
- const num=n=>Number(n||0).toLocaleString("fr-MA",{minimumFractionDigits:2,maximumFractionDigits:2});
+ const num=n=>Number(n||0).toLocaleString(LANG==="en"?"en-GB":"fr-MA",{minimumFractionDigits:2,maximumFractionDigits:2});
  const rows=emciaAccountRows(m,{through:true}).flatMap(r=>r.details.filter(d=>d.mm<=m&&d.rem>0.009).map(d=>({
   sid:r.sid,gid:r.gid,mode:r.mode,month:d.mm,due:d.due,paid:d.paid,rem:d.rem,
   teacher:objName(by(db.t,by(db.g,r.gid)?.tid))||"—",group:by(db.g,r.gid)?.n||"—"
@@ -5107,7 +5569,7 @@ function emciaSecretaryArrearsHTML(m){
  '<p class="muted">المتعلم المسجل في أكثر من فوج أو المتأخر في أكثر من شهر قد يظهر في عدة أسطر. مجموع المتعلمين العام دون تكرار، أما مجاميع الأساتذة فتحسب المتعلمين داخل أفواج كل أستاذ. التسبيق المخصص لشهر لاحق لا يسدد متأخرات شهر سابق تلقائياً.</p></div>';
 }
 function emciaSecretaryFinancialHTML(m){
- const num=n=>Number(n||0).toLocaleString("fr-MA",{minimumFractionDigits:2,maximumFractionDigits:2});
+ const num=n=>Number(n||0).toLocaleString(LANG==="en"?"en-GB":"fr-MA",{minimumFractionDigits:2,maximumFractionDigits:2});
  const rows=emciaAccountRows(m);
  const enrolled=activeEnrollmentsForMonth(m);
  const currentKeys=new Set(enrolled.map(e=>e.sid+"|"+e.gid+"|"+(e.billingMode==="session"?"session":"monthly")));
@@ -5168,6 +5630,7 @@ function rcChooseCategory(category){
  if(student)student.style.display="none";
  document.querySelectorAll("#rcCategoryTabs button").forEach(b=>{const active=b.dataset.rcCat===category;b.style.fontWeight=active?"700":"400";b.style.outline=active?"2px solid currentColor":"none";b.setAttribute("aria-pressed",String(active))});
  rcToggleFields();
+ if(typeof applyLang==="function")applyLang();
 }
 function reportcenter(){
  let teachers=db.t.filter(x=>x.active!==false);
@@ -5409,7 +5872,7 @@ function emciaRenderDailyPayments(){
  const counter=document.getElementById('daily-payment-count-value');if(counter)counter.textContent=String(allRows.length);
  const total=document.getElementById('daily-payment-count-total');if(total)total.textContent=money(allRows.reduce((sum,row)=>sum+row.remaining,0));
  const cache=emciaDailyReminderCache,ready=cache.date===date&&cache.loaded;
- const time=value=>new Date(value).toLocaleTimeString(LANG==='fr'?'fr-MA':'ar-MA',{timeZone:'Africa/Casablanca',hour:'2-digit',minute:'2-digit'});
+ const time=value=>new Date(value).toLocaleTimeString(LANG==='ar'?'ar-MA':LANG==='fr'?'fr-MA':'en-GB',{timeZone:'Africa/Casablanca',hour:'2-digit',minute:'2-digit'});
  box.innerHTML=(cache.error?'<p class="warn">'+esc(cache.error)+'</p>':'')+'<p><b>'+tr('عدد المتعلمين')+': '+rows.length+'</b> · '+tr('إجمالي المتبقي')+': '+money(rows.reduce((s,x)=>s+x.remaining,0))+'</p>'+(rows.length?'<div style="overflow-x:auto"><table><tr><th>'+tr('أول حصة')+'</th><th>'+tr('المتعلم')+'</th><th>'+tr('الأفواج والتوقيت')+'</th><th>'+tr('تفاصيل المستحقات')+'</th><th>'+tr('المتبقي')+'</th><th>'+tr('التذكير والمتابعة')+'</th></tr>'+rows.map(row=>{
   const reminder=ready?cache.rows.find(x=>x.student_id===row.sid):null,gids=[...new Set(row.details.map(x=>x.gid))];
   const sid=esc(JSON.stringify(row.sid));
@@ -5970,7 +6433,7 @@ function emciaTeacherLateCashShortHTML(tid,m){
 }
 function teacherShortReportHTML(tid,m){
  const d=teacherExportData(tid,m);if(!d.teacher)return "";
- const num=n=>Number(n||0).toLocaleString("fr-MA",{minimumFractionDigits:2,maximumFractionDigits:2});
+ const num=n=>Number(n||0).toLocaleString(LANG==="en"?"en-GB":"fr-MA",{minimumFractionDigits:2,maximumFractionDigits:2});
  const registrationDate=r=>db.e.filter(e=>e.sid===r.sid&&e.gid===r.gid&&(e.billingMode==="session"?"session":"monthly")===r.mode&&e.start).map(e=>e.start).sort()[0]||"—";
  const groups=d.groups.filter(g=>g.rows.length);
  const body=groups.map(g=>{
@@ -5978,14 +6441,14 @@ function teacherShortReportHTML(tid,m){
   return '<tbody class="teacher-group"><tr class="teacher-group-heading"><th colspan="3">الفوج: '+esc(g.group.n)+'</th></tr>'+entries+'<tr class="teacher-group-total"><th colspan="2">مجموع الفوج</th><th class="amount">'+num(g.teacherDue)+'</th></tr></tbody>';
  }).join("");
  const studyTotal=d.groups.reduce((v,g)=>v+g.teacherDue,0),lateTotal=emciaTeacherLateCashTotal(tid,m),total=studyTotal+lateTotal;
- return '<style>.emcia-teacher-short{width:100%;max-width:100%;box-sizing:border-box;font-family:Arial,Tahoma,sans-serif;color:#111;direction:rtl}.emcia-teacher-short .teacher-meta{font-size:11px;margin:7px 0 14px}.emcia-teacher-short .teacher-full-table{width:100%;table-layout:fixed;border-collapse:collapse;margin:0 0 12px}.emcia-teacher-short .teacher-full-table th,.emcia-teacher-short .teacher-full-table td{border:1px solid #d9dee4!important;padding:6px 7px;font-size:11px;line-height:1.4;overflow-wrap:anywhere}.emcia-teacher-short .teacher-full-table th{background:#edf0f3!important;text-align:center}.emcia-teacher-short .teacher-full-table td:first-child{width:50%;text-align:right}.emcia-teacher-short .teacher-full-table .date{width:26%;text-align:center;direction:ltr;white-space:nowrap}.emcia-teacher-short .teacher-full-table .amount{width:24%;text-align:center;background:#f7f8f9!important;font-variant-numeric:tabular-nums;white-space:nowrap}.emcia-teacher-short .teacher-group-heading th{background:#e5e9ed!important;text-align:right!important;padding:7px}.emcia-teacher-short .teacher-group-total th{background:#edf0f3!important}.emcia-teacher-short .teacher-total{font-size:13px;text-align:center;border-top:1px solid #777;padding-top:10px;margin:12px 0 8px}.emcia-teacher-short .teacher-signature{text-align:center;margin:15px 0 0;font-size:12px;break-inside:avoid}.emcia-teacher-short .teacher-signature-space{height:45px}.emcia-teacher-short tr{break-inside:avoid;page-break-inside:avoid}@media print{.emcia-teacher-short .teacher-full-table th,.emcia-teacher-short .teacher-full-table td{font-size:10.5px;padding:5px 6px}.emcia-teacher-short .teacher-full-table{width:100%!important}}</style>'+
+ return '<style>.emcia-teacher-short{width:100%;max-width:100%;box-sizing:border-box;font-family:Arial,Tahoma,sans-serif;color:#111;direction:inherit}.emcia-teacher-short .teacher-meta{font-size:11px;margin:7px 0 14px}.emcia-teacher-short .teacher-full-table{width:100%;table-layout:fixed;border-collapse:collapse;margin:0 0 12px}.emcia-teacher-short .teacher-full-table th,.emcia-teacher-short .teacher-full-table td{border:1px solid #d9dee4!important;padding:6px 7px;font-size:11px;line-height:1.4;overflow-wrap:anywhere}.emcia-teacher-short .teacher-full-table th{background:#edf0f3!important;text-align:center}.emcia-teacher-short .teacher-full-table td:first-child{width:50%;text-align:right}.emcia-teacher-short .teacher-full-table .date{width:26%;text-align:center;direction:ltr;white-space:nowrap}.emcia-teacher-short .teacher-full-table .amount{width:24%;text-align:center;background:#f7f8f9!important;font-variant-numeric:tabular-nums;white-space:nowrap}.emcia-teacher-short .teacher-group-heading th{background:#e5e9ed!important;text-align:right!important;padding:7px}.emcia-teacher-short .teacher-group-total th{background:#edf0f3!important}.emcia-teacher-short .teacher-total{font-size:13px;text-align:center;border-top:1px solid #777;padding-top:10px;margin:12px 0 8px}.emcia-teacher-short .teacher-signature{text-align:center;margin:15px 0 0;font-size:12px;break-inside:avoid}.emcia-teacher-short .teacher-signature-space{height:45px}.emcia-teacher-short tr{break-inside:avoid;page-break-inside:avoid}@media print{.emcia-teacher-short .teacher-full-table th,.emcia-teacher-short .teacher-full-table td{font-size:10.5px;padding:5px 6px}.emcia-teacher-short .teacher-full-table{width:100%!important}}</style>'+
  '<div class="emcia-teacher-short"><p class="teacher-meta"><b>الأستاذ:</b> '+esc(objName(d.teacher))+' &nbsp; | &nbsp; <b>شهر الدراسة:</b> '+esc(emciaReportMonthLabel(m))+'</p>'+
  '<table class="teacher-full-table"><colgroup><col style="width:50%"><col style="width:26%"><col style="width:24%"></colgroup><thead><tr><th>اسم<br>المتعلم</th><th>تاريخ<br>التسجيل</th><th>مستحق<br>الأستاذ</th></tr></thead>'+(body||'<tbody><tr><td colspan="3">لا توجد تسجيلات لهذا الأستاذ خلال الشهر.</td></tr></tbody>')+'</table>'+
  emciaTeacherLateCashShortHTML(tid,m)+'<div class="teacher-total"><b>إجمالي مستحق الأستاذ للصرف: '+num(total)+'</b></div><div class="teacher-signature"><b>توقيع الأستاذ</b><div class="teacher-signature-space"></div></div></div>';
 }
 function teacherReportHTML(tid,m){
  let d=teacherExportData(tid,m); if(!d.teacher)return "";
- const teacherDetailNum=n=>Number(n||0).toLocaleString("fr-MA",{minimumFractionDigits:2,maximumFractionDigits:2});
+ const teacherDetailNum=n=>Number(n||0).toLocaleString(LANG==="en"?"en-GB":"fr-MA",{minimumFractionDigits:2,maximumFractionDigits:2});
  let body=d.groups.map(x=>'<h3>الفوج: '+esc(x.group.n)+'</h3><table><tr><th>المتعلم</th><th>المستحق<br>الدراسي</th><th>المخصص لشهر<br>الدراسة</th><th>المقبوض خلال<br>الشهر</th><th>المتبقي</th><th>الرصيد المسبق<br>/ الزائد</th><th>التخفيض الذي<br>يتحمله الأستاذ (مقرر)</th><th>صافي حصة<br>الأستاذ (مقرر)</th><th>التخفيض المسجل<br>عند الأداء</th><th>مستحق الأستاذ عن<br>أداءات شهر الدراسة</th></tr>'+x.rows.map(r=>'<tr><td>'+esc(r.name)+'</td>'+[r.studyDue,r.paid,r.cash].map(n=>'<td>'+teacherDetailNum(n)+'</td>').join("") + [r.debt,r.credit,r.plannedDiscount,r.plannedNet,r.teacherDiscount,r.due].map(n=>'<td>'+teacherDetailNum(n)+'</td>').join("")+'</tr>').join("")+'<tr><th colspan="2">مجموع الفوج</th><th>'+teacherDetailNum(x.paid)+'</th><th>'+teacherDetailNum(x.rows.reduce((s,r)=>s+r.cash,0))+'</th><th colspan="2"></th><th>'+teacherDetailNum(x.rows.reduce((s,r)=>s+r.plannedDiscount,0))+'</th><th>'+teacherDetailNum(x.rows.reduce((s,r)=>s+r.plannedNet,0))+'</th><th>'+teacherDetailNum(x.teacherDiscount)+'</th><th>'+teacherDetailNum(x.teacherDue)+'</th></tr></table>').join("");
  const discrepancies=d.groups.flatMap(x=>x.rows.filter(r=>r.mode==="monthly"&&r.cash>0&&r.plannedNet>0&&Math.abs(r.due-r.plannedNet)>0.009).map(r=>({name:r.name,group:x.group.n,actual:r.due,expected:r.plannedNet,difference:Math.round((r.plannedNet-r.due)*100)/100})));
  const reconciliationHTML=discrepancies.length?'<h3>مطابقة مستحقات الأستاذ — فروق تحتاج مراجعة</h3><p>المبالغ أدناه للمراجعة فقط؛ لا تُعدّل الأداءات أو التسويات المحفوظة.</p><table><tr><th>المتعلم</th><th>الفوج</th><th>المسجل من المقبوضات</th><th>الصافي المقرر</th><th>الفرق</th></tr>'+discrepancies.map(r=>'<tr><td>'+esc(r.name)+'</td><td>'+esc(r.group)+'</td><td>'+teacherDetailNum(r.actual)+'</td><td>'+teacherDetailNum(r.expected)+'</td><td>'+teacherDetailNum(r.difference)+'</td></tr>').join('')+'</table>':'';
@@ -5998,7 +6461,8 @@ function adminReportHTML(m){
  return `<h1>EMCIA — التقرير الإداري الشهري الشامل</h1><p><b>الشهر:</b> ${m}</p>${emciaAccountsHTML(m,{shares:true})}<h3>حركة القبض وتوزيع المستحقات</h3><table><tr><th>تاريخ الأداء</th><th>شهر الاستحقاق</th><th>الأستاذ</th><th>الفوج</th><th>المتعلم</th><th>المستوى</th><th>المؤدى</th><th>مستحق الأستاذ</th><th>حصة EMCIA</th><th>ملاحظة</th></tr>${rows.map(r=>`<tr><td>${r.date}</td><td>${r.month}</td><td>${esc(r.teacher)}</td><td>${esc(r.group)}</td><td>${esc(r.student)}</td><td>${esc(r.level)}</td><td>${money(r.paid)}</td><td>${money(r.teacherDue)}</td><td>${money(r.emcia)}</td><td>${esc(r.note)}</td></tr>`).join("")}<tr><th colspan="6">المجموع</th><th>${money(paid)}</th><th>${money(td)}</th><th>${money(em)}</th><th></th></tr></table>`;
 }
 function printableDoc(content,title){
- return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>${esc(title)}</title><style>body{font-family:Arial,sans-serif;color:#111;padding:24px}h1{text-align:center;font-size:22px}h2{margin-top:24px}h3{margin-top:20px;background:#eee;padding:7px}table{width:100%;border-collapse:collapse;margin:10px 0 20px}th,td{border:1px solid #777;padding:7px;text-align:right;font-size:12px}th{background:#eee}.foot{margin-top:30px;font-size:11px;color:#555}@media print{button{display:none}body{padding:0}}
+ if(LANG!=="ar"){content=emciaLocalizedDocumentHTML(content);title=tr(title);}
+ return `<!doctype html><html lang="${LANG}" dir="${LANG==="ar"?"rtl":"ltr"}"><head><meta charset="utf-8"><title>${esc(title)}</title><style>body{font-family:Arial,sans-serif;color:#111;padding:24px}h1{text-align:center;font-size:22px}h2{margin-top:24px}h3{margin-top:20px;background:#eee;padding:7px}table{width:100%;border-collapse:collapse;margin:10px 0 20px}th,td{border:1px solid #777;padding:7px;text-align:right;font-size:12px}th{background:#eee}.foot{margin-top:30px;font-size:11px;color:#555}@media print{button{display:none}body{padding:0}}
 </style></head><body>${content}</body></html>`;
 }
 function printHTML(content,title){
@@ -6007,7 +6471,8 @@ function printHTML(content,title){
  w.document.open();w.document.write(printableDoc(content,title));w.document.close();setTimeout(()=>{w.focus();w.print()},350);
 }
 function downloadXls(html,filename){
- let doc=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" dir="rtl"><head><meta charset="utf-8"></head><body>${html}</body></html>`;
+ if(LANG!=="ar")html=emciaLocalizedDocumentHTML(html);
+ let doc=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" lang="${LANG}" dir="${LANG==="ar"?"rtl":"ltr"}"><head><meta charset="utf-8"></head><body>${html}</body></html>`;
  let blob=new Blob(["\ufeff",doc],{type:"application/vnd.ms-excel;charset=utf-8"}),a=document.createElement("a");
  a.href=URL.createObjectURL(blob);a.download=filename+".xls";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
