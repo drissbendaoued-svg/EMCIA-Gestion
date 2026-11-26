@@ -27,6 +27,10 @@ function createDOM(){
    else if(u.pathname.endsWith('/emcia_daily_payment_reminders'))out=reminders.filter(x=>u.searchParams.get('reminder_date')==='eq.'+x.reminder_date);
    else if(u.pathname.endsWith('/rpc/emcia_mark_daily_payment_reminder')){const body=JSON.parse(options.body);let row=reminders.find(x=>x.student_id===body.p_student_id&&x.reminder_date===body.p_date);if(!row){row={student_id:body.p_student_id,reminder_date:body.p_date,actor_name:role,created_at:new Date().toISOString()};reminders.push(row)}out=[row];}
    else if(u.pathname.endsWith('/rpc/emcia_load_state_v2'))out={operational:op,financial:['director','accountant'].includes(role)?fin:null};
+   else if(u.pathname.endsWith('/rpc/emcia_cash_snapshot_v1'))out={
+    financial_revision:fin.revision,x:fin.payload.x||[],oi:fin.payload.oi||[],
+    monthly_adjustment_dues:(fin.payload.adj||[]).map(({id,pid,sid,gid,month,approvedDue,updatedAt})=>({id,pid,sid,gid,month,approvedDue,updatedAt}))
+   };
    else if(u.pathname.endsWith('/rpc/emcia_save_state_v2')){
     const body=JSON.parse(options.body);
     if(failAtomic||body.p_operational_revision!==op.revision||body.p_financial&&body.p_financial_revision!==fin.revision)return {ok:false,status:409,json:async()=>({message:'Revision conflict'})};
@@ -335,6 +339,36 @@ assert.ok(w.eval("scheduleConflict({...db.sch[0],start:'15:00',end:'16:00'},'m1'
   // Legacy financial fields must keep their target when another account deletes an earlier record.
   dom.window.close();op={id:'main',payload:fixtures(),revision:1};fin={id:'main',payload:{e:[{_index:1,discountTeacher:20}]},revision:1};role='secretary_morning';dom=createDOM();w=await login(dom);w.eval("db.e=db.e.filter(x=>x.id!=='e1');save()");await saved(w);assert.deepEqual(op.payload._legacyFinancialIds.e,['e1','e2']);
   dom.window.close();role='director';dom=createDOM();w=await login(dom);assert.equal(w.eval("db.e.find(x=>x.id==='e2').discountTeacher"),20);assert.equal(w.eval("db.e.find(x=>x.id==='e1')"),undefined);
+  // An advance allocated to a stopped enrollment's final month covers the reduced amount for both roles.
+  dom.window.close();data=make();
+  Object.assign(data.e[0],{end:'2026-11-14',active:false,stopMonthCharge:'yes'});
+  data.g[0].f=400;
+  data.p=[{id:'adjusted-receipt',sid:'s1',gid:'g1',date:'2026-10-27',allocMonth:'2026-11',a:300,netAfterRefund:300,adjustmentId:'settlement'}];
+  const adjustment={id:'settlement',pid:'adjusted-receipt',sid:'s1',gid:'g1',month:'2026-11',baseDue:400,approvedDue:300,countedDays:21,note:'private'};
+  op={id:'main',revision:1,payload:data};fin={id:'main',revision:1,payload:{adj:[adjustment]}};
+  for(const settlementRole of ['director','secretary_morning']){
+   role=settlementRole;dom=createDOM();w=await login(dom);
+   assert.equal(w.eval("dueForEnrollmentMonth(db.e[0],'2026-11')"),300);
+   assert.equal(w.eval("emciaAccountRows('2026-11',{sid:'s1',gid:'g1'})[0].debt"),0);
+   assert.equal(w.eval("emciaAccountDebtLines(db.e[0],'2026-11').length"),0);
+   assert.equal(w.eval("emciaPendingAlertCount()"),0);
+   assert.equal(w.eval("emciaDailyPaymentRows('2026-11-14').some(row=>row.sid==='s1')"),false);
+   assert.equal(w.eval("dueForEnrollmentMonth(db.e[0],'2026-12')"),0);
+   if(role==='director'){
+    assert.equal(w.eval("adjustmentReferenceDue(db.p[0],db.g[0],'2026-11',db.adj[0])"),400);
+    w.eval("db.adj[0].approvedDue=350");
+    assert.equal(w.eval("emciaAccountRows('2026-11',{sid:'s1',gid:'g1'})[0].debt"),50);
+    w.eval("db.adj[0].approvedDue=0");
+    assert.equal(w.eval("dueForEnrollmentMonth(db.e[0],'2026-11')"),0);
+   }else{
+    assert.equal(w.eval('db.adj.length'),0);
+    assert.equal(w.eval('db.monthlyAdjustmentDues[0].note'),undefined);
+    w.eval('save()');await saved(w);assert.equal(op.payload.monthlyAdjustmentDues,undefined);
+   }
+   w.eval("db.p[0].cancelledAt='2026-11-14'");
+   assert.equal(w.eval("dueForEnrollmentMonth(db.e[0],'2026-11')"),400);
+   dom.window.close();
+  }
   assert.deepEqual(errors,[]);
   console.log('PASS: actual DOM attendance handlers, independent sessions, lesson completion, receipt add/edit, cloud reload, strict dates, duplicate receipts, cash, schedule conflicts, stable IDs, legacy compatibility, atomic conflict rollback, advances, late/partial payments, discount bearers, individual balances, reports, teacher privacy, daily payment reminders/filtering/deduplication, lesson-based monthly settlements, dated study stops, preserved historical arrears, future credits re-enrollment gaps, additional-income direct/batch entry, decimal totals, month edits, deletion, legacy monthly reports, recurring institutional obligations, partial payments, linked existing expenses, calendar edges, versioned terms, financial privacy and accountant/director reload. Mock writes:',writes);
  }finally{dom.window.close()}
