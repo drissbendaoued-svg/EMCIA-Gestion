@@ -309,6 +309,14 @@ assert.ok(w.eval("scheduleConflict({...db.sch[0],start:'15:00',end:'16:00'},'m1'
   w.eval("delTx('oi',db.oi[0].id)");assert.equal(w.dashboardStats('2026-12').other,0);assert.equal(d.querySelector('#oiRegisteredTotal').textContent,'32.25 DH');
   w.eval("db.oi.push({id:'legacy-income',cat:'التسجيل',a:7,month:'2026-11'});db.x.push({id:'legacy-expense',a:5,month:'2026-11'});db.sv.push({id:'legacy-saving',a:2,month:'2026-11'});save()");
   assert.equal(w.dashboardStats('2026-11').other,39.25);
+  w.eval("window.emciaOperationsMonth='2026-11';show('financeoperations')");
+  const incomeCards=()=>[...d.querySelectorAll('#financeoperations .emcia-flow-income h3')].map(node=>node.textContent);
+  assert.deepEqual(incomeCards(),['32.25 DH','7.00 DH']);
+  assert.equal(d.querySelector('#financeoperations .emcia-flow-balance h3').textContent,'34.25 DH');
+  assert.match(d.querySelector('#financeoperations details:last-child').textContent,/مداخيل إضافية من المتعلمين/);
+  const operationsMonth=d.querySelector('#emciaOperationsMonth');
+  operationsMonth.value='2026-12';operationsMonth.dispatchEvent(new w.Event('change',{bubbles:true}));
+  assert.deepEqual(incomeCards(),['0.00 DH','0.00 DH']);
   for(const type of ['monthly','executive']){
    w.eval("show('reportcenter')");w.rcChooseCategory('management');d.querySelector('#rcType').value=type;d.querySelector('#rcMonth').value='2026-11';w.rcBuildReport();
    const row=[...d.querySelectorAll('#rcPreview tr')].find(x=>x.textContent.includes('مداخيل أخرى'));
