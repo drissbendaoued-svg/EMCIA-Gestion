@@ -398,6 +398,41 @@ assert.ok(w.eval("scheduleConflict({...db.sch[0],start:'15:00',end:'16:00'},'m1'
    assert.equal(w.eval("dueForEnrollmentMonth(db.e[0],'2026-11')"),400);
    dom.window.close();
   }
+  // Review decisions persist by the exact receipt set and leave both payment ledgers intact.
+  const duplicateData=fixtures();
+  const receipt={sid:'s1',gid:'g1',a:200,date:'2026-11-14'};
+  duplicateData.p=[
+   {...receipt,id:'first',receiptNo:'R1',allocMonth:'2026-11'},
+   {...receipt,id:'second',receiptNo:'R2',allocMonth:'2026-12'},
+   {...receipt,id:'third',receiptNo:'R3',allocMonth:'2026-11',date:'2026-11-13'},
+   {...receipt,id:'fourth',receiptNo:'R4',allocMonth:'2026-12',date:'2026-11-13'}
+  ];
+  op={id:'main',revision:1,payload:duplicateData};fin={id:'main',revision:1,payload:{adj:[]}};
+  role='director';dom=createDOM();w=await login(dom);d=w.document;
+  w.show('alerts');
+  const panel=d.querySelector('#emcia-duplicate-alerts');panel.open=true;
+  const confirmButtons=()=>[...panel.querySelectorAll('[onclick^="emciaConfirmDistinctPayments"]')];
+  assert.equal(confirmButtons().length,2);
+  const originalOperational=JSON.stringify(op.payload),originalFinancial=JSON.stringify(fin);
+  failAtomic=true;confirmButtons()[0].click();await wait(20);failAtomic=false;
+  assert.match(alerts.pop(),/تعذر حفظ تأكيد عدم التكرار/);
+  assert.equal(confirmButtons().length,2);
+  assert.equal(JSON.stringify(op.payload),originalOperational);
+  confirmButtons()[0].click();await wait(20);
+  assert.equal(confirmButtons().length,1);
+  assert.equal(panel.open,true);
+  assert.match(panel.querySelector('summary').textContent,/\(1\)/);
+  assert.equal(op.payload.duplicateDismissals.length,1);
+  const {duplicateDismissals,...operationalPayload}=op.payload;
+  assert.equal(JSON.stringify(operationalPayload),originalOperational);
+  assert.equal(JSON.stringify(fin),originalFinancial);
+  dom.window.close();role='accountant';dom=createDOM();w=await login(dom);
+  assert.equal(w.emciaPotentialDuplicatePayments().length,1);
+  assert.equal(w.emciaPotentialDuplicatePayments()[0].rows[0].receiptNo,'R3');
+  w.eval("db.p.push({...db.p[0],id:'new-receipt',receiptNo:'R5'})");
+  assert.equal(w.emciaPotentialDuplicatePayments().length,2);
+  w.eval("db.p.pop();db.p[0].allocMonth='2027-01'");
+  assert.equal(w.emciaPotentialDuplicatePayments().length,2);
   assert.deepEqual(errors,[]);
   console.log('PASS: actual DOM attendance handlers, independent sessions, lesson completion, receipt add/edit, cloud reload, strict dates, duplicate receipts, cash, schedule conflicts, stable IDs, legacy compatibility, atomic conflict rollback, advances, late/partial payments, discount bearers, individual balances, reports, teacher privacy, daily payment reminders/filtering/deduplication, lesson-based monthly settlements, dated study stops, preserved historical arrears, future credits re-enrollment gaps, additional-income direct/batch entry, decimal totals, month edits, deletion, legacy monthly reports, recurring institutional obligations, partial payments, linked existing expenses, calendar edges, versioned terms, financial privacy and accountant/director reload. Mock writes:',writes);
  }finally{dom.window.close()}
