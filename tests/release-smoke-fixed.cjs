@@ -107,6 +107,35 @@ assert.ok(w.eval("scheduleConflict({...db.sch[0],start:'15:00',end:'16:00'},'m1'
    const teacher=w.teacherReportHTML('t1','2026-11');assert.doesNotMatch(teacher,/حصة EMCIA|حصة المؤسسة/);assert.match(teacher,new RegExp(expected.toFixed(2)));
   }
   // Advance received in October becomes earnings only after a November lesson.
+  // The advance statement follows the selected due month and shows matured advances as paid fees.
+  const advanceData=make();
+  advanceData.p=[
+   {id:'early-nov',sid:'s1',gid:'g1',receiptNo:'EARLY-NOV',a:300,date:'2026-10-27',allocMonth:'2026-11'},
+   {id:'split',sid:'s1',gid:'g1',receiptNo:'SPLIT',a:800,date:'2026-11-12',allocMonth:'2026-12',allocations:[{month:'2026-12',amount:400},{month:'2027-01',amount:400}]},
+   {id:'dec-only',sid:'s1',gid:'g1',receiptNo:'DEC-ONLY',a:150,date:'2026-11-13',allocMonth:'2026-12'},
+   {id:'cancelled',sid:'s1',gid:'g1',receiptNo:'CANCELLED',a:100,date:'2026-11-14',allocMonth:'2026-12',cancelledAt:'2026-11-14'}
+  ];seed(advanceData);
+  const advanceBefore=w.eval('JSON.stringify(db.p)');
+  w.eval("show('advances')");
+  const advanceMonth=d.querySelector('#advmonth'),statement=d.querySelector('#advstatement');
+  const chooseAdvanceMonth=month=>{advanceMonth.value=month;advanceMonth.dispatchEvent(new w.Event('change',{bubbles:true}))};
+  assert.equal(advanceMonth.value,'2026-12');
+  assert.match(statement.textContent,/تسبيقات الشهر المختار/);
+  assert.match(statement.textContent,/550\.00 DH/);
+  assert.match(statement.textContent,/SPLIT.*DEC-ONLY/s);
+  assert.doesNotMatch(statement.textContent,/EARLY-NOV|CANCELLED|2027-01/);
+  chooseAdvanceMonth('2027-01');
+  assert.match(statement.textContent,/2027-01.*400\.00 DH/s);
+  assert.doesNotMatch(statement.textContent,/DEC-ONLY|550\.00 DH/);
+  chooseAdvanceMonth('2026-11');
+  assert.match(statement.textContent,/واجبات مؤداة قبل بداية الشهر/);
+  assert.match(statement.textContent,/EARLY-NOV/);
+  assert.doesNotMatch(statement.textContent,/تسبيقات الشهر المختار|SPLIT/);
+  chooseAdvanceMonth('2027-02');
+  assert.match(statement.textContent,/لا توجد مبالغ/);
+  assert.equal(statement.querySelectorAll('tbody tr').length,0);
+  assert.equal(w.eval('JSON.stringify(db.p)'),advanceBefore);
+  assert.equal(w.eval("emciaAccountRows('2026-11',{gid:'g1'})[0].paid"),300);
   let data=make();data.sp=[{id:'advance',sid:'s1',gid:'g2',a:100,date:'2026-10-20'}];seed(data);
   assert.equal(w.emciaSessionBalance('s1','g2','2026-10-31').credit,100);
   assert.equal(w.dashboardStats('2026-10').gross,100);assert.equal(w.dashboardStats('2026-10').prof,0);assert.equal(w.dashboardStats('2026-10').em,0);
