@@ -3168,7 +3168,7 @@ function certification(){
  category.addEventListener('change',()=>{search.value='';refresh()});search.addEventListener('input',refresh);
  const card=document.createElement('div');card.className='card';host.append(card);
  const heading=document.createElement('h3');heading.textContent='طلبات الشواهد — حفظ مسودة سحابية';card.append(heading);
- const language=document.createElement('select');[['ar','العربية'],['fr','Français'],['bi','العربية + Français']].forEach(([v,n])=>language.add(new Option(n,v)));card.append(language);
+ const language=document.createElement('select');[['ar','العربية'],['fr','Français'],['en','English'],['bi','العربية + Français']].forEach(([v,n])=>language.add(new Option(n,v)));card.append(language);
  const kind=document.createElement('select');[['attendance','شهادة متابعة الدراسة / المواظبة'],['completion','شهادة إتمام المستوى'],['participation','شهادة المشاركة'],['work','شهادة العمل'],['experience','شهادة الخبرة'],['appreciation','شهادة التقدير']].forEach(([v,n])=>kind.add(new Option(n,v)));card.append(kind);
  const save=document.createElement('button');save.textContent='حفظ مسودة الطلب';card.append(save);
  const refreshList=document.createElement('button');refreshList.textContent='تحديث قائمة طلباتي';card.append(refreshList);
@@ -3290,7 +3290,7 @@ function certification(){
     const wrapper=document.createElement('div');wrapper.style.cssText='padding:14px;margin:10px 0;border:1px solid #d6dee8;border-radius:14px;overflow-wrap:anywhere';listing.append(wrapper);
     const title=document.createElement('strong');title.textContent=nameOf(item)||'مستفيد غير معروف';wrapper.append(title);
     const meta=document.createElement('p');meta.textContent='المعرف الداخلي: '+item.subject_id;meta.style.cssText='font-size:13px;color:#52667a';wrapper.append(meta);
-    const detail=document.createElement('p');detail.textContent=(types[item.certificate_type]||item.certificate_type)+' | '+({ar:'العربية',fr:'الفرنسية',bi:'العربية والفرنسية'}[item.language]||item.language)+' | '+' | '+item.created_at.slice(0,10);detail.dir='auto';detail.style.overflowWrap='anywhere';wrapper.append(detail);
+    const detail=document.createElement('p');detail.textContent=(types[item.certificate_type]||item.certificate_type)+' | '+({ar:'العربية',fr:'الفرنسية',en:'English',bi:'العربية والفرنسية'}[item.language]||item.language)+' | '+' | '+item.created_at.slice(0,10);detail.dir='auto';detail.style.overflowWrap='anywhere';wrapper.append(detail);
     const cohort=groupOf(item);if(cohort){const p=document.createElement('p');p.textContent='الفوج: '+cohort;wrapper.append(p)}
     const state=document.createElement('p');state.textContent='الحالة: '+(statuses[status]||status);wrapper.append(state);
     const actionRow=document.createElement('div');actionRow.style.cssText='display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;align-items:center';wrapper.append(actionRow);
