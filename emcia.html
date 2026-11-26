@@ -476,7 +476,7 @@ header>b{display:block;text-align:center;font-size:clamp(20px,5vw,28px)}
 /* EMCIA V20: all page chrome scrolls naturally */
 header,nav,#nav,.main-nav,.subnav-wrap,.subnav,#emcia-top-controls{position:static!important;top:auto!important;bottom:auto!important}
 #emcia-top-controls{z-index:auto}
-#emcia-cloud-status{position:static!important;box-shadow:none!important;background:transparent!important;border:0!important;padding:0!important}
+
 #emcia-account-menu{position:relative}
 #emcia-account-menu>div{z-index:80!important}
 body:not(.emcia-authorized) #emcia-top-controls{display:none!important}
@@ -773,7 +773,8 @@ main .page:not(#workspace):not(#home) textarea:focus-visible{outline:2px solid #
 </div>
 </details>
 </div><div class="emcia-login-brand"><img src="./EMCIA_Official_Logo-1.jpg" alt="الشعار الرسمي لمؤسسة EMCIA" class="emcia-login-logo" onerror="this.hidden=true"><h1 data-fr="Bienvenue à EMCIA">مرحبًا بكم في EMCIA</h1><p data-fr="Gestion de l’établissement">نظام تدبير المؤسسة</p></div><form id="authForm"><label><span data-fr="Adresse e-mail">البريد الإلكتروني</span><input id="authEmail" type="email" required autocomplete="username" ></label><label for="authPassword" data-fr="Mot de passe">كلمة المرور</label><div class="emcia-password-field"><div class="emcia-eye-wrap"><input id="authPassword" type="password" required autocomplete="current-password"><input id="authPasswordVisible" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" style="display:none" oninput="document.getElementById('authPassword').value=this.value"><button class="emcia-eye-button" id="authPasswordEye" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false" onclick="emciaLoginEyeClick()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><button id="emcia-login-submit" type="submit" data-fr="Connexion">دخول إلى الحساب</button></form><button id="emcia-forgot" type="button" style="margin-top:10px;background:#eef3f8;color:#175d8d" data-fr="Mot de passe oublié ?">نسيت كلمة المرور؟</button><div id="emcia-recovery" style="display:none"><p data-fr="Saisissez votre adresse e-mail pour recevoir le lien de réinitialisation.">أدخل بريد الحساب لإرسال رابط إعادة التعيين. افتح الرابط من البريد ثم اختر كلمة مرور جديدة.</p><form id="emcia-recovery-form"><input id="emcia-recovery-email" type="email" placeholder="البريد الإلكتروني" data-fr-placeholder="Adresse e-mail" required><button type="submit" data-fr="Envoyer le lien">إرسال رابط الاستعادة</button></form></div><div id="emcia-new-password" style="display:none"><p data-fr="Choisissez un nouveau mot de passe (8 caractères minimum).">اختر كلمة مرور جديدة (8 أحرف على الأقل).</p><form id="emcia-new-password-form"><input id="emcia-new-password-value" type="password" minlength="8" required autocomplete="new-password" placeholder="كلمة المرور الجديدة" data-fr-placeholder="Nouveau mot de passe"><input id="emcia-new-password-confirm" type="password" minlength="8" required autocomplete="new-password" placeholder="تأكيد كلمة المرور" data-fr-placeholder="Confirmer le mot de passe"><button type="submit" data-fr="Enregistrer le nouveau mot de passe">حفظ كلمة المرور الجديدة</button></form></div><p id="authStatus" role="status" aria-live="polite"></p><div class="emcia-login-footer" data-fr="Année scolaire 2026–2027">الموسم الدراسي 2026–2027</div><small data-fr="Les données sont conservées dans le système cloud de l’établissement.">البيانات محفوظة بأمان في النظام السحابي للمؤسسة.</small></div></div>
-<header><b>EMCIA Gestion</b><small id="emcia-release">2026.11.17.2</small><div class="emcia-display-controls">
+<header class="emcia-app-header">
+<div class="emcia-display-controls">
 <button class="emcia-theme-toggle" type="button" data-toggle-theme aria-label="التبديل إلى الوضع الليلي"></button>
 <details class="emcia-language-menu">
 <summary data-language-summary aria-label="اللغة"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg></summary>
@@ -783,7 +784,17 @@ main .page:not(#workspace):not(#home) textarea:focus-visible{outline:2px solid #
 <button type="button" data-language="en" lang="en" dir="ltr">English</button>
 </div>
 </details>
-</div></header>
+</div>
+<div class="emcia-header-brand" dir="ltr"><span class="emcia-header-symbol" aria-hidden="true"></span><b>EMCIA</b></div>
+<div class="emcia-header-meta">
+<details class="emcia-sync-menu">
+<summary id="emcia-sync-indicator" data-sync-state="pending" aria-label="حالة الاتصال والمزامنة"><span aria-hidden="true"></span></summary>
+<div id="emcia-cloud-detail" aria-hidden="true"></div>
+</details>
+<small id="emcia-release" dir="ltr">2026.11.17.2</small>
+<span id="emcia-cloud-status" class="emcia-visually-hidden" role="status" aria-live="polite"></span>
+</div>
+</header>
 <button id="mobileNavToggle" type="button" onclick="toggleMobileNav()" aria-label="إظهار أو إخفاء القائمة">☰ القائمة</button><div id="appWorkspace"><nav id="nav"></nav>
 <main>
 <section id="home" class="page active"></section>
@@ -6155,16 +6166,12 @@ async function resumeAuthSession(){
 const cloudUrl=api+'/rest/v1/emcia_cloud_state';
 const headers=()=>({'apikey':key,'Authorization':'Bearer '+token,'Content-Type':'application/json'});
 function cloudStatus(message){
- let node=document.getElementById('emcia-cloud-status');
- if(!node){
-  node=document.createElement('span');node.id='emcia-cloud-status';
-  node.setAttribute('role','status');node.setAttribute('aria-live','polite');
-  node.style.cssText='display:block;text-align:center;font:12px system-ui;margin:4px auto 0;max-width:100%;overflow-wrap:anywhere';
-  const header=document.querySelector('header');(header||document.body).appendChild(node);
- }
+ const indicator=document.getElementById('emcia-sync-indicator');
  const error=/فشل|تعارض|تعذر|⚠️/.test(message);
- node.style.color=error?'#fecaca':(/جار/.test(message)?'#fef08a':'#d1fae5');
- node.textContent=message;
+ indicator.dataset.syncState=error?'error':(/جار/.test(message)?'busy':'ready');
+ indicator.title=message;
+ document.getElementById('emcia-cloud-status').textContent=message;
+ document.getElementById('emcia-cloud-detail').textContent=message;
 }
 window.addEventListener('beforeunload',event=>{
  if(!started||(!dirty&&!saving&&!blocked))return;
@@ -6294,6 +6301,7 @@ function joinState(op,fin){
 
  return state;
 }
+let syncCheckFailed=false;
 async function checkRemoteChanges(){
  if(!started||!token||dirty||saving||blocked||document.visibilityState==='hidden')return;
  try{
@@ -6303,12 +6311,21 @@ async function checkRemoteChanges(){
   if((op&&Number(op.revision)!==opRevision)||(fin&&Number(fin.revision)!==finRevision)||(!canFinance()&&cashRevision!==finRevision)){
    cloudStatus('🔄 وصلت تغييرات من حساب آخر؛ جار تحديث البيانات...');
    location.reload();
+  }else if(syncCheckFailed&&!dirty&&!saving&&!blocked){
+   syncCheckFailed=false;
+   cloudStatus('☁️ متصل بنظام EMCIA');
   }
- }catch(e){if(!navigator.onLine)cloudStatus('⚠️ الاتصال بالإنترنت غير متاح مؤقتاً');else if(e instanceof TypeError)cloudStatus('☁️ تعذر الاتصال للتحقق مؤقتاً؛ سيُعاد المحاولة تلقائياً');else cloudStatus('⚠️ تعذر التحقق من التحديثات: '+e.message)}
+ }catch(e){syncCheckFailed=true;if(!navigator.onLine)cloudStatus('⚠️ الاتصال بالإنترنت غير متاح مؤقتاً');else if(e instanceof TypeError)cloudStatus('☁️ تعذر الاتصال للتحقق مؤقتاً؛ سيُعاد المحاولة تلقائياً');else cloudStatus('⚠️ تعذر التحقق من التحديثات: '+e.message)}
 }
 setInterval(checkRemoteChanges,12000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkRemoteChanges()});
 window.addEventListener('focus',checkRemoteChanges);
+window.addEventListener('online',checkRemoteChanges);
+window.addEventListener('offline',()=>{
+ if(!started)return;
+ syncCheckFailed=true;
+ cloudStatus('⚠️ الاتصال بالإنترنت غير متاح مؤقتاً');
+});
 async function loadCloudSnapshot(){
  const snapshot=await request(api+'/rest/v1/rpc/emcia_load_state_v2',{method:'POST',headers:headers(),body:JSON.stringify({p_id:cloudId})});
  if(!snapshot?.operational)throw Error('تعذر تحميل بيانات المؤسسة أو ليست لديك صلاحية الوصول');
@@ -6821,7 +6838,32 @@ div[title^="المستحقات:"]:hover,div[title^="المحصل:"]:hover{filter
 /* Display and language preferences */
 @media screen{
 .emcia-display-controls{display:flex;gap:6px;justify-content:flex-end;margin:0 0 8px}
-header .emcia-display-controls{justify-content:center;margin:8px 0 0}
+/* Keep the brand centered between two equal side columns. */
+.emcia-app-header{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px;padding:8px 12px;min-height:54px}
+.emcia-app-header .emcia-display-controls{justify-content:flex-start;gap:4px;margin:0}
+.emcia-header-brand{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.emcia-header-brand b{font-size:clamp(17px,4.5vw,23px);line-height:1}
+.emcia-header-symbol{width:34px;height:34px;border-radius:8px;background:#fff url("./EMCIA_Official_Logo-1.jpg") 2.44% 50% / 301.18% auto no-repeat}
+.emcia-header-meta{display:flex;align-items:center;justify-content:flex-end;gap:4px;min-width:0}
+.emcia-header-meta #emcia-release{font-size:10px;line-height:1.2;font-variant-numeric:tabular-nums;white-space:nowrap}
+.emcia-sync-menu{position:relative;z-index:6}
+.emcia-sync-menu summary{list-style:none;display:grid;place-items:center;cursor:pointer;width:26px;height:36px}
+.emcia-sync-menu summary::-webkit-details-marker{display:none}
+.emcia-sync-menu summary span{display:block;width:9px;height:9px;border-radius:50%;background:#879aaf}
+.emcia-sync-menu [data-sync-state="ready"] span{background:#4ade80}
+.emcia-sync-menu [data-sync-state="busy"] span{background:#fbbf24}
+.emcia-sync-menu [data-sync-state="error"] span{background:#f87171}
+#emcia-cloud-detail{position:absolute;inset-inline-end:0;top:100%;z-index:7;min-width:min(210px,70vw);max-width:70vw;padding:8px 10px;border-radius:8px;background:var(--card);color:var(--txt);border:1px solid var(--line);font-size:12px;direction:rtl;text-align:right;overflow-wrap:anywhere;box-shadow:0 5px 14px #0003}
+#emcia-cloud-detail:empty{display:none}
+.emcia-visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+header.emcia-app-header .emcia-display-controls>button,.emcia-app-header .emcia-language-menu summary{width:38px;min-width:38px;height:38px}
+.emcia-app-header .emcia-language-options{inset-inline-start:0;inset-inline-end:auto}
+@media(max-width:330px){
+ .emcia-app-header{gap:4px;padding-inline:8px}
+ .emcia-header-symbol{width:29px;height:29px}
+ .emcia-header-meta{gap:1px}
+ .emcia-sync-menu summary{width:20px}
+}
 header .emcia-display-controls button,#authGate .emcia-display-controls button{display:inline-flex;align-items:center;justify-content:center;width:42px;min-width:42px;height:42px;padding:0;margin:0;border:1px solid #b9c9d8;border-radius:9px;background:#edf4f9;color:#153753;font-weight:750;line-height:1}
 #authGate{direction:inherit}
 .emcia-language-menu{position:relative;z-index:6}
@@ -6951,6 +6993,8 @@ const loginEnglish={
 function syncDisplayLanguage(){
  const language=root.lang;
  const labels={ar:"اللغة",fr:"Langue",en:"Language"};
+ const syncLabels={ar:"حالة الاتصال والمزامنة",fr:"État de la connexion et de la synchronisation",en:"Connection and sync status"};
+ document.getElementById("emcia-sync-indicator").setAttribute("aria-label",syncLabels[language]);
  document.querySelectorAll("[data-language-summary]").forEach(summary=>{
   summary.setAttribute("aria-label",labels[language]);
   summary.title=labels[language];
